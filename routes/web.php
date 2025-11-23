@@ -71,17 +71,6 @@ use Illuminate\Support\Facades\Route;
 
 
 
-
-
-
-
-
-
-
-
-
-
-
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -114,18 +103,6 @@ Route::view('general-widget-box', 'admin_unique_layout.general-widget-box')->nam
 //widgets
 Route::view('general-widget', 'Widgets.general_widget')->name('general_widget');
 Route::view('chart-widget', 'Widgets.chart_widget')->name('chart_widget');
-
-
-
-
-
-
-
-
-
-
-
-
 
 //charts
 Route::view('chart-apex', 'charts.chart_apex')->name('chart_apex');
@@ -173,13 +150,15 @@ Route::group(['middleware' => ['prevent-back-history', SetLocale::class]], funct
     Route::get('/dashboard', [UserController::class, 'dashboard'])->name('dashboard')->middleware('isLoggedIn');
     Route::get('/logout', [UserController::class, 'logout'])->name('logout');
 
-    Route::get('/blog_details/{slug}', [UserController::class, 'blog_details'])->name('blog_details');
+    Route::get('/blog_detail/{slug}', [UserController::class, 'blog_detail'])->name('blog.detail');
     Route::post('/blog/{id}/like', [BlogController::class, 'incrementLike'])->name('blog.like');
     Route::post('blog-comment', [UserController::class, 'blogCommentStore'])->name('blog-comment.store');
     Route::post('blog-comment-reply', [UserController::class, 'blogCommentReplyStore'])->name('blog-comment-reply.store');
     Route::get('search-blog-list', [UserController::class, 'searchBlogList'])->name('search-blog.list');
-    Route::get('/signup', [UserController::class, 'signup'])->name('signup')->middleware('alreadyLoggedIn');
-    Route::post('/reg', [UserController::class, 'registration']);
+    Route::get('/signup', [UserController::class, 'signup'])->name('signup');
+    Route::post('/send-otp', [UserController::class, 'sendOtp'])->name('send.otp');
+Route::post('/verify-otp', [UserController::class, 'verifyOtp'])->name('verify.otp');
+Route::post('/reg', [UserController::class, 'registration'])->name('register');
     Route::get('/contact', [UserController::class, 'contact'])->name('contact');
     Route::get('/about', [UserController::class, 'about'])->name('about');
     Route::get('/workUs', [UserController::class, 'workUs'])->name('workUs');
@@ -545,12 +524,12 @@ Route::group(['prefix' => 'admin', 'middleware' => ['check.session']], function 
             Route::post('bulk-delete', [MediaController::class, 'bulkDelete'])->name('gallery.bulk.delete');
         });
 
-        Route::group(['prefix' => 'blog', 'as' => 'blog.'], function () {
-            Route::get('/', [BlogController::class, 'index'])->name('index')->middleware('AdminIsLoggedIn');
-            Route::get('create', [BlogController::class, 'create'])->name('create')->middleware('AdminIsLoggedIn');
+        Route::group(['prefix' => 'blog', 'as' => 'blog.', 'middleware' => 'AdminIsLoggedIn'], function () {
+            Route::get('/', [BlogController::class, 'index'])->name('index');
+            Route::get('create', [BlogController::class, 'create'])->name('create');
             Route::post('store', [BlogController::class, 'store'])->name('store');
-            Route::get('edit/{uuid}', [BlogController::class, 'edit'])->name('edit')->middleware('AdminIsLoggedIn');
-            Route::post('update/{uuid}', [BlogController::class, 'update'])->name('update');
+            Route::get('edit/{uuid}', [BlogController::class, 'edit'])->name('edit');
+            Route::post('update/{uuid}', [BlogController::class, 'update'])->name('update'); // Now matches method signature
             Route::get('delete/{uuid}', [BlogController::class, 'delete'])->name('delete');
             Route::get('blog-comment-list', [BlogController::class, 'blogCommentList'])->name('blog-comment-list')->middleware('AdminIsLoggedIn');
             Route::post('change-blog-comment-status', [BlogController::class, 'changeBlogCommentStatus'])->name('changeBlogCommentStatus');

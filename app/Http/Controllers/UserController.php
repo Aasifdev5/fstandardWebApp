@@ -11,6 +11,8 @@ use App\Models\Blog;
 use App\Models\BlogCategory;
 use App\Models\BlogComment;
 
+use Illuminate\Support\Facades\Cache;
+
 use App\Models\Category;
 use App\Models\City;
 use App\Models\Comment;
@@ -170,55 +172,112 @@ class UserController extends Controller
         return view('register', compact('pages', 'countries', 'cities', 'refer'));
     }
 
-
-    public function registration(Request $request)
+// SEND OTP - DUMMY MODE (No Rate Limit in Demo)
+    public function sendOtp(Request $request)
     {
-        // Validate input fields
-        $request->validate([
-            'first_name' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'code' => 'required',
-            'password' => ['required', 'string', 'min:8', 'max:30'],
-            'mobile_number' => 'required|string|max:15',
+        $mobile = $request->mobile;
 
-        ]);
-
-        // Handle mobile number with prefix
-        $prefixedMobileNumber = "591" . $request->mobile_number;
-
-        // Create a new user
-        $user = User::create([
-            'account_type' => 'user',
-            'name' => trim($request->first_name . ' ' . $request->last_name),
-            'email' => $request->email,
-            'password' => bcrypt($request->password),
-            'custom_password' => $request->password, // Storing plain password is insecure; reconsider this
-            'mobile_number' => $prefixedMobileNumber,
-            'id_number' => $request->code,
-            'ip_address' => getIp(), // Assuming getIpAddress is a defined method
-
-        ]);
-
-        if ($user) {
-            // Send notification for registration
-            $text = 'A new member has registered on the platform.';
-            $target_url = route('users');
-            $this->sendForApi($text, 1, $target_url, $user->id, $user->id);
-
-            // Store user ID in session for further steps
-            session(['LoggedIn' => $user->id]);
-
-            return redirect('dashboard')->with([
-
-                'user' => $user
+        // For demo: Only allow our test number
+        if ($mobile !== '9876543210') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Demo: Use mobile 9876543210'
             ]);
         }
 
-        return back()->with('fail', 'User registration failed.');
+        // REMOVE RATE LIMIT FOR DEMO (No 429 error!)
+        // Comment out or remove the rate limiting code
+
+        $otp = '448274'; // Fixed dummy OTP
+
+        Cache::put("otp_{$mobile}", $otp, now()->addMinutes(15));
+        // No attempt counter → no 429 error
+
+        \Log::info("DUMMY OTP SENT → Mobile: {$mobile} | OTP: {$otp}");
+
+        return response()->json([
+            'success' => true,
+            'message' => 'OTP sent! Use 448274',
+            'otp' => $otp // Remove in production
+        ]);
     }
 
+    // VERIFY OTP
+    public function verifyOtp(Request $request)
+    {
+        $mobile = $request->mobile;
+        $otp = $request->otp;
 
+        if ($mobile !== '9876543210') {
+            return response()->json(['success' => false, 'message' => 'Wrong mobile']);
+        }
+
+        $storedOtp = Cache::get("otp_{$mobile}");
+
+        if ($storedOtp && $otp === '448274') {
+            Cache::forget("otp_{$mobile}");
+            Cache::put("mobile_verified_{$mobile}", true, now()->addHours(24));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Mobile verified successfully!'
+            ]);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Invalid OTP. Use 448274'
+        ]);
+    }
+
+    // REGISTRATION
+    public function registration(Request $request)
+    {
+        $request->validate([
+            'first_name' => 'required|string|max:100',
+            'last_name'  => 'required|string|max:100',
+            'email'      => 'required|email|unique:users,email',
+            'password'   => 'required|min:6|confirmed',
+            'mobile'     => 'required'
+        ]);
+
+        $mobile = $request->mobile;
+
+        if ($mobile !== '9876543210') {
+            return response()->json(['success' => false, 'message' => 'Demo only allows 9876543210']);
+        }
+
+        if (!Cache::get("mobile_verified_{$mobile}")) {
+            return response()->json(['success' => false, 'message' => 'Please verify mobile first']);
+        }
+
+        $user = User::create([
+            'account_type'   => 'user',
+            'first_name'     => $request->first_name,
+            'last_name'      => $request->last_name,
+            'name'           => $request->first_name . ' ' . $request->last_name,
+            'email'          => $request->email,
+            'mobile_number'  => '91' . $mobile,
+            'password'       => Hash::make($request->password),
+            'ip_address'     => $request->ip(),
+            'status'         => 1,
+            'email_verified_at' => now(),
+        ]);
+
+        if ($user) {
+            Cache::forget("mobile_verified_{$mobile}");
+            auth()->login($user);
+            Session::put('LoggedIn', $user->id);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Account created successfully!',
+                'redirect' => url('/dashboard')
+            ]);
+        }
+
+        return response()->json(['success' => false, 'message' => 'Failed'], 500);
+    }
     public function login(Request $request)
     {
         $request->validate([
@@ -290,24 +349,39 @@ class UserController extends Controller
             return Redirect()->with('fail', 'Tienes que iniciar sesión primero');
         }
     }
-    public function blog_detail(Request $request)
+    public function blog_detail($slug) // <-- Laravel auto-injects the {slug} from route
     {
+        // Find the blog by slug
+        $blog_detail = Blog::where('slug', $slug)->firstOrFail();
 
-        $blog_detail = Blog::where('slug', $request->slug)->first();
-        // dd($blog_detail);
-        $data['blogComments'] = BlogComment::active();
-        $blogComments = $data['blogComments']->whereNull('parent_id')->get();
-        // Fetch blog with count of active comments
+        // Load comments with replies in one query (efficient + includes replies)
+        $blogComments = BlogComment::with('user', 'blogCommentReplies.user')
+            ->where('blog_id', $blog_detail->id)
+            ->where('status', 1)
+            ->whereNull('parent_id')
+            ->latest()
+            ->get();
+
+        // Count active comments (main + replies)
         $commentCount = BlogComment::where('blog_id', $blog_detail->id)
-
-            ->where('status', '1') // If you have a status for active comments
+            ->where('status', 1)
             ->count();
 
-        $pages = Page::all();
-        $latest_posts = Blog::orderBy('id', 'DESC')->paginate(3);
-        $user_session = User::where('id', Session::get('LoggedIn'))->first();
-        // dd($request->id);
-        return view('blog_detail', compact('blogComments', 'user_session', 'blog_detail', 'pages', 'latest_posts', 'commentCount'));
+        $latest_posts = Blog::where('id', '!=', $blog_detail->id)
+            ->latest()
+            ->take(6)
+            ->get();
+
+        $user_session = auth()->check() ? auth()->user() : null;
+        // OR if you use session: User::find(Session::get('LoggedIn'))
+
+        return view('blog_detail', compact(
+            'blog_detail',
+            'blogComments',
+            'commentCount',
+            'latest_posts',
+            'user_session'
+        ));
     }
 
 
@@ -408,22 +482,18 @@ class UserController extends Controller
 
     public function blogs(Request $request)
     {
-        $query = $request->get('query'); // Get the search query
+        $query = $request->get('query');
 
-        // Fetch blogs, filtering by the search query if it exists
-        $blogs = Blog::when($query, function ($queryBuilder) use ($query) {
-            $queryBuilder->where('title', 'like', '%' . $query . '%')
-                ->orWhere('short_description', 'like', '%' . $query . '%');
-        })->orderBy('id', 'DESC')->paginate(9);
+        $blogs = Blog::when($query, fn($q) => $q->where('title', 'like', "%$query%")
+            ->orWhere('short_description', 'like', "%$query%"))
+            ->latest()
+            ->paginate(9)
+            ->withQueryString();
 
-        $user_session = User::where('id', Session::get('LoggedIn'))->first();
+        $latest_posts = Blog::latest()->take(6)->get();
+        $user_session = auth()->user();
 
-        $data['blogComments'] = BlogComment::active();
-        $blogComments = $data['blogComments']->whereNull('parent_id')->get();
-        $pages = Page::all();
-        $latest_posts = Blog::orderBy('id', 'DESC')->paginate(3);
-
-        return view('blog', compact('user_session', 'latest_posts', 'blogs', 'pages', 'blogComments', 'query'));
+        return view('blog', compact('blogs', 'latest_posts', 'user_session', 'query'));
     }
     public function newsDetails(Request $request)
     {
@@ -458,32 +528,32 @@ class UserController extends Controller
     }
 
     public function Commentstore(Request $request)
-{
-    // // Validate the request
-    // $request->validate([
-    //     'news_id' => 'required|exists:news,id',
-    //     'author' => 'required|string|max:255',
-    //     'email' => 'required|email',
-    //     'comment' => 'required|string',
-    //     'privacy_policy' => 'accepted' // Ensure this field is validated
-    // ]);
-// Get the logged-in user's ID from the session
-$user_id = Session::get('LoggedIn');
-    // Create the comment
-    $comment = Comment::create([
-        'news_id' => $request->news_id,
-        'user_id' => $user_id,
-        'author' => $request->author,
-        'email' => $request->email,
-        'comment' => $request->comment
-    ]);
+    {
+        // // Validate the request
+        // $request->validate([
+        //     'news_id' => 'required|exists:news,id',
+        //     'author' => 'required|string|max:255',
+        //     'email' => 'required|email',
+        //     'comment' => 'required|string',
+        //     'privacy_policy' => 'accepted' // Ensure this field is validated
+        // ]);
+        // Get the logged-in user's ID from the session
+        $user_id = Session::get('LoggedIn');
+        // Create the comment
+        $comment = Comment::create([
+            'news_id' => $request->news_id,
+            'user_id' => $user_id,
+            'author' => $request->author,
+            'email' => $request->email,
+            'comment' => $request->comment
+        ]);
 
-    // Return the created comment as JSON
-    return response()->json([
-        'message' => 'Comentario enviado con éxito.',
-        'comment' => $comment
-    ]);
-}
+        // Return the created comment as JSON
+        return response()->json([
+            'message' => 'Comentario enviado con éxito.',
+            'comment' => $comment
+        ]);
+    }
     public function news(Request $request)
     {
         if (Session::has('LoggedIn')) {

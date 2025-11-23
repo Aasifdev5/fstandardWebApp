@@ -69,7 +69,7 @@
 
                                                     <a
                                                     href="{{ url('admin/mail-templates/edit', $mailTemplate->id) }}">
-                                                     <i class="fa fa-edit me-2"></i>Editar
+                                                     <i class="fa fa-edit me-2"></i>
                                                  </a>
 
                                                 </div>

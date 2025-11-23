@@ -111,7 +111,7 @@
                                 class="fa fa-thumb-tack"></i>
                             <a class="sidebar-link sidebar-title link-nav" href="{{ route('users') }}">
                                 <i class="fa fa-users text-light"></i>&nbsp;&nbsp;&nbsp;
-                                <span>Inspector Manage</span>
+                                <span>Client Manage</span>
                             </a>
                         </li>
                         {{-- <li class="sidebar-list {{ Request::is('admin/portfolios') ? 'active' : '' }}"><i
@@ -129,13 +129,7 @@
                             </a>
                         </li> --}}
                         <!-- Clients -->
-                        <li class="sidebar-list {{ Request::is('clients*') ? 'active' : '' }}">
-                            <i class="fa fa-users"></i>
-                            <a class="sidebar-link sidebar-title link-nav" href="{{ route('clients.index') }}">
-                                <i data-feather="user"></i>
-                                <span>Clientes</span>
-                            </a>
-                        </li>
+
 
 
 
@@ -147,14 +141,14 @@
                                 <span>Slider</span>
                             </a>
                         </li>
-                        <li class="sidebar-list"><i class="fa fa-thumb-tack"></i><a class="sidebar-link sidebar-title"
+                        {{-- <li class="sidebar-list"><i class="fa fa-thumb-tack"></i><a class="sidebar-link sidebar-title"
                                 href="javascript:void(0)"><i data-feather="message-circle"></i><span>Chat</span></a>
                             <ul class="sidebar-submenu">
                                 <li><a href="{{ route('chat.index') }}">Chat App</a></li>
 
                             </ul>
-                        </li>
-                        <li class="sidebar-list {{ Request::is('news') ? 'active' : '' }}"><i
+                        </li> --}}
+                        {{-- <li class="sidebar-list {{ Request::is('news') ? 'active' : '' }}"><i
                                 class="fa fa-thumb-tack"></i>
                             <a class="sidebar-link sidebar-title link-nav" href="{{ route('news.index') }}">
                                 <i class="icofont icofont-triangle text-light"></i>&nbsp;&nbsp;&nbsp;
@@ -174,7 +168,7 @@
                                 <i class="icofont icofont-triangle text-light"></i>&nbsp;&nbsp;&nbsp;
                                 <span>Categoría</span>
                             </a>
-                        </li>
+                        </li> --}}
                         {{-- <li class="sidebar-list {{ Request::is('restaurants') ? 'active' : '' }}">
                             <a class="sidebar-link sidebar-title link-nav" href="{{ route('restaurants.index') }}">
                                 <i class="fa fa-cutlery text-light"></i>&nbsp;&nbsp;&nbsp;
@@ -182,13 +176,13 @@
                             </a>
                         </li> --}}
 
-                        <li class="sidebar-list {{ Request::is('subcategory') ? 'active' : '' }}"><i
+                        {{-- <li class="sidebar-list {{ Request::is('subcategory') ? 'active' : '' }}"><i
                                 class="fa fa-thumb-tack"></i>
                             <a class="sidebar-link sidebar-title link-nav" href="{{ route('subcategory.index') }}">
                                 <i class="icofont icofont-triangle text-light"></i>&nbsp;&nbsp;&nbsp;
                                 <span>Subcategory</span>
                             </a>
-                        </li>
+                        </li> --}}
                         {{-- <li class="sidebar-list {{ Request::is('products*') ? 'active' : '' }}">
                             <i class="fa fa-thumb-tack"></i>
                             <a class="sidebar-link sidebar-title link-nav" href="{{ route('products.list') }}">
@@ -210,14 +204,14 @@
                             </a>
                             <ul class="sidebar-submenu">
                                 <li><a class="{{ Request::is('blog/create') ? 'active' : '' }}"
-                                        href="{{ route('blog.create') }}">{{ __('Agregar Blog') }}</a></li>
+                                        href="{{ route('blog.create') }}">{{ __('Add Blog') }}</a></li>
                                 <li><a class="{{ Request::is('blog/index') ? 'active' : '' }}"
-                                        href="{{ route('blog.index') }}">{{ __('Todo el Blog') }}</a></li>
+                                        href="{{ route('blog.index') }}">{{ __('Blog List') }}</a></li>
                                 <li><a class="{{ Request::is('blog/blog-comment-list') ? 'active' : '' }}"
                                         href="{{ route('blog.blog-comment-list') }}">{{ __('Lista de Comentarios') }}</a>
                                 </li>
                                 <li><a class="{{ Request::is('blog/blog-category/index') ? 'active' : '' }}"
-                                        href="{{ route('blog.blog-category.index') }}">{{ __('Categoría de Blog') }}</a>
+                                        href="{{ route('blog.blog-category.index') }}">{{ __('Blog Categeory') }}</a>
                                 </li>
                             </ul>
                         </li>

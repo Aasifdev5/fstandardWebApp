@@ -2,6 +2,9 @@
 @section('title')
     {{ $title }}
 @endsection
+@section('css')
+    <link rel="stylesheet" type="text/css" href="{{ asset('assets/css/vendors/summernote.css') }}">
+@endsection
 @section('main_content')
     <!-- Page content area start -->
 
@@ -90,7 +93,7 @@
                                                     <br>
                                                     <div class="input__group mb-25">
                                                         <label>{{ __('Descripción breve') }} <span class="text-danger">*</span></label>
-                                                        <textarea name="short_description" id="editor1" class="summernote"></textarea>
+                                                        <textarea name="short_description" id="editor1" ></textarea>
 
                                                         @if ($errors->has('short_description'))
                                                             <span class="text-danger"><i class="fas fa-exclamation-triangle"></i>
@@ -122,7 +125,7 @@
                                                     <div class="input__group mb-25">
                                                         <label>{{ __('Detalles') }} <span
                                                                 class="text-danger">*</span></label>
-                                                        <textarea name="details" id="editor1">{{ old('details') }}</textarea>
+                                                        <textarea name="details" class="summernote">{{ old('details') }}</textarea>
 
                                                         @if ($errors->has('details'))
                                                             <span class="text-danger"><i
@@ -241,4 +244,10 @@
         <!-- Container-fluid Ends-->
         <!-- Container-fluid Ends-->
 
+@endsection
+@section('scripts')
+    <script src="{{ asset('assets/js/jquery.ui.min.js') }}"></script>
+    <script src="{{ asset('assets/js/editor/summernote/summernote.js') }}"></script>
+    <script src="{{ asset('assets/js/editor/summernote/summernote.custom.js') }}"></script>
+    <script src="{{ asset('assets/js/tooltip-init.js') }}"></script>
 @endsection

@@ -2,12 +2,15 @@
 @section('title')
     {{ $title }}
 @endsection
+@section('css')
+    <link rel="stylesheet" type="text/css" href="{{ asset('assets/css/vendors/summernote.css') }}">
+@endsection
 @section('main_content')
 
         <div class="container-fluid" >
                 <div class="col-sm-12">
                     <div class="text-center"><img src="assets/images/endless-logo.png" alt=""></div>
-                    <div class="card mt-4 p-4" style="background: #fff">
+                    <div class="card mt-4 p-4">
                         <div class="row">
                             <div class="col-md-12">
                                 <div class="customers__area bg-style mb-30">
@@ -52,7 +55,7 @@
                                         <br>
                                         <div class="input__group mb-25">
                                             <label>{{ __('Descripción breve') }} <span class="text-danger">*</span></label>
-                                            <textarea name="short_description" id="editor1" class="summernote">{{ $blog->short_description }}</textarea>
+                                            <textarea name="short_description" id="editor1" >{{ $blog->short_description }}</textarea>
 
                                             @if ($errors->has('short_description'))
                                                 <span class="text-danger"><i class="fas fa-exclamation-triangle"></i>
@@ -207,4 +210,10 @@
         </div>
 
 
+@endsection
+@section('scripts')
+    <script src="{{ asset('assets/js/jquery.ui.min.js') }}"></script>
+    <script src="{{ asset('assets/js/editor/summernote/summernote.js') }}"></script>
+    <script src="{{ asset('assets/js/editor/summernote/summernote.custom.js') }}"></script>
+    <script src="{{ asset('assets/js/tooltip-init.js') }}"></script>
 @endsection

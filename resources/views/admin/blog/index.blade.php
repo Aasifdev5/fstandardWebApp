@@ -28,7 +28,7 @@
                                     <i class="fa fa-trash"></i> Delete Selected
                                 </button>
                                 <a href="{{ route('blog.create') }}" class="btn btn-success btn-sm">
-                                    <i class="fa fa-plus"></i> {{ __('Agregar Blog') }}
+                                    <i class="fa fa-plus"></i> {{ __('Add Blog') }}
                                 </a>
                             </div>
                         </div>
@@ -70,10 +70,10 @@
                                                 <td>
                                                     <div class="action__buttons">
                                                         <a href="{{ route('blog.edit', [$blog->uuid]) }}" title="Edit" class="btn btn-sm btn-success m-1" data-toggle="tooltip">
-                                                            <i class="fa fa-edit"></i> Edit
+                                                            <i class="fa fa-edit"></i>
                                                         </a>
                                                         <a href="javascript:void(0);" class="btn btn-sm btn-danger m-1 delete-blog" data-url="{{ route('blog.delete', [$blog->uuid]) }}" data-toggle="tooltip" title="{{ trans('remove') }}">
-                                                            <i class="fa fa-trash"></i> Delete
+                                                            <i class="fa fa-trash"></i>
                                                         </a>
                                                     </div>
                                                 </td>
