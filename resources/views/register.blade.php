@@ -222,14 +222,11 @@
                                 <p class="text-center text-muted mb-4">Complete your profile to get started</p>
 
                                 <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label fw-bold">First Name</label>
-                                        <input type="text" name="first_name" class="form-control" required>
+                                    <div class="col-md-12 mb-3">
+                                        <label class="form-label fw-bold">Full Name</label>
+                                        <input type="text" name="name" class="form-control" required>
                                     </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label fw-bold">Last Name</label>
-                                        <input type="text" name="last_name" class="form-control" required>
-                                    </div>
+
                                 </div>
 
                                 <div class="mb-3">
@@ -273,78 +270,94 @@
     </div>
 </section>
 
-<!-- Scripts -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/js/toastr.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.min.css">
 
 <script>
+// Global CSRF setup — this fixes 419 forever on ALL AJAX requests
+$.ajaxSetup({
+    headers: {
+        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+    }
+});
+
 $(document).ready(function() {
-    toastr.options = { positionClass: "toast-top-right", timeOut: 5000, progressBar: true };
+    toastr.options = {
+        positionClass: "toast-top-right",
+        timeOut: 5000,
+        progressBar: true
+    };
 
     let mobileNumber = '';
     let otpTimer;
 
     function updateStepIndicator(step) {
         $('.step-indicator').removeClass('active completed');
-        for(let i = 1; i <= step; i++) {
-            $(`.step-indicator[data-step="${i}"]`).addClass(i === step ? 'active' : 'completed');
+        for (let i = 1; i <= step; i++) {
+            $(`.step-indicator[data-step="${i}"]`)
+                .addClass(i === step ? 'active' : 'completed');
         }
     }
 
-    // Auto move to next OTP box
-    $('.otp-input').on('input', function() {
-        if(this.value.length === 1) $(this).next('.otp-input').focus();
-        if(this.value === '' && event.inputType === 'deleteContentBackward') $(this).prev('.otp-input').focus();
+    // Auto-focus next OTP input
+    $('.otp-input').on('input', function(e) {
+        if (this.value.length === 1) {
+            $(this).next('.otp-input').focus();
+        }
+        if (this.value === '' && e.originalEvent.inputType === 'deleteContentBackward') {
+            $(this).prev('.otp-input').focus();
+        }
     });
 
     // STEP 1: Send OTP
     $('#sendOtpBtn').on('click', function() {
         const mobile = $('input[name="mobile"]').val().trim();
-        if(!/^\d{10}$/.test(mobile)) {
-            toastr.error('Enter valid 10-digit mobile number');
+        if (!/^\d{10}$/.test(mobile)) {
+            toastr.error('Please enter a valid 10-digit mobile number');
             return;
         }
 
-        $(this).prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Sending...');
+        const $btn = $(this).prop('disabled', true)
+            .html('<span class="spinner-border spinner-border-sm"></span> Sending...');
 
-        $.post("/send-otp", {
-            _token: '{{ csrf_token() }}',
-            mobile: mobile
-        })
-        .done(function(res) {
-            if(res.success) {
-                mobileNumber = mobile;
-                $('#maskedMobile').text('+91 ' + mobile.replace(/(\d{3})(\d{3})(\d{4})/, '$1***$3'));
-                $('.step').removeClass('active');
-                $('#step2').addClass('active');
-                updateStepIndicator(2);
-                startTimer(60);
-                toastr.success(res.message || 'OTP sent! Use 448274');
-            } else {
-                toastr.error(res.message || 'Failed');
-            }
-        })
-        .fail(function() {
-            toastr.error('Server error. Check console.');
-        })
-        .always(() => {
-            $('#sendOtpBtn').prop('disabled', false).html('Send OTP');
-        });
+        $.post("/send-otp", { mobile: mobile })
+            .done(function(res) {
+                if (res.success) {
+                    mobileNumber = mobile;
+                    $('#maskedMobile').text('+91 ' + mobile.replace(/(\d{3})(\d{3})(\d{4})/, '$1***$3'));
+                    $('.step').removeClass('active');
+                    $('#step2').addClass('active');
+                    updateStepIndicator(2);
+                    startTimer(60);
+                    toastr.success(res.message || 'OTP sent! Use 448274');
+                } else {
+                    toastr.error(res.message || 'Failed to send OTP');
+                }
+            })
+            .fail(function() {
+                toastr.error('Network error. Please try again.');
+            })
+            .always(() => {
+                $btn.prop('disabled', false).html('Send OTP');
+            });
     });
 
     // Resend OTP
     $('#resendOtp').on('click', function(e) {
         e.preventDefault();
-        $('input[name="mobile"]').val(mobileNumber);
-        $('#sendOtpBtn').click();
+        if (mobileNumber) {
+            $('input[name="mobile"]').val(mobileNumber);
+            $('#sendOtpBtn').click();
+        }
     });
 
     function startTimer(seconds) {
         clearInterval(otpTimer);
         $('#timer').text(`(${seconds}s)`);
         otpTimer = setInterval(() => {
-            if(--seconds <= 0) {
+            seconds--;
+            if (seconds <= 0) {
                 clearInterval(otpTimer);
                 $('#timer').text('');
             } else {
@@ -356,45 +369,47 @@ $(document).ready(function() {
     // STEP 2: Verify OTP
     $('#verifyOtpBtn').on('click', function() {
         const otp = $('.otp-input').map(function() { return this.value; }).get().join('');
-        if(otp.length !== 6) {
-            toastr.error('Enter full 6-digit OTP');
+        if (otp.length !== 6 || !/^\d+$/.test(otp)) {
+            toastr.error('Please enter a valid 6-digit OTP');
             return;
         }
 
         $.post("/verify-otp", {
-            _token: '{{ csrf_token() }}',
             mobile: mobileNumber,
             otp: otp
         })
         .done(function(res) {
-            if(res.success) {
+            if (res.success) {
                 $('.step').removeClass('active');
                 $('#step3').addClass('active');
                 updateStepIndicator(3);
-                toastr.success('Mobile verified!');
+                toastr.success('Mobile number verified successfully!');
             } else {
                 toastr.error(res.message || 'Invalid OTP');
             }
         })
-        .fail(() => toastr.error('Server error'));
+        .fail(() => toastr.error('Server error. Please try again.'));
     });
 
-    // FINAL SUBMIT
+    // FINAL STEP: Registration
     $('#multiStepForm').on('submit', function(e) {
         e.preventDefault();
+
+        // Clear previous OTP inputs
+        $('.otp-input').val('');
 
         const formData = new FormData(this);
         formData.append('mobile', mobileNumber);
 
         $.ajax({
-            url: "/reg",  // ← Direct URL (works 100%)
+            url: "/reg",
             method: "POST",
             data: formData,
             processData: false,
             contentType: false,
             success: function(res) {
-                if(res.success) {
-                    toastr.success(res.message || 'Account created!');
+                if (res.success) {
+                    toastr.success(res.message || 'Account created successfully!');
                     setTimeout(() => {
                         window.location.href = res.redirect || '/dashboard';
                     }, 1500);
@@ -403,7 +418,17 @@ $(document).ready(function() {
                 }
             },
             error: function(xhr) {
-                const msg = xhr.responseJSON?.message || 'Server error';
+                let msg = 'Something went wrong';
+
+                if (xhr.status === 419) {
+                    msg = 'Session expired. Please refresh the page.';
+                } else if (xhr.responseJSON?.message) {
+                    msg = xhr.responseJSON.message;
+                } else if (xhr.responseJSON?.errors) {
+                    const errors = Object.values(xhr.responseJSON.errors).flat();
+                    msg = errors[0];
+                }
+
                 toastr.error(msg);
             }
         });

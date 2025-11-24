@@ -11,23 +11,22 @@ use App\Models\Blog;
 use App\Models\BlogCategory;
 use App\Models\BlogComment;
 
-use Illuminate\Support\Facades\Cache;
-
 use App\Models\Category;
+
 use App\Models\City;
 use App\Models\Comment;
-
 use App\Models\Country;
 
 use App\Models\News;
-use App\Models\Notification;
 
+use App\Models\Notification;
 use App\Models\Page;
+
 use App\Models\PasswordReset;
 use App\Models\Reaction;
 use App\Models\Sales;
-
 use App\Models\SupportTicketQuestion;
+
 use App\Models\User;
 use App\Notifications\NewUserRegisteredNotification;
 use App\Notifications\ResetPasswordNotification;
@@ -35,9 +34,10 @@ use App\Notifications\UserRegisteredNotification;
 use App\Notifications\VerifyEmailNotification;
 use App\Traits\SendNotification;
 use Carbon\Carbon;
-use Hash;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
@@ -103,14 +103,7 @@ class UserController extends Controller
 
         return view('faq', compact('user_session'));
     }
-    public function affiliate()
-    {
 
-
-        $user_session = User::where('id', Session::get('LoggedIn'))->first();
-
-        return view('affiliate', compact('user_session'));
-    }
     public function vacancy()
     {
 
@@ -172,7 +165,7 @@ class UserController extends Controller
         return view('register', compact('pages', 'countries', 'cities', 'refer'));
     }
 
-// SEND OTP - DUMMY MODE (No Rate Limit in Demo)
+    // SEND OTP - DUMMY MODE (No Rate Limit in Demo)
     public function sendOtp(Request $request)
     {
         $mobile = $request->mobile;
@@ -233,9 +226,10 @@ class UserController extends Controller
     // REGISTRATION
     public function registration(Request $request)
     {
+        // dd($request->all());
         $request->validate([
-            'first_name' => 'required|string|max:100',
-            'last_name'  => 'required|string|max:100',
+            'name' => 'required|string|max:100',
+
             'email'      => 'required|email|unique:users,email',
             'password'   => 'required|min:6|confirmed',
             'mobile'     => 'required'
@@ -253,22 +247,27 @@ class UserController extends Controller
 
         $user = User::create([
             'account_type'   => 'user',
-            'first_name'     => $request->first_name,
-            'last_name'      => $request->last_name,
-            'name'           => $request->first_name . ' ' . $request->last_name,
+
+            'name'           => $request->name,
             'email'          => $request->email,
-            'mobile_number'  => '91' . $mobile,
+            'whatsapp_number'  => '91' . $mobile,
             'password'       => Hash::make($request->password),
             'ip_address'     => $request->ip(),
             'status'         => 1,
-            'email_verified_at' => now(),
+
         ]);
 
         if ($user) {
             Cache::forget("mobile_verified_{$mobile}");
             auth()->login($user);
             Session::put('LoggedIn', $user->id);
-
+            // Send email verification notification
+            $user->notify(new VerifyEmailNotification($user));
+            // Fire the UserRegistered event
+            // event(new UserRegistered($user));
+            $text = 'A new user has registered on the platform.';
+            $target_url = route('users');
+            $this->sendForApi($text, 1, $target_url, $user->id, $user->id);
             return response()->json([
                 'success' => true,
                 'message' => 'Account created successfully!',
@@ -277,6 +276,83 @@ class UserController extends Controller
         }
 
         return response()->json(['success' => false, 'message' => 'Failed'], 500);
+    }
+    // Step 1: Send OTP for Login
+    public function sendLoginOtp(Request $request)
+    {
+        $mobile = $request->mobile;
+
+        // Demo restriction
+        if ($mobile !== '9876543210') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Demo: Use mobile 9876543210'
+            ]);
+        }
+
+        $user = User::where('whatsapp_number', '91' . $mobile)->first();
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This mobile number is not registered'
+            ]);
+        }
+
+        $otp = '448274'; // Fixed dummy OTP
+        Cache::put("login_otp_{$mobile}", $otp, now()->addMinutes(10));
+
+        \Log::info("LOGIN OTP SENT → Mobile: {$mobile} | OTP: {$otp}");
+
+        return response()->json([
+            'success' => true,
+            'message' => 'OTP sent! Use 448274',
+            'otp' => $otp // Remove in production
+        ]);
+    }
+
+    // Step 2: Verify OTP & Login
+    public function verifyLoginOtp(Request $request)
+    {
+        $mobile = $request->mobile;
+        $otp = $request->otp;
+
+        if ($mobile !== '9876543210') {
+            return response()->json(['success' => false, 'message' => 'Invalid mobile']);
+        }
+
+        $storedOtp = Cache::get("login_otp_{$mobile}");
+
+        if ($storedOtp && $otp === '448274') {
+            $user = User::where('whatsapp_number', '91' . $mobile)->first();
+
+            if (!$user) {
+                return response()->json(['success' => false, 'message' => 'User not found']);
+            }
+
+            // Clear OTP
+            Cache::forget("login_otp_{$mobile}");
+
+            // Login user
+            $user->update([
+                'is_online' => 1,
+                'last_seen' => Carbon::now('UTC')
+            ]);
+
+            auth()->login($user);
+            Session::put('LoggedIn', $user->id);
+            Session::put('user_session', $user);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Login successful!',
+                'redirect' => url('/dashboard')
+            ]);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Invalid OTP. Use 448274'
+        ]);
     }
     public function login(Request $request)
     {
@@ -301,7 +377,7 @@ class UserController extends Controller
                 $request->session()->put('user_session', $user);
                 $userId = Session::get('LoggedIn');
 
-                return redirect('news');
+                return redirect('dashboard');
             } else {
                 return back()->with('fail', 'Password does not match');
             }

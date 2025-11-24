@@ -1016,15 +1016,15 @@
 </head>
 
 <body>
-   @php
-    $general_setting = \App\Models\Setting::pluck('option_value', 'option_key')->toArray();
-@endphp
+    @php
+        $general_setting = \App\Models\Setting::pluck('option_value', 'option_key')->toArray();
+    @endphp
 
-<!-- ================================ -->
-<!-- ✔ PRELOADER FIXED -->
-<!-- ================================ -->
-<div id="preloader"
-    style="
+    <!-- ================================ -->
+    <!-- ✔ PRELOADER FIXED -->
+    <!-- ================================ -->
+    <div id="preloader"
+        style="
         position: fixed;
         top:0;
         left:0;
@@ -1037,13 +1037,13 @@
         background-position:center;
         background-size:150px;
     ">
-</div>
+    </div>
 
-<script>
-    $(window).on("load", function () {
-        $("#preloader").fadeOut(400);
-    });
-</script>
+    <script>
+        $(window).on("load", function() {
+            $("#preloader").fadeOut(400);
+        });
+    </script>
 
 
     <!-- LOADER -->
@@ -1075,10 +1075,18 @@
                     <li class="nav-item px-2">
                         <a class="nav-link text-dark" href="{{ url('faq') }}">FAQ</a>
                     </li>
-                    <li class="nav-item px-2">
-                        <a class="btn btn-light rounded-pill px-4 py-2" href="{{ url('signup') }}"
-                            style="font-weight:600;">Sign Up</a>
-                    </li>
+                    @if (!empty($user_session))
+                        <li class="nav-item px-2">
+                            <a class="btn btn-light rounded-pill px-4 py-2" href="{{ url('dashboard') }}"
+                                style="font-weight:600;">Dashboard</a>
+                        </li>
+                    @else
+                        <li class="nav-item px-2">
+                            <a class="btn btn-light rounded-pill px-4 py-2" href="{{ url('signup') }}"
+                                style="font-weight:600;">Sign Up</a>
+                        </li>
+                    @endif
+
                 </ul>
             </div>
         </div>

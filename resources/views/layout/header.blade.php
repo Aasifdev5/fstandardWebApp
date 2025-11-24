@@ -28,7 +28,7 @@
         </div>
         <div class="nav-right col-6 pull-right right-header p-0">
             <ul class="nav-menus">
-                <li>
+                {{-- <li>
                     <div class="right-header ps-0">
                         <div class="input-group">
                             <div class="input-group-prepend"><span class="input-group-text mobile-search"><i
@@ -36,7 +36,7 @@
                             <input class="form-control" type="text" placeholder="Search Here........">
                         </div>
                     </div>
-                </li>
+                </li> --}}
                 <li class="serchinput">
                     <div class="serchbox"><i data-feather="search"></i></div>
                     <div class="form-group search-form">

@@ -16,13 +16,11 @@ use App\Http\Controllers\Admin\ContactUsController;
 
 
 use App\Http\Controllers\Admin\CurrencyController;
-use App\Http\Controllers\Admin\EmailAppController;
-use App\Http\Controllers\Admin\EventsController;
+
 use App\Http\Controllers\Admin\FacebookSocialiteController;
 
 use App\Http\Controllers\Admin\ForumCategoryController;
 
-use App\Http\Controllers\Admin\ForumController;
 
 use App\Http\Controllers\Admin\GoogleController;
 
@@ -32,40 +30,38 @@ use App\Http\Controllers\Admin\HomeSettingController;
 use App\Http\Controllers\Admin\LanguageController;
 use App\Http\Controllers\Admin\LocationController;
 
-
-
 use App\Http\Controllers\Admin\MailTemplateController;
-
 use App\Http\Controllers\Admin\MediaController;
 use App\Http\Controllers\Admin\NewsController;
 
-use App\Http\Controllers\Admin\OrderController;
 
 use App\Http\Controllers\Admin\Pages;
-
 use App\Http\Controllers\Admin\PortfolioController;
-
-use App\Http\Controllers\Admin\ProductController;
 
 
 use App\Http\Controllers\Admin\QRCodeController;
+
 use App\Http\Controllers\Admin\ResetPasswordController;
-use App\Http\Controllers\Admin\RestaurantController;
-use App\Http\Controllers\Admin\RoleController;
+
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\SubcategoryController;
 use App\Http\Controllers\Admin\SupportTicketController;
 use App\Http\Controllers\Admin\TagController;
 use App\Http\Controllers\Admin\TestimonialController;
-use App\Http\Controllers\Api\CartController;
-use App\Http\Controllers\ClientController;
-use App\Http\Controllers\EquipmentController;
-use App\Http\Controllers\InspectionController;
+use App\Http\Controllers\AffiliateController;
+
 use App\Http\Controllers\UserController;
 use App\Http\Middleware\SetLocale;
 use App\Models\Language;
+use App\Models\User;
+use Carbon\Carbon;
+
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Session;
+
+
 
 
 
@@ -121,7 +117,32 @@ Route::get('/error/{code}', function ($code) {
     abort($code);
 });
 
+Route::get('/verify-email/{id}', function ($id) {
 
+    $user = User::findOrFail($id);
+
+    // Prevent using the link twice
+    if ($user->hasVerifiedEmail()) {
+        return redirect('/dashboard');
+    }
+
+    // Mark verified + set online (exactly like your login)
+    $user->update([
+        'email_verified_at' => now(),
+        'is_online'         => 1,
+        'last_seen'         => Carbon::now('UTC'),
+    ]);
+
+    // Login user
+    Auth::login($user);
+    Session::put('LoggedIn', $user->id);
+    Session::put('user_session', $user);
+    Session::regenerate();
+
+    return redirect('/dashboard')
+        ->with('status', 'Welcome! Your email is verified.')
+        ->with('verified', true);
+})->name('verify.email.simple')->middleware('signed');
 
 Route::post('/log', [UserController::class, 'login'])->name('login');
 Route::group(['middleware' => ['prevent-back-history', SetLocale::class]], function () {
@@ -134,7 +155,7 @@ Route::group(['middleware' => ['prevent-back-history', SetLocale::class]], funct
     Route::get('/privacy', [UserController::class, 'privacy'])->name('privacy');
     Route::get('/book', [UserController::class, 'book'])->name('book');
     Route::post('contact_send', [Pages::class, 'contact_send']);
-    Route::get('Userlogin', [UserController::class, 'Userlogin'])->name('Userlogin');
+
     Route::get('newsDetails/{id}', [UserController::class, 'newsDetails'])->name('newsDetails');
 
     Route::get('/dashboard', [UserController::class, 'dashboard'])->name('dashboard')->middleware('isLoggedIn');
@@ -157,8 +178,17 @@ Route::group(['middleware' => ['prevent-back-history', SetLocale::class]], funct
     Route::get('search-blog-list', [UserController::class, 'searchBlogList'])->name('search-blog.list');
     Route::get('/signup', [UserController::class, 'signup'])->name('signup');
     Route::post('/send-otp', [UserController::class, 'sendOtp'])->name('send.otp');
-Route::post('/verify-otp', [UserController::class, 'verifyOtp'])->name('verify.otp');
-Route::post('/reg', [UserController::class, 'registration'])->name('register');
+    Route::post('/verify-otp', [UserController::class, 'verifyOtp'])->name('verify.otp');
+    Route::get('Userlogin', [UserController::class, 'Userlogin'])->name('Userlogin');
+    Route::post('/send-login-otp', [UserController::class, 'sendLoginOtp']);
+    Route::post('/verify-login-otp', [UserController::class, 'verifyLoginOtp']);
+    Route::get('/affiliate', [AffiliateController::class, 'affiliate'])->name('affiliate');
+    Route::post('/affiliate/register', [AffiliateController::class, 'register'])->name('affiliate.register');
+    Route::post('/affiliate/login', [AffiliateController::class, 'login'])->name('affiliate.login');
+    Route::get('/affiliate/dashboard', [AffiliateController::class, 'dashboard'])->name('affiliate.dashboard');
+    Route::post('/affiliate/logout', [AffiliateController::class, 'logout'])->name('affiliate.logout');
+
+    Route::post('/reg', [UserController::class, 'registration'])->name('register');
     Route::get('/contact', [UserController::class, 'contact'])->name('contact');
     Route::get('/about', [UserController::class, 'about'])->name('about');
     Route::get('/workUs', [UserController::class, 'workUs'])->name('workUs');
@@ -172,7 +202,7 @@ Route::post('/reg', [UserController::class, 'registration'])->name('register');
     Route::get('/faq', [UserController::class, 'faqs'])->name('faqs');
     Route::get('/membership', [UserController::class, 'membership'])->name('membership');
     Route::get('/challenges', [UserController::class, 'challenges'])->name('challenges');
-    Route::get('/affiliate', [UserController::class, 'affiliate'])->name('affiliate');
+
     Route::get('/vacancy ', [UserController::class, 'vacancy'])->name('vacancy');
 
     Route::get('/gen_cards', [UserController::class, 'gen_cards'])->name('gen_cards')->middleware('isLoggedIn');
@@ -204,14 +234,7 @@ Route::group(['prefix' => 'admin', 'middleware' => ['check.session']], function 
 
     Route::group(['middleware' => 'admin-prevent-back-history', SetLocale::class], function () {
 
-        Route::prefix('clients')->group(function () {
-            Route::get('/', [ClientController::class, 'index'])->name('clients.index');
-            Route::get('/create', [ClientController::class, 'create'])->name('clients.create');
-            Route::post('/store', [ClientController::class, 'store'])->name('clients.store');
-            Route::get('/{client}/edit', [ClientController::class, 'edit'])->name('clients.edit');
-            Route::post('/{client}/update', [ClientController::class, 'update'])->name('clients.update');
-            Route::delete('/{client}/delete', [ClientController::class, 'destroy'])->name('clients.destroy');
-        });
+
 
 
 
@@ -545,11 +568,6 @@ Route::group(['prefix' => 'admin', 'middleware' => ['check.session']], function 
         });
 
 
-
-
-
-
-
         Route::get('dashboard', [Admin::class, 'dashboard'])->name('dashboard')->middleware('AdminIsLoggedIn');
 
         Route::get('/edit_profile', [Admin::class, 'edit_profile'])->name('edit_profile')->middleware('AdminIsLoggedIn');
@@ -587,10 +605,6 @@ Route::group(['prefix' => 'admin', 'middleware' => ['check.session']], function 
             Route::post('update/{id}', [MailTemplateController::class, 'update'])->name('update');
             Route::post('bulk-delete', [MailTemplateController::class, 'bulkDelete'])->middleware('AdminIsLoggedIn');
         });
-        Route::get('email-application', [EmailAppController::class, 'index'])->name('index')->middleware('AdminIsLoggedIn');
-        Route::post('sendMessage', [EmailAppController::class, 'sendMessage'])->name('sendMessage');
-        Route::post('sendMail/{id}', [EmailAppController::class, 'sendMail'])->name('sendMail');
-        Route::get('email-compose', [EmailAppController::class, 'compose'])->name('compose')->middleware('AdminIsLoggedIn');
     });
 });
 // Public routes (accessible without authentication)

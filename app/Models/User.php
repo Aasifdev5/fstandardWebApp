@@ -18,6 +18,10 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $fillable = [
+        'is_affiliate',
+        'referral_code',
+        'affiliate_earnings',
+        'commission_rate',
         'uid',
         'name',
         'email',
@@ -87,19 +91,13 @@ class User extends Authenticatable
     {
         return $this->hasMany(Comment::class);
     }
-    public function favorites()
+    protected static function booted()
     {
-        return $this->hasMany(Favorite::class);
-    }
-
-    public function serviceRequests()
-    {
-        return $this->hasMany(ServiceRequest::class, 'created_by');
-    }
-
-    public function proposals()
-    {
-        return $this->hasMany(Proposal::class, 'worker_id');
+        static::creating(function ($user) {
+            if ($user->is_affiliate && !$user->referral_code) {
+                $user->referral_code = strtoupper(substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), 0, 10));
+            }
+        });
     }
     public static function getUserFullname($id)
     {

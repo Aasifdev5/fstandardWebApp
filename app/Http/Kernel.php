@@ -73,5 +73,6 @@ class Kernel extends HttpKernel
         'prevent-back-history' => \App\Http\Middleware\PreventBackHistory::class,
         'admin-prevent-back-history' => \App\Http\Middleware\AdminPreventBackHistory::class,
         'auth.firebase' => \App\Http\Middleware\VerifyFirebase::class,
+        'affiliate' => \App\Http\Middleware\EnsureIsAffiliate::class,
     ];
 }

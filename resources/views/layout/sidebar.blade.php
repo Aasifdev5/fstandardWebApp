@@ -285,31 +285,9 @@
                         </li>
                         <hr>
 
-                        <!-- Clients -->
-                        <li class="sidebar-list {{ Request::is('clients*') ? 'active' : '' }}">
-                            <i class="fa fa-users"></i>
-                            <a class="sidebar-link sidebar-title link-nav" href="{{ route('clients.index') }}">
-                                <i data-feather="user"></i>
-                                <span>Clientes</span>
-                            </a>
-                        </li>
-                        <!-- Equipments -->
-                        <li class="sidebar-list {{ Request::is('equipments*') ? 'active' : '' }}">
-                            <i class="fa fa-cogs"></i>
-                            <a class="sidebar-link sidebar-title link-nav" href="{{ route('equipments.index') }}">
-                                <i data-feather="cpu"></i>
-                                <span>Equipos</span>
-                            </a>
-                        </li>
 
-                        <!-- Inspections -->
-                        <li class="sidebar-list {{ Request::is('inspections*') ? 'active' : '' }}">
-                            <i class="fa fa-search"></i>
-                            <a class="sidebar-link sidebar-title link-nav" href="{{ route('inspections.index') }}">
-                                <i data-feather="file-text"></i>
-                                <span>Inspecciones</span>
-                            </a>
-                        </li>
+
+
 
                     </ul>
                 </div>
