@@ -94,8 +94,8 @@
 
                                         <div class="col-lg-2">
                                             <a id="add" href="javascript:;" data-repeater-create=""
-                                               class="btn btn-blue">
-                                                <i class="fas fa-plus"></i> {{ __('Add') }}
+                                               class="btn btn-success btn-sm">
+                                                <i class="fas fa-plus text-gray"></i> {{ __('Add') }}
                                             </a>
                                         </div>
 

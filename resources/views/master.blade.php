@@ -1103,7 +1103,7 @@
                 <div class="col-md-4 mb-4">
                     <h4 class="fw-bold mb-3"><img src="<?php echo '/' . $general_setting['app_logo'] ?? ''; ?>" alt="" width="70"
                             height="70"> F Standard</h4>
-                    <p class="text-muted">Empowering traders worldwide with limitless opportunities and premium funding
+                    <p class="text-white">Empowering traders worldwide with limitless opportunities and premium funding
                         programs.</p>
                     <div class="social-icons mt-4">
                         <a href="#"><i class="fab fa-facebook-f"></i></a>
@@ -1118,7 +1118,7 @@
                     <ul class="list-unstyled">
                         <li class="mb-2"><a href="#" data-page="about">About Us</a></li>
 
-                        <li class="mb-2"><a href="#" data-page="blog">Blog</a></li>
+                        <li class="mb-2"><a href="{{ url('blog') }}">Blog</a></li>
 
                     </ul>
                 </div>
@@ -1133,8 +1133,8 @@
                 <div class="col-md-2 mb-4">
                     <h5 class="fw-bold mb-3">Support</h5>
                     <ul class="list-unstyled">
-                        <li class="mb-2"><a href="#" data-page="faq">FAQs</a></li>
-                        <li class="mb-2"><a href="#" data-page="contact">Contact Us</a></li>
+                        <li class="mb-2"><a href="{{ url('faq') }}">FAQs</a></li>
+                        <li class="mb-2"><a href="{{ route('contact') }}">Contact Us</a></li>
 
                     </ul>
                 </div>

@@ -1,130 +1,189 @@
 @extends('master')
-@section('title')
-    {{ __('Contact') }}
-@endsection
+
+@section('title', __('Contact'))
+
 @section('content')
+<!-- Make sure your master layout includes the <head> and loads Bootstrap; meta csrf included below to be safe -->
+<meta name="csrf-token" content="{{ csrf_token() }}">
+
+<style>
+    :root { --primary: #f89c10; --dark: #1e293b; --light: #f8fafc; }
+    body { background: #f8fafc; }
+    .pages-hero { background: var(--primary); padding: 60px 0; text-align: center; color: #fff; border-bottom-left-radius: 18px; border-bottom-right-radius: 18px; }
+    .pages-hero h1 { font-size: 42px; font-weight: 700; }
+    .contact-wrapper { padding: 40px 0; }
+    .cw-box { background: #fff; padding: 30px; text-align: center; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); transition: .3s; }
+    .cw-box:hover { transform: translateY(-5px); box-shadow: 0 6px 24px rgba(0,0,0,0.12); }
+    .cw-icon { font-size: 45px; color: var(--primary); margin-bottom: 15px; }
+    .custom-form, .message-form { border-radius: 12px; border: 1px solid #ddd; padding: 12px 15px; font-size: 15px; }
+    .custom-form:focus, .message-form:focus { border-color: var(--primary); box-shadow: 0 0 5px rgba(248,156,16,0.4); }
+    .btn-primary-custom { background: var(--primary); color: #fff; padding: 12px 25px; border-radius: 30px; font-weight: 600; border: none; transition: .3s; }
+    .btn-primary-custom:hover { background: #d8850e; }
+</style>
+
+<!-- HERO -->
 <div class="pages-hero">
     <div class="container">
-        <div class="pages-title">
-            <h1>Contact Us</h1>
-            <p>Get In Touch</p>
-        </div>
+        <h1>Contact Us</h1>
+        <p>We’re here to assist you</p>
     </div>
 </div>
-    <!-- CONTENT START -->
-    <section>
-        <!-- CONTACT BOX START -->
-        <div class="bg-wrapper contact-wrapper mb-5">
-            <div class="container">
-                <div class="row">
-                    <div class="col-lg-4">
-                        <div class="cw-box">
-                            <div class="cw-circle">
-                                <figure class="cw-icon">
-                                    <img src="{{ asset('images/icons/placeholder.png') }}" alt="">
-                                </figure>
-                            </div>
-                            <p>837 Castle Hill Ave. Bronx NY </p>
-                            <p>33195 United States</p>
-                        </div>
+
+<section>
+    <!-- CONTACT BOXES -->
+    <div class="contact-wrapper mb-5">
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-lg-4 col-md-6">
+                    <div class="cw-box">
+                        <div class="cw-icon"><i class="fa-solid fa-location-dot"></i></div>
+                        <p class="fw-bold">837 Castle Hill Ave, Bronx NY 33195</p>
                     </div>
-                    <div class="col-lg-4 spacing-m-center">
-                        <div class="cw-box">
-                            <div class="cw-circle">
-                                <figure class="cw-icon">
-                                    <img src="{{ asset('images/icons/telephone.png') }}" alt="">
-                                </figure>
-                            </div>
-                            <p><a href="tel:718-825-3320"> 718-825-3320</a></p>
-                            <p><a href="tel:212-632-4120"> 212-632-4120</a></p>
-                        </div>
+                </div>
+
+                <div class="col-lg-4 col-md-6">
+                    <div class="cw-box">
+                        <div class="cw-icon"><i class="fa-solid fa-phone"></i></div>
+                        <p class="fw-bold"><a href="tel:7188253320">+1 718-825-3320</a></p>
                     </div>
-                    <div class="col-lg-4">
-                        <div class="cw-box">
-                            <div class="cw-circle">
-                                <figure class="cw-icon">
-                                    <img src="{{ asset('images/icons/email.png') }}" alt="">
-                                </figure>
-                            </div>
-                            <p><a href="mailto:info@industric.com">info@industric.com</a></p>
-                            <p><a href="mailto:sales@industra.com">sales@industra.com</a></p>
-                        </div>
+                </div>
+
+                <div class="col-lg-4 col-md-6 mx-auto">
+                    <div class="cw-box">
+                        <div class="cw-icon"><i class="fa-solid fa-envelope"></i></div>
+                        <p class="fw-bold"><a href="mailto:info@industric.com">info@industric.com</a></p>
                     </div>
                 </div>
             </div>
         </div>
-        <!-- CONTACT BOX END -->
+    </div>
 
-        <!-- CONTACT FORM START -->
-        <div class="container mt-5 mb-5">
-            <div class="row">
-                <div class="col-md-8 mx-auto">
-                    <div class="contact-title">
-                        <h3>Get in Touch With Us</h3>
-                        <p>World’s leading non-asset- based supply chain management companies, we design and implement
-                            industry-leading. We specialise in intelligent & effective search and believes business.</p>
-                    </div>
-                    <br />
-                    <form id="contact-form" method="post" action="http://quickdevs.com/demo/industric/contact.php">
-                        <div class="messages"></div>
-                        <div class="controls">
-                            <div class="row">
-                                <div class="col-sm-6">
-                                    <div class="form-group">
-                                        <input id="form_name" type="text" name="name" class="form-control custom-form"
-                                            placeholder="*Name" required="required" data-error="Firstname is required.">
-                                        <div class="help-block with-errors"></div>
-                                    </div>
-                                </div>
-                                <div class="col-sm-6">
-                                    <div class="form-group">
-                                        <input id="form_email" type="email" name="email" class="form-control custom-form"
-                                            placeholder="*Email address" required="required"
-                                            data-error="Valid email is required.">
-                                        <div class="help-block with-errors"></div>
-                                    </div>
-                                </div>
-                                <div class="col-sm-12">
-                                    <div class="form-group">
-                                        <input id="form_phone" type="tel" name="phone" class="form-control custom-form"
-                                            placeholder="*Please enter your phone">
-                                        <div class="help-block with-errors"></div>
-                                    </div>
-                                </div>
-                                <div class="col-sm-12">
-                                    <div class="form-group">
-                                        <textarea id="form_message" name="message"
-                                            class="form-control message-form custom-form" placeholder="*Your message"
-                                            rows="6" required="required" data-error="Please,leave us a message."></textarea>
-                                        <div class="help-block with-errors"></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <br />
-                            <div class="row">
-                                <div class="col-md-12 btn-send">
-                                    <p><input type="submit" class="btn btn-default" value="Send message"></p>
-                                </div>
-                                <div class="col-sm-12">
-                                    <p class="required">
-                                        * These fields are required.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </form>
+    <!-- FORM -->
+    <div class="container mt-5 mb-5">
+        <div class="row">
+            <div class="col-md-8 mx-auto">
+                <div class="text-center mb-4">
+                    <h3 class="fw-bold">Send Us a Message</h3>
+                    <p>Feel free to reach out for any queries, support, or business assistance.</p>
                 </div>
+
+                <!-- IMPORTANT: id must match the JS selector below -->
+                <form id="contact-form" method="POST" action="{{ url('contact_send') }}">
+                    @csrf
+                    <div class="row g-3">
+                        <div class="col-sm-6">
+                            <input type="text" name="name" id="name" class="form-control custom-form" placeholder="Your Name *" required>
+                        </div>
+
+                        <div class="col-sm-6">
+                            <input type="email" name="email" id="email" class="form-control custom-form" placeholder="Email Address *" required>
+                        </div>
+
+                        <div class="col-sm-12">
+                            <input type="tel" name="phone" id="phone" class="form-control custom-form" placeholder="Phone">
+                        </div>
+
+                        <div class="col-sm-12">
+                            <textarea name="message" id="message" class="form-control message-form" rows="6" placeholder="Your Message *" required></textarea>
+                        </div>
+
+                        <div class="col-sm-12 text-center mt-3">
+                            <button type="submit" class="btn-primary-custom" id="submitBtn">Send Message</button>
+                        </div>
+                    </div>
+                </form>
+
             </div>
         </div>
-        <!-- CONTACT FORM END -->
+    </div>
 
-        <!-- MAP START -->
-        <div class="bottom-map">
-            <iframe
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d167616.99483399244!2d-74.08279002518668!3d40.67646407501496!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x89c25a560db693e3%3A0xb05e8b0bdf854b54!2sGowanus%2C+Brooklyn%2C+Nueva+York%2C+EE.+UU.!5e0!3m2!1ses-419!2sdo!4v1560863423970!5m2!1ses-419!2sdo"
-                class="map-iframe-alt"></iframe>
-        </div>
-        <!-- MAP END -->
-    </section>
-    <!-- CONTENT END -->
+</section>
+
+<!-- SCRIPTS: jQuery first, then SweetAlert, then our AJAX -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+$(document).ready(function () {
+    // Set X-CSRF-TOKEN header for all AJAX requests
+    $.ajaxSetup({
+        headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') }
+    });
+
+    // Bind to the correct form id
+    $("#contact-form").on("submit", function (e) {
+        e.preventDefault();
+
+        let $btn = $("#submitBtn");
+        $btn.prop("disabled", true).text("Sending...");
+
+        // Use FormData so file uploads (if any) can be added later
+        let formElement = this;
+        let formData = new FormData(formElement);
+
+        $.ajax({
+            url: $(formElement).attr('action'),
+            method: "POST",
+            data: formData,
+            processData: false,
+            contentType: false,
+            cache: false,
+
+            success: function (res) {
+                // Expect JSON { status: 'success', message: '...' }
+                if (res.status === 'success') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Message Sent!',
+                        text: res.message || 'Your message has been sent successfully.',
+                        confirmButtonColor: '#f89c10'
+                    });
+                    formElement.reset();
+                } else {
+                    // fallback
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'Notice',
+                        text: res.message || 'Response received.',
+                        confirmButtonColor: '#f89c10'
+                    });
+                }
+                $btn.prop("disabled", false).text("Send Message");
+            },
+
+            error: function (xhr) {
+                $btn.prop("disabled", false).text("Send Message");
+
+                if (xhr.status === 422) {
+                    // Validation errors - show first error or all combined
+                    let errors = xhr.responseJSON && xhr.responseJSON.errors ? xhr.responseJSON.errors : null;
+                    let messages = [];
+                    if (errors) {
+                        Object.keys(errors).forEach(function (k) {
+                            messages.push(errors[k].join(' '));
+                        });
+                    }
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Validation Error',
+                        html: (messages.length ? messages.join('<br>') : 'Please check your input.'),
+                        confirmButtonColor: '#f89c10'
+                    });
+                } else {
+                    // Generic error
+                    let msg = 'Unable to send your message. Please try again later.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) msg = xhr.responseJSON.message;
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: msg,
+                        confirmButtonColor: '#f89c10'
+                    });
+                }
+            }
+        });
+    });
+});
+</script>
+
 @endsection

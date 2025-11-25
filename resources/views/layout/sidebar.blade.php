@@ -120,14 +120,14 @@
                                 <i class="icofont icofont-briefcase text-light"></i>&nbsp;&nbsp;&nbsp;
                                 <span>Portfolio</span>
                             </a>
-                        </li>
+                        </li> --}}
                         <li class="sidebar-list {{ Request::is('admin/testimonials') ? 'active' : '' }}"><i
                                 class="fa fa-thumb-tack"></i>
                             <a class="sidebar-link sidebar-title link-nav" href="{{ route('testimonials.index') }}">
                                 <i class="icofont icofont-award text-light"></i>&nbsp;&nbsp;&nbsp;
                                 <span>Testimonial</span>
                             </a>
-                        </li> --}}
+                        </li>
                         <!-- Clients -->
 
 

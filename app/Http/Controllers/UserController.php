@@ -27,6 +27,7 @@ use App\Models\Reaction;
 use App\Models\Sales;
 use App\Models\SupportTicketQuestion;
 
+use App\Models\Testimonial;
 use App\Models\User;
 use App\Notifications\NewUserRegisteredNotification;
 use App\Notifications\ResetPasswordNotification;
@@ -75,7 +76,7 @@ class UserController extends Controller
     {
 
         $user_session = User::where('id', Session::get('LoggedIn'))->first();
-
+        $testimonials = Testimonial::all();
         $sliders = Banner::all()->map(function ($slider) {
             // Split every 4 words into a new line
             $words = explode(' ', $slider->title1);
@@ -84,7 +85,7 @@ class UserController extends Controller
             return $slider;
         });
 
-        return view('index', compact('user_session', 'sliders'));
+        return view('index', compact('user_session', 'sliders','testimonials'));
     }
 
     public function membership()
@@ -98,10 +99,10 @@ class UserController extends Controller
     public function faqs()
     {
 
-
+        $faq = SupportTicketQuestion::all();
         $user_session = User::where('id', Session::get('LoggedIn'))->first();
 
-        return view('faq', compact('user_session'));
+        return view('faq', compact('user_session','faq'));
     }
 
     public function vacancy()

@@ -67,45 +67,53 @@ class Pages extends Controller
 
     }
 
-    public function contact_send(Request $request)
+
+public function contact_send(Request $request)
 {
-    // dd($request->phone);
-    // Validate input fields
-    $validatedData = $request->validate([
-        'name' => 'required|string',
-        'email' => 'required|email',
-        'message' => 'required|string',
-    ]);
-
-    // Extract validated data
-    $name = $validatedData['name'];
-    $email = $validatedData['email'];
-    $message_content = $validatedData['message'];
-
-    // Prepare data for the email
-    $data = [
-        'name' => $name,
-        'email' => $email,
-        'phone'=>$request->phone,
-        'subject'=>$request->subject,
-        'message_content' => $message_content,
-
-    ];
-
     try {
-        // Send email using the ContactFormSubmitted Mailable
-        Mail::to('admin@lajoyaresort.com.bo')->send(new ContactFormSubmitted($data));
+        // Validate input
+        $validated = $request->validate([
+            'name'    => 'required|string|max:255',
+            'email'   => 'required|email|max:255',
+            'phone'   => 'nullable|string|max:50',
+            'message' => 'required|string'
+        ]);
 
-        // Flash success message and redirect back
-        \Session::flash('flash_message', 'Gracias. Su mensaje ha sido enviado.');
-        return \Redirect::back();
+        // Prepare data for email
+        $data = [
+            'name'    => $validated['name'],
+            'email'   => $validated['email'],
+            'phone'   => $request->phone ?? '',
+            'subject' => $request->subject ?? 'New Contact Message',
+            'message_content' => $validated['message'],
+        ];
+
+        // Send email (adjust recipient)
+        Mail::to('aasifdev5@gmail.com')->send(new ContactFormSubmitted($data));
+
+        // Return JSON success (English)
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Thank you. Your message has been sent.'
+        ], 200);
+
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        // Return validation errors as JSON
+        return response()->json([
+            'status' => 'validation_error',
+            'errors' => $e->errors()
+        ], 422);
     } catch (\Throwable $e) {
-        // Log error and flash error message
-        \Log::error('No se pudo enviar el correo electrónico del formulario de contacto: ' . $e->getMessage());
-        \Session::flash('error_flash_message', 'No se pudo enviar su mensaje. Por favor, inténtelo de nuevo más tarde.');
-        return \Redirect::back()->withErrors(['error' => 'No se pudo enviar el correo electrónico.']);
+        \Log::error("Contact form error: " . $e->getMessage());
+
+        // Return JSON error (English)
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Could not send your message. Please try again later.'
+        ], 500);
     }
 }
+
 
 
     public function addnew(Request $request)

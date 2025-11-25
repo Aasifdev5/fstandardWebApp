@@ -307,16 +307,24 @@
 </section>
 
   <!-- Testimonials -->
-    <section class="py-5 bg-white">
-        <div class="container">
-            <h2 class="text-center mb-5 section-title">What Our Traders Say</h2>
+<section class="py-5 bg-white">
+    <div class="container">
+        <h2 class="text-center mb-5 section-title">What Our Clients Say</h2>
 
-            <div class="row">
+        <div class="row">
+            @foreach($testimonials as $t)
                 <div class="col-md-4 mb-4">
                     <div class="testimonial-card">
-                        <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Trader" class="testimonial-avatar">
-                        <h5 class="text-center fw-bold">Michael T.</h5>
-                        <p class="text-muted text-center">Professional Forex Trader</p>
+
+                        <!-- Avatar -->
+                        <img src="{{ asset($t->client_image_url) }}"
+                             alt="{{ $t->client_name }}"
+                             class="testimonial-avatar">
+
+                        <h5 class="text-center fw-bold">{{ $t->client_name }}</h5>
+                        <p class="text-muted text-center">{{ $t->client_role }}</p>
+
+                        <!-- Stars -->
                         <div class="text-warning text-center mb-3">
                             <i class="fas fa-star"></i>
                             <i class="fas fa-star"></i>
@@ -324,44 +332,15 @@
                             <i class="fas fa-star"></i>
                             <i class="fas fa-star"></i>
                         </div>
-                        <p class="text-center">"F Standard has completely transformed my trading career. The platform is intuitive, and the support team is always available when I need help."</p>
-                    </div>
-                </div>
 
-                <div class="col-md-4 mb-4">
-                    <div class="testimonial-card">
-                        <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Trader" class="testimonial-avatar">
-                        <h5 class="text-center fw-bold">Sarah L.</h5>
-                        <p class="text-muted text-center">Swing Trader</p>
-                        <div class="text-warning text-center mb-3">
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                        </div>
-                        <p class="text-center">"The no time limit feature allowed me to trade at my own pace. I reached my profit target without pressure and got funded within a week!"</p>
+                        <p class="text-center">"{{ $t->content }}"</p>
                     </div>
                 </div>
-
-                <div class="col-md-4 mb-4">
-                    <div class="testimonial-card">
-                        <img src="https://randomuser.me/api/portraits/men/76.jpg" alt="Trader" class="testimonial-avatar">
-                        <h5 class="text-center fw-bold">David K.</h5>
-                        <p class="text-muted text-center">Day Trader</p>
-                        <div class="text-warning text-center mb-3">
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                        </div>
-                        <p class="text-center">"The payout process is incredibly fast. I received my first profit share in just 4 hours. Highly recommend F Standard to serious traders."</p>
-                    </div>
-                </div>
-            </div>
+            @endforeach
         </div>
-    </section>
+    </div>
+</section>
+
     <!-- F Standard - Icons Section -->
 <section class="py-5" style="background:#0f0b28; color:white;">
   <div class="container">
