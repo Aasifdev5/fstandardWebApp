@@ -1012,7 +1012,7 @@
                     <h2 class="cta-title">Ready for Your<br>Breakthrough?</h2>
                     <p class="cta-text">Join thousands of successful affiliates who've transformed their income. Start
                         today and get instant access to all our premium resources, training, and support.</p>
-                    <button type="button" class="btn btn-light btn-lg px-5 py-3 fw-bold" data-bs-toggle="modal"
+                    <button type="button" class="btn btn-success btn-lg px-5 py-3 fw-bold" data-bs-toggle="modal"
                         data-bs-target="#registerModal">
                         <i class="fas fa-user-plus me-2"></i> Start Earning Today - $0 Cost
                     </button>

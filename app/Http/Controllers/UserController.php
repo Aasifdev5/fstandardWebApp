@@ -85,7 +85,7 @@ class UserController extends Controller
             return $slider;
         });
 
-        return view('index', compact('user_session', 'sliders','testimonials'));
+        return view('index', compact('user_session', 'sliders', 'testimonials'));
     }
 
     public function membership()
@@ -102,7 +102,7 @@ class UserController extends Controller
         $faq = SupportTicketQuestion::all();
         $user_session = User::where('id', Session::get('LoggedIn'))->first();
 
-        return view('faq', compact('user_session','faq'));
+        return view('faq', compact('user_session', 'faq'));
     }
 
     public function vacancy()
@@ -156,7 +156,7 @@ class UserController extends Controller
 
         // Check if the keys array is not empty before accessing the first key
         $refer = !empty($keys) ? $keys[0] : null;
-
+        // dd($refer);
         // Fetch the necessary data
         $pages = Page::all();
         $countries = Country::all();
@@ -245,10 +245,10 @@ class UserController extends Controller
         if (!Cache::get("mobile_verified_{$mobile}")) {
             return response()->json(['success' => false, 'message' => 'Please verify mobile first']);
         }
-
+        // dd($request->all());
         $user = User::create([
             'account_type'   => 'user',
-
+            'refer' => $request->refer,
             'name'           => $request->name,
             'email'          => $request->email,
             'whatsapp_number'  => '91' . $mobile,

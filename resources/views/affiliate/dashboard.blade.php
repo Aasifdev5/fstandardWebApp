@@ -34,9 +34,9 @@
     <div class="mt-5 p-4 bg-light rounded border">
         <h5>Your Personal Referral Link:</h5>
         <code class="bg-white p-3 rounded d-block fs-5">
-            https://yourdomain.com/register?ref={{ $user->referral_code }}
+            https://yourdomain.com/signup?{{ $user->referral_code }}
         </code>
-        <button onclick="navigator.clipboard.writeText('https://yourdomain.com/register?ref={{ $user->referral_code }}')"
+        <button onclick="navigator.clipboard.writeText('https://yourdomain.com/signup?{{ $user->referral_code }}')"
                 class="btn btn-primary mt-3">Copy Link</button>
     </div>
 
