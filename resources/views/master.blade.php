@@ -1032,65 +1032,114 @@
         height:100%;
         z-index:9999;
         background-color:#ffffff;
-        background-image: url('{{ asset($general_setting['app_logo'] ?? 'uploads/setting/default.png') }}');
+        background-image: url('{{ asset($general_setting['app_preloader'] ?? 'uploads/setting/default.png') }}');
         background-repeat:no-repeat;
         background-position:center;
-        background-size:150px;
+
     ">
     </div>
 
     <script>
         $(window).on("load", function() {
-            $("#preloader").fadeOut(400);
+            $("#preloader").fadeOut(1000);
         });
     </script>
 
 
     <!-- LOADER -->
     <!-- NAVBAR -->
-    <nav class="navbar navbar-expand-lg navbar-custom">
-        <div class="container">
-            <a class="navbar-brand d-flex align-items-center" href="{{ url('/') }}">
-                <img src="<?php echo '/' . $general_setting['app_logo'] ?? ''; ?>" alt="" width="70" height="70"> F Standard
-            </a>
+   <nav class="navbar navbar-expand-lg"
+    style="background:rgba(255,255,255,0.65); backdrop-filter:blur(12px); border-bottom:1px solid rgba(255,255,255,0.4); padding:12px 0; transition:all .3s ease; box-shadow:0 4px 20px rgba(0,0,0,0.05);">
 
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
-                <span class="navbar-toggler-icon"></span>
-            </button>
+    <div class="container">
 
-            <div class="collapse navbar-collapse justify-content-end" id="navMenu">
-                <ul class="navbar-nav mb-2 mb-lg-0">
-                    <li class="nav-item px-2">
-                        <a class="nav-link text-dark" href="{{ url('/') }}">Home</a>
-                    </li>
-                    <li class="nav-item px-2">
-                        <a class="nav-link text-dark" href="{{ url('blog') }}">Blog</a>
-                    </li>
-                    <li class="nav-item px-2">
-                        <a class="nav-link text-dark" href="{{ url('challenges') }}">Challenges</a>
-                    </li>
-                    <li class="nav-item px-2">
-                        <a class="nav-link text-dark" href="{{ url('affiliate') }}">Affiliate</a>
-                    </li>
-                    <li class="nav-item px-2">
-                        <a class="nav-link text-dark" href="{{ url('faq') }}">FAQ</a>
-                    </li>
-                    @if (!empty($user_session))
-                        <li class="nav-item px-2">
-                            <a class="btn btn-light rounded-pill px-4 py-2" href="{{ url('dashboard') }}"
-                                style="font-weight:600;">Dashboard</a>
-                        </li>
-                    @else
-                        <li class="nav-item px-2">
-                            <a class="btn btn-light rounded-pill px-4 py-2" href="{{ url('signup') }}"
-                                style="font-weight:600;">Sign Up</a>
-                        </li>
-                    @endif
+        <a class="navbar-brand d-flex align-items-center" href="{{ url('/') }}"
+           style="font-size:1.5rem; font-weight:700; color:var(--primary); transition:.3s;">
+            <img src="{{ '/' . ($general_setting['app_logo'] ?? '') }}" width="55" height="55" class="me-2" alt="">
+            F Standard
+        </a>
 
-                </ul>
-            </div>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu"
+            style="border:none;">
+            <span class="navbar-toggler-icon" style="filter:brightness(0);"></span>
+        </button>
+
+        <div class="collapse navbar-collapse justify-content-end" id="navMenu">
+            <ul class="navbar-nav align-items-center mb-2 mb-lg-0">
+
+                @php
+                $links = [
+                    '/' => 'Home',
+                    'blog' => 'Blog',
+                    'challenges' => 'Challenges',
+                    'affiliate' => 'Partner',
+                    'faq' => 'FAQ',
+                    'trading' => 'Trading Panel',
+                    'challenges' => 'Challeges',
+                ];
+                @endphp
+
+                @foreach ($links as $url => $label)
+                    <li class="nav-item px-1">
+                        <a class="nav-link"
+                            href="{{ url($url) }}"
+                            style="
+                                font-weight:500;
+                                position:relative;
+                                color:var(--dark);
+                                padding:8px 12px;
+                                border-radius:6px;
+                                transition:0.3s;
+                            "
+                            onmouseover="this.style.color='var(--primary)'; this.style.background='rgba(124,58,237,0.08)'"
+                            onmouseout="this.style.color='var(--dark)'; this.style.background='transparent'">
+                            {{ $label }}
+                        </a>
+                    </li>
+                @endforeach
+
+                @if (!empty($user_session))
+                    <li class="nav-item px-2">
+                        <a class="btn rounded-pill px-4 py-2"
+                           href="{{ url('dashboard') }}"
+                           style="
+                                background:var(--primary);
+                                color:white;
+                                border:none;
+                                font-weight:600;
+                                transition:0.3s;
+                                box-shadow:0px 4px 10px rgba(124,58,237,0.25);
+                           "
+                           onmouseover="this.style.background='var(--primary-dark)'; this.style.boxShadow='0px 4px 18px rgba(124,58,237,0.4)'; this.style.transform='translateY(-3px)'"
+                           onmouseout="this.style.background='var(--primary)'; this.style.boxShadow='0px 4px 10px rgba(124,58,237,0.25)'; this.style.transform='translateY(0)'">
+                            Dashboard
+                        </a>
+                    </li>
+                @else
+                    <li class="nav-item px-2">
+                        <a class="btn rounded-pill px-4 py-2"
+                           href="{{ url('signup') }}"
+                           style="
+                                background:var(--primary);
+                                color:white;
+                                border:none;
+                                font-weight:600;
+                                transition:0.3s;
+                                box-shadow:0px 4px 10px rgba(124,58,237,0.25);
+                           "
+                           onmouseover="this.style.background='var(--primary-dark)'; this.style.boxShadow='0px 4px 18px rgba(124,58,237,0.4)'; this.style.transform='translateY(-3px)'"
+                           onmouseout="this.style.background='var(--primary)'; this.style.boxShadow='0px 4px 10px rgba(124,58,237,0.25)'; this.style.transform='translateY(0)'">
+                            Access Capital
+                        </a>
+                    </li>
+                @endif
+
+            </ul>
         </div>
-    </nav>
+    </div>
+</nav>
+
+
 
     <!-- CONTENT START -->
     @yield('content')
@@ -1101,8 +1150,8 @@
         <div class="container position-relative">
             <div class="row">
                 <div class="col-md-4 mb-4">
-                    <h4 class="fw-bold mb-3"><img src="<?php echo '/' . $general_setting['app_logo'] ?? ''; ?>" alt="" width="70"
-                            height="70"> F Standard</h4>
+                    <h4 class="fw-bold mb-3"><img src="<?php echo '/' . $general_setting['app_preloader'] ?? ''; ?>" alt="" width="170"
+                            height="170"> F Standard</h4>
                     <p class="text-white">Empowering traders worldwide with limitless opportunities and premium funding
                         programs.</p>
                     <div class="social-icons mt-4">

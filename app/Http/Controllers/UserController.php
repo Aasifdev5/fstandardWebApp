@@ -448,7 +448,17 @@ class UserController extends Controller
             ->latest()
             ->take(6)
             ->get();
-
+        $categories = BlogCategory::whereHas('blogs', function ($q) {
+            $q->where('status', 1);
+        })
+            ->with([
+                'blogs' => function ($q) {
+                    $q->where('status', 1)
+                        ->latest(); // removed limit(6)
+                }
+            ])
+            ->orderBy('name')
+            ->get();
         $user_session = auth()->check() ? auth()->user() : null;
         // OR if you use session: User::find(Session::get('LoggedIn'))
 
@@ -457,6 +467,7 @@ class UserController extends Controller
             'blogComments',
             'commentCount',
             'latest_posts',
+            'categories',
             'user_session'
         ));
     }
@@ -559,19 +570,81 @@ class UserController extends Controller
 
     public function blogs(Request $request)
     {
-        $query = $request->get('query');
+        $query        = $request->get('query');
+        $categorySlug = $request->get('category');
 
-        $blogs = Blog::when($query, fn($q) => $q->where('title', 'like', "%$query%")
-            ->orWhere('short_description', 'like', "%$query%"))
-            ->latest()
-            ->paginate(9)
+        /**
+         * ---------------------------------------------
+         * 1. MAIN BLOG LIST (paginated + search + filter)
+         * ---------------------------------------------
+         */
+        $blogsQuery = Blog::query()
+            ->when($query, function ($q) use ($query) {
+                $q->where(function ($sq) use ($query) {
+                    $sq->where('title', 'like', "%{$query}%")
+                        ->orWhere('short_description', 'like', "%{$query}%")
+                        ->orWhere('details', 'like', "%{$query}%");
+                });
+            })
+            ->when($categorySlug, function ($q) use ($categorySlug) {
+                $q->whereHas('category', function ($sq) use ($categorySlug) {
+                    $sq->where('slug', $categorySlug);
+                });
+            })
+            ->where('status', 1)
+            ->latest();
+
+        $blogs = (clone $blogsQuery)
+            ->paginate($categorySlug ? 12 : 9)
             ->withQueryString();
 
-        $latest_posts = Blog::latest()->take(6)->get();
-        $user_session = auth()->user();
+        /**
+         * ---------------------------------------------
+         * 2. Latest posts (sidebar)
+         * ---------------------------------------------
+         */
+        $latest_posts = Blog::where('status', 1)
+            ->latest()
+            ->take(6)
+            ->get();
 
-        return view('blog', compact('blogs', 'latest_posts', 'user_session', 'query'));
+        /**
+         * ---------------------------------------------
+         * 3. ALL blogs per category (NO LIMIT)
+         * Only categories that have blogs will show
+         * ---------------------------------------------
+         */
+        $categories = BlogCategory::whereHas('blogs', function ($q) {
+            $q->where('status', 1);
+        })
+            ->with([
+                'blogs' => function ($q) {
+                    $q->where('status', 1)
+                        ->latest(); // removed limit(6)
+                }
+            ])
+            ->orderBy('name')
+            ->get();
+
+        /**
+         * ---------------------------------------------
+         * 4. Current category for page header
+         * ---------------------------------------------
+         */
+        $currentCategory = $categorySlug
+            ? BlogCategory::where('slug', $categorySlug)->first()
+            : null;
+
+        return view('blog', compact(
+            'blogs',
+            'latest_posts',
+            'categories',
+            'currentCategory',
+            'query'
+        ));
     }
+
+
     public function newsDetails(Request $request)
     {
         if (Session::has('LoggedIn')) {
@@ -631,7 +704,7 @@ class UserController extends Controller
             'comment' => $comment
         ]);
     }
-    public function news(Request $request)
+    public function trading(Request $request)
     {
         if (Session::has('LoggedIn')) {
             $query = $request->get('query');
@@ -642,7 +715,7 @@ class UserController extends Controller
                     ->orWhere('content', 'like', '%' . $query . '%')->orWhere('author', 'like', '%' . $query . '%');
             })->orderBy('id', 'DESC')->paginate(9);
 
-            return view('news', compact('user_session', 'latest_posts'));
+            return view('trading.dashboard', compact('user_session', 'latest_posts'));
         } else {
             return Redirect('Userlogin')->with('fail', 'Tienes que iniciar sesión primero');
         }

@@ -198,7 +198,7 @@ Route::group(['middleware' => ['prevent-back-history', SetLocale::class]], funct
     Route::get('/chat/messages', [ChatController::class, 'getChatMessages'])->name('chat.messages');
     Route::post('/chat/send', [ChatController::class, 'sendChatMessage'])->name('chat.send');
 
-    Route::get('/news', [UserController::class, 'news'])->name('news');
+    Route::get('/trading', [UserController::class, 'trading'])->name('trading');
     Route::get('/faq', [UserController::class, 'faqs'])->name('faqs');
     Route::get('/membership', [UserController::class, 'membership'])->name('membership');
     Route::get('/challenges', [UserController::class, 'challenges'])->name('challenges');

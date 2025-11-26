@@ -10,10 +10,21 @@
 
 <style>
     :root {
-        --primary: #f89c10;     /* Your exact orange */
+        --primary: #f89c10;
         --primary-dark: #e07a00;
         --accent: #f89c10;
         --gradient: linear-gradient(135deg, #f89c10 0%, #ff9f1c 100%);
+        --light-bg: #f8f9fa;
+        --border-color: #eaeaea;
+        --text-dark: #333;
+        --text-light: #6c757d;
+    }
+
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        color: var(--text-dark);
+        line-height: 1.6;
+        background-color: #fff;
     }
 
     .blog-detail-header {
@@ -26,6 +37,12 @@
         font-weight: 800;
         line-height: 1.2;
     }
+
+    /* Main Content Area */
+    .main-content {
+        padding: 60px 0;
+    }
+
     .blog-content {
         font-size: 1.15rem;
         line-height: 1.9;
@@ -46,20 +63,176 @@
         border-radius: 8px;
     }
 
-    .section-title {
-        position: relative;
-        padding-bottom: 15px;
+    /* Sidebar Styles */
+    .sidebar {
+        position: sticky;
+        top: 30px;
     }
-    .section-title:after {
-        content: '';
-        position: absolute;
-        bottom: 0;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 80px;
-        height: 4px;
-        background: var(--gradient);
-        border-radius: 2px;
+
+    .sidebar-widget {
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 30px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        border: 1px solid var(--border-color);
+    }
+
+    .widget-title {
+        font-size: 1.3rem;
+        font-weight: 700;
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+        border-bottom: 3px solid var(--primary);
+        color: var(--text-dark);
+    }
+
+    /* Author Widget */
+    .author-widget {
+        text-align: center;
+    }
+    .author-avatar {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin: 0 auto 15px;
+        border: 3px solid var(--primary);
+    }
+    .author-name {
+        font-weight: 700;
+        font-size: 1.2rem;
+        margin-bottom: 5px;
+    }
+    .author-bio {
+        color: var(--text-light);
+        font-size: 0.95rem;
+        margin-bottom: 15px;
+    }
+
+    /* Categories Widget */
+    .category-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    .category-list li {
+        padding: 10px 0;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .category-list li:last-child {
+        border-bottom: none;
+    }
+    .category-list a {
+        text-decoration: none;
+        color: var(--text-dark);
+        display: flex;
+        justify-content: space-between;
+        transition: all 0.3s ease;
+    }
+    .category-list a:hover {
+        color: var(--primary);
+    }
+    .category-count {
+        background: var(--light-bg);
+        padding: 2px 8px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+    }
+
+    /* Recent Posts Widget */
+    .recent-post {
+        display: flex;
+        margin-bottom: 15px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .recent-post:last-child {
+        margin-bottom: 0;
+        padding-bottom: 0;
+        border-bottom: none;
+    }
+    .recent-post-img {
+        width: 70px;
+        height: 70px;
+        border-radius: 8px;
+        object-fit: cover;
+        margin-right: 15px;
+    }
+    .recent-post-content h5 {
+        font-size: 0.95rem;
+        margin-bottom: 5px;
+        line-height: 1.4;
+    }
+    .recent-post-content h5 a {
+        text-decoration: none;
+        color: var(--text-dark);
+        transition: all 0.3s ease;
+    }
+    .recent-post-content h5 a:hover {
+        color: var(--primary);
+    }
+    .recent-post-date {
+        font-size: 0.8rem;
+        color: var(--text-light);
+    }
+
+    /* Tags Widget */
+    .tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    .tag {
+        background: var(--light-bg);
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        text-decoration: none;
+        color: var(--text-dark);
+        transition: all 0.3s ease;
+    }
+    .tag:hover {
+        background: var(--primary);
+        color: white;
+    }
+
+    /* Newsletter Widget */
+    .newsletter-form .form-control {
+        border-radius: 30px;
+        padding: 10px 20px;
+        margin-bottom: 15px;
+        border: 1px solid var(--border-color);
+    }
+    .newsletter-form .btn {
+        width: 100%;
+        border-radius: 30px;
+        padding: 10px;
+    }
+
+    /* Social Links */
+    .social-links {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        margin-top: 15px;
+    }
+    .social-link {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--light-bg);
+        color: var(--text-dark);
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+    .social-link:hover {
+        background: var(--primary);
+        color: white;
+        transform: translateY(-3px);
     }
 
     /* Buttons */
@@ -75,6 +248,35 @@
         background: var(--primary-dark);
         transform: translateY(-3px);
         box-shadow: 0 8px 25px rgba(248, 156, 16, 0.4);
+    }
+
+    /* Section Title */
+    .section-title {
+        position: relative;
+        padding-bottom: 15px;
+        margin-bottom: 30px;
+    }
+    .section-title:after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 80px;
+        height: 4px;
+        background: var(--gradient);
+        border-radius: 2px;
+    }
+
+    /* Like Icon Hover */
+    .heart-icon:hover {
+        filter: brightness(0) saturate(100%) invert(61%) sepia(93%) saturate(1100%) hue-rotate(10deg) brightness(105%) contrast(101%);
+    }
+
+    /* Responsive Adjustments */
+    @media (max-width: 991px) {
+        .sidebar {
+            margin-top: 50px;
+        }
     }
 
     /* Links & Accents */
@@ -93,11 +295,6 @@
     .border-primary {
         border-color: var(--primary) !important;
     }
-
-    /* Like Icon Hover */
-    .heart-icon:hover {
-        filter: brightness(0) saturate(100%) invert(61%) sepia(93%) saturate(1100%) hue-rotate(10deg) brightness(105%) contrast(101%);
-    }
 </style>
 
 <!-- Header -->
@@ -109,138 +306,160 @@
                 <div class="d-flex justify-content-center flex-wrap mt-4 text-white-50 fs-5">
                     <div class="me-4"><i class="fas fa-calendar-alt"></i> {{ $blog_detail->created_at->format('F d, Y') }}</div>
                     <div class="me-4"><i class="fas fa-clock"></i> {{ $readTime }} min read</div>
-                    <div><i class="fas fa-comments"></i> {{ $commentCount }} Comments</div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="container my-5">
-    <div class="row justify-content-center">
-        <div class="col-lg-9">
+<!-- Main Content -->
+<div class="main-content">
+    <div class="container">
+        <div class="row">
+            <!-- Main Blog Content -->
+            <div class="col-lg-8">
+                <img src="{{ asset($blog_detail->image) }}" class="img-fluid rounded-4 shadow-lg mb-5" alt="{{ $blog_detail->title }}">
 
-            <img src="{{ asset($blog_detail->image) }}" class="img-fluid rounded-4 shadow-lg mb-5" alt="{{ $blog_detail->title }}">
+                <article class="blog-content">
+                    {!! $blog_detail->details !!}
+                </article>
 
-            <article class="blog-content">
-                {!! $blog_detail->details !!}
-            </article>
-
-            <!-- Likes -->
-            <div class="d-flex align-items-center mt-5 mb-4">
-                <img class="heart-icon me-3" src="{{ asset('assets/heart.svg') }}" alt="Like"
-                     style="width:34px;cursor:pointer;transition:0.3s;" data-blog-id="{{ $blog_detail->id }}">
-                <span id="likeText" class="fs-5 fw-bold text-primary">
-                    {{ $blog_detail->like_count }} {{ Str::plural('Like', $blog_detail->like_count) }}
-                </span>
-            </div>
-
-            <hr class="my-5">
-
-            <!-- Comments -->
-            <div class="comments-section">
-                <h3 class="mb-4">Comments ({{ $commentCount }})</h3>
-
-                @auth
-                    <form id="commentForm" class="bg-white p-4 rounded-4 shadow-sm mb-5">
-                        @csrf
-                        <input type="hidden" name="blog_id" value="{{ $blog_detail->id }}">
-                        <textarea name="comment" class="form-control mb-3" rows="4" placeholder="Share your thoughts..." required></textarea>
-                        <button type="submit" class="btn btn-primary">Post Comment</button>
-                    </form>
-                @else
-                    <p class="text-center py-4">
-                        <a href="{{ url('Userlogin') }}" class="btn btn-outline-primary btn-lg">Login to Comment</a>
-                    </p>
-                @endauth
-
-                @forelse($blogComments as $comment)
-                    <div class="bg-white rounded-4 shadow-sm p-4 mb-4">
-                        <div class="d-flex">
-                            <img src="{{ $comment->user->image_path ? getImageFile($comment->user->image_path) : asset('149071.png') }}"
-                                 class="rounded-circle me-3" width="50" height="50" alt="{{ $comment->user->name }}">
-                            <div class="flex-grow-1">
-                                <strong>{{ $comment->user->name }}</strong>
-                                <small class="text-muted ms-2">{{ $comment->created_at->diffForHumans() }}</small>
-                                <p class="mt-2 mb-1">{{ $comment->comment }}</p>
-
-                                @auth
-                                    <button class="btn btn-sm btn-link text-primary replyBtn"
-                                            data-bs-toggle="modal" data-bs-target="#replyModal"
-                                            data-parent_id="{{ $comment->id }}">
-                                        Reply
-                                    </button>
-                                @endauth
-                            </div>
+                <!-- Tags -->
+                @if($blog_detail->tags)
+                    <div class="mt-5">
+                        <div class="tags">
+                            @foreach(explode(',', $blog_detail->tags) as $tag)
+                                <a href="#" class="tag">{{ trim($tag) }}</a>
+                            @endforeach
                         </div>
+                    </div>
+                @endif
 
-                        @foreach($comment->blogCommentReplies as $reply)
-                            <div class="bg-light rounded-3 p-3 ms-5 mt-3 border-start border-3 border-primary">
-                                <div class="d-flex">
-                                    <img src="{{ $reply->user->image_path ? getImageFile($reply->user->image_path) : asset('149071.png') }}"
-                                         class="rounded-circle me-3" width="40" height="40">
-                                    <div>
-                                        <strong>{{ $reply->user->name }}</strong>
-                                        <small class="text-muted ms-2">{{ $reply->created_at->diffForHumans() }}</small>
-                                        <p class="mt-1 mb-0">{{ $reply->comment }}</p>
+                <!-- Likes -->
+                <div class="d-flex align-items-center mt-5 mb-4">
+                    <img class="heart-icon me-3" src="{{ asset('assets/heart.svg') }}" alt="Like"
+                         style="width:34px;cursor:pointer;transition:0.3s;" data-blog-id="{{ $blog_detail->id }}">
+                    <span id="likeText" class="fs-5 fw-bold text-primary">
+                        {{ $blog_detail->like_count }} {{ Str::plural('Like', $blog_detail->like_count) }}
+                    </span>
+                </div>
+
+                <hr class="my-5">
+
+                <!-- Comments Section -->
+                <!-- Add your existing comments section here -->
+
+                <!-- Related Posts -->
+                @if($latest_posts->count())
+                    <h3 class="my-5 section-title">Continue Reading</h3>
+                    <div class="row">
+                        @foreach($latest_posts->take(3) as $post)
+                            <div class="col-md-4 mb-4">
+                                <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden">
+                                    <img src="{{ asset($post->image) }}" class="card-img-top" style="height:200px;object-fit:cover;">
+                                    <div class="card-body d-flex flex-column">
+                                        <h5 class="card-title fw-bold">{{ $post->title }}</h5>
+                                        <p class="card-text text-muted small flex-grow-1">
+                                            {!! Str::limit(strip_tags($post->short_description), 80) !!}
+                                        </p>
+                                        <a href="{{ url('blog_detail/'.$post->slug) }}" class="btn btn-primary btn-sm mt-3 align-self-start">Read More</a>
                                     </div>
                                 </div>
                             </div>
                         @endforeach
                     </div>
-                @empty
-                    <p class="text-center text-muted py-4">No comments yet. Be the first!</p>
-                @endforelse
+                @endif
             </div>
 
-            <!-- Related Posts -->
-            @if($latest_posts->count())
-                <h3 class="my-5 text-center section-title">Continue Reading</h3>
-                <div class="row">
-                    @foreach($latest_posts->take(3) as $post)
-                        <div class="col-md-4 mb-4">
-                            <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden">
-                                <img src="{{ asset($post->image) }}" class="card-img-top" style="height:200px;object-fit:cover;">
-                                <div class="card-body d-flex flex-column">
-                                    <h5 class="card-title fw-bold">{{ $post->title }}</h5>
-                                    <p class="card-text text-muted small flex-grow-1">
-                                        {!! Str::limit(strip_tags($post->short_description), 80) !!}
-                                    </p>
-                                    <a href="{{ url('blog_detail/'.$post->slug) }}" class="btn btn-primary btn-sm mt-3 align-self-start">Read More</a>
-                                </div>
-                            </div>
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <div class="sidebar">
+                    <!-- Author Widget -->
+                    <div class="sidebar-widget author-widget">
+                        <!-- You can replace this with actual author data from your database -->
+                        <img src="https://ui-avatars.com/api/?name={{ urlencode($blog_detail->author ?? 'Admin') }}&background=f89c10&color=fff" alt="Author" class="author-avatar">
+                        <h3 class="author-name">{{ $blog_detail->author ?? 'Admin' }}</h3>
+                        <p class="author-bio">Experienced writer passionate about sharing knowledge and insights on various topics.</p>
+                        <div class="social-links">
+                            <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+                            <a href="#" class="social-link"><i class="fab fa-linkedin-in"></i></a>
+                            <a href="#" class="social-link"><i class="fab fa-github"></i></a>
+                            <a href="#" class="social-link"><i class="fab fa-medium"></i></a>
                         </div>
-                    @endforeach
+                    </div>
+
+                    <!-- Categories Widget -->
+                    <div class="sidebar-widget">
+                        <h3 class="widget-title">Categories</h3>
+                       <ul class="list-unstyled">
+                        @foreach($categories as $cat)
+                            @if($cat->blogs->count() > 0)
+                                <li class="mb-3 pb-3 border-bottom">
+                                    <a href="{{ url('blog?category=' . $cat->slug) }}"
+                                       class="d-flex justify-content-between align-items-center text-decoration-none
+                                              {{ request('category') === $cat->slug ? 'text-primary fw-bold' : 'text-dark' }}">
+                                        <span>{{ $cat->name }}</span>
+                                        <span class="badge bg-light text-primary rounded-pill">{{ $cat->blogs->count() }}</span>
+                                    </a>
+                                </li>
+                            @endif
+                        @endforeach
+                    </ul>
+                    </div>
+
+                    <!-- Recent Posts Widget -->
+                    <div class="sidebar-widget">
+                        <h3 class="widget-title">Recent Posts</h3>
+                        @if($latest_posts->count())
+                            @foreach($latest_posts->take(3) as $post)
+                                <div class="recent-post">
+                                    <img src="{{ asset($post->image) }}" alt="{{ $post->title }}" class="recent-post-img">
+                                    <div class="recent-post-content">
+                                        <h5><a href="{{ url('blog_detail/'.$post->slug) }}">{{ $post->title }}</a></h5>
+                                        <div class="recent-post-date">{{ $post->created_at->format('M d, Y') }}</div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        @else
+                            <p class="text-muted">No recent posts available.</p>
+                        @endif
+                    </div>
+
+                    <!-- Tags Widget -->
+                    <div class="sidebar-widget">
+                        <h3 class="widget-title">Popular Tags</h3>
+                        <div class="tags">
+                            <!-- Replace with dynamic tags from your database -->
+                            <a href="#" class="tag">Web Development</a>
+                            <a href="#" class="tag">Laravel</a>
+                            <a href="#" class="tag">PHP</a>
+                            <a href="#" class="tag">JavaScript</a>
+                            <a href="#" class="tag">CSS</a>
+                            <a href="#" class="tag">HTML</a>
+                            <a href="#" class="tag">UX Design</a>
+                            <a href="#" class="tag">Responsive</a>
+                        </div>
+                    </div>
+
+                    <!-- Newsletter Widget -->
+                    <div class="sidebar-widget">
+                        <h3 class="widget-title">Newsletter</h3>
+                        <p class="mb-3">Subscribe to our newsletter to receive updates on new articles.</p>
+                        <form class="newsletter-form">
+                            @csrf
+                            <div class="mb-3">
+                                <input type="email" class="form-control" placeholder="Your email address" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Subscribe</button>
+                        </form>
+                    </div>
                 </div>
-            @endif
+            </div>
         </div>
     </div>
 </div>
 
-<!-- Reply Modal -->
-<div class="modal fade" id="replyModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form id="replyForm">
-                @csrf
-                <input type="hidden" name="blog_id" value="{{ $blog_detail->id }}">
-                <input type="hidden" name="parent_id" id="parent_id">
-                <div class="modal-header">
-                    <h5 class="modal-title">Reply to Comment</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <textarea name="reply_comment" class="form-control" rows="4" placeholder="Write your reply..." required></textarea>
-                </div>
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary">Send Reply</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Scripts (unchanged) -->
+<!-- Scripts -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/js/toastr.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.min.css">
@@ -276,6 +495,13 @@ $(document).ready(function(){
                 toastr.error(res.message || 'Error');
             }
         }).fail(() => toastr.error('Network error'));
+    });
+
+    // Newsletter form submission
+    $('.newsletter-form').on('submit', function(e){
+        e.preventDefault();
+        toastr.info('Thank you for subscribing to our newsletter!');
+        $(this).find('input[type="email"]').val('');
     });
 });
 </script>

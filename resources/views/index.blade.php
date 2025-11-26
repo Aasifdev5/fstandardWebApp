@@ -221,89 +221,360 @@
       </div>
     </div>
   </section>
-<!-- ============================
-     Trading Panel + App Download Section
-     ============================ -->
-<section style="background:#0D0D24; padding:70px 0;">
-  <div class="container">
+<style>
+ /* ==========================================================
+   SECTION & CARD STYLES (Clean & Modern Dark Theme)
+   ========================================================== */
+.app-section {
+    background: #0b0b1e; /* Deep dark navy */
+    padding: 100px 0;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
 
-    <!-- Title -->
-    <h2 class="text-center"
-        style="color:white; font-size:40px; font-weight:700; margin-bottom:10px;">
-      Start Trading With F Standard
-    </h2>
+.download-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 30px;
+    padding: 40px;
+    backdrop-filter: blur(10px);
+    transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
 
-    <p class="text-center mb-5"
-       style="color:#b9c0d4; max-width:650px; margin:auto; font-size:17px;">
-      Access your trading dashboard, manage your accounts, and download the F Standard app for seamless trading.
-    </p>
+.download-card:hover {
+    transform: translateY(-10px);
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.2);
+}
 
-    <div class="row justify-content-center text-center">
+.download-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 15px;
+    background: #4ade80; /* Brighter CTA button */
+    color: #0b0b1e !important;
+    padding: 12px 30px;
+    border-radius: 12px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: 0.3s;
+    margin-top: 25px;
+}
 
-      <!-- Trading Panel Button -->
-      <div class="col-md-4 mb-4">
-        <a href="market.html"
-           style="
-             display:inline-block;
-             background:#4C6FFF;
-             padding:15px 35px;
-             border-radius:40px;
-             color:white;
-             font-size:18px;
-             font-weight:600;
-             text-decoration:none;
-             box-shadow:0 6px 20px rgba(76,111,255,0.4);
-             transition:0.3s;">
-          🚀 Open Trading Panel
-        </a>
-      </div>
+.download-btn:hover {
+    background: #3ac06a;
+    transform: scale(1.02);
+}
 
-      <!-- Android Download -->
-      <div class="col-md-3 mb-3">
-        <a href="#"
-           style="
-             display:flex;
-             align-items:center;
-             justify-content:center;
-             gap:12px;
-             background:#1A1A32;
-             padding:14px 25px;
-             border-radius:50px;
-             color:white;
-             text-decoration:none;
-             border:1px solid #2c2c4b;
-             font-weight:500;
-             transition:0.3s;">
-          <img src="https://cdn-icons-png.flaticon.com/512/888/888857.png"
-               style="width:26px;">
-          <span style="font-size:16px;">Download for Android</span>
-        </a>
-      </div>
+/* ==========================================================
+   REALISTIC DEVICE COMMON STYLES
+   ========================================================== */
+.device-container {
+    width: 280px;
+    height: 560px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 10;
+}
 
-      <!-- iOS Download -->
-      <div class="col-md-3 mb-3">
-        <a href="#"
-           style="
-             display:flex;
-             align-items:center;
-             justify-content:center;
-             gap:12px;
-             background:#1A1A32;
-             padding:14px 25px;
-             border-radius:50px;
-             color:white;
-             text-decoration:none;
-             border:1px solid #2c2c4b;
-             font-weight:500;
-             transition:0.3s;">
-          <img src="https://cdn-icons-png.flaticon.com/512/179/179309.png"
-               style="width:26px;">
-          <span style="font-size:16px;">Download for iOS</span>
-        </a>
-      </div>
+.device-frame {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    border-radius: 48px;
+    padding: 12px;
+    box-shadow:
+        0 30px 60px -10px rgba(0,0,0,0.6),
+        inset 0 0 0 2px rgba(255,255,255,0.2);
+    transition: transform 0.5s ease;
+}
 
+.device-screen {
+    width: 100%;
+    height: 100%;
+    background: #000;
+    border-radius: 36px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+}
+
+/* Glass Reflection Layer (Crucial for Realism) */
+.device-reflection {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        135deg,
+        rgba(255,255,255,0.15) 0%,
+        rgba(255,255,255,0.05) 25%,
+        transparent 50%
+    );
+    z-index: 50;
+    pointer-events: none;
+    border-radius: 36px;
+}
+
+/* --- iPhone 17 Specifics (Titanium) --- */
+.iphone-17 .device-frame {
+    background: #2b2b2b;
+    background: linear-gradient(110deg, #3a3a3a 0%, #5e5e5e 20%, #2b2b2b 40%, #1f1f1f 100%);
+    box-shadow:
+        0 40px 80px -20px rgba(0,0,0,0.8),
+        inset -5px -5px 15px rgba(0,0,0,0.8),
+        inset 2px 2px 10px rgba(255,255,255,0.3);
+    border-radius: 54px;
+    padding: 10px;
+}
+
+.iphone-17 .device-screen { border-radius: 44px; }
+.iphone-island { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); width: 96px; height: 28px; background: #000; border-radius: 20px; z-index: 60; box-shadow: 0 0 2px rgba(255,255,255,0.1); }
+.iphone-island::after { content: ''; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 12px; height: 12px; background: radial-gradient(circle at 30% 30%, #333, #000); border-radius: 50%; box-shadow: inset 0 0 2px rgba(255,255,255,0.2); }
+.iphone-btn { position: absolute; background: #2b2b2b; border-radius: 4px; box-shadow: inset -1px 0 2px rgba(0,0,0,0.5); }
+.btn-vol-up { left: -3px; top: 120px; width: 3px; height: 40px; }
+.btn-vol-down { left: -3px; top: 170px; width: 3px; height: 40px; }
+.btn-power { right: -3px; top: 140px; width: 3px; height: 60px; }
+
+/* --- Pixel 10 Specifics (Ceramic Slate) --- */
+.pixel-10 .device-frame {
+    background: #25282e;
+    box-shadow:
+        0 40px 80px -20px rgba(0,0,0,0.8),
+        inset 0 0 0 1px #444,
+        inset 0 0 20px rgba(0,0,0,1);
+    border-radius: 40px;
+    padding: 14px;
+}
+
+.pixel-10 .device-screen { border-radius: 28px; }
+.pixel-cam { position: absolute; top: 18px; left: 50%; transform: translateX(-50%); width: 16px; height: 16px; background: #000; border-radius: 50%; z-index: 60; box-shadow: inset 0 0 4px rgba(50,50,50,0.8); border: 1px solid rgba(0,0,0,0.5); }
+.pixel-cam::after { content: ''; position: absolute; top: 4px; left: 4px; width: 4px; height: 4px; background: rgba(255,255,255,0.1); border-radius: 50%; }
+.pixel-btn { position: absolute; background: #3a3a3a; border-radius: 2px; right: -3px; box-shadow: inset 1px 0 2px rgba(0,0,0,0.5); }
+.btn-pixel-power { top: 110px; width: 3px; height: 35px; }
+.btn-pixel-vol { top: 160px; width: 3px; height: 60px; }
+
+/* ==========================================================
+   APP INTERFACE (Localized to Indian Market)
+   ========================================================== */
+.app-ui {
+    height: 100%;
+    width: 100%;
+    background: radial-gradient(circle at 100% 0%, #1e1e40 0%, #0D0D24 50%, #000000 100%);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    padding: 50px 15px 20px;
+    font-family: inherit;
+}
+
+/* UI Utility Classes */
+.ui-card { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.05); border-radius: 20px; padding: 15px; margin-bottom: 15px; }
+.ui-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+.ui-avatar { width: 36px; height: 36px; background: #333; border-radius: 50%; border: 2px solid #555; display: flex; align-items: center; justify-content: center;}
+.balance-label { font-size: 13px; color: #a0a0b0; text-transform: uppercase; letter-spacing: 1px; }
+.balance-amount { font-size: 32px; font-weight: 700; letter-spacing: -1px; margin: 5px 0; }
+.balance-change { font-size: 13px; color: #4ade80; background: rgba(74, 222, 128, 0.1); padding: 4px 8px; border-radius: 6px; display: inline-block; }
+.text-red { color: #ef4444; background: rgba(239, 68, 68, 0.1); padding: 4px 8px; border-radius: 6px; display: inline-block; }
+.action-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 25px; }
+.action-item { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.action-icon { width: 48px; height: 48px; border-radius: 16px; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 20px; transition: 0.2s; font-weight: bold;}
+.action-text { font-size: 11px; color: #ccc; }
+.market-list { flex-grow: 1; overflow: hidden; }
+.market-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.coin-icon { width: 32px; height: 32px; border-radius: 50%; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:12px; text-shadow:0 1px 2px rgba(0,0,0,0.3); color:#fff;}
+.bottom-nav { margin-top: auto; background: rgba(20, 20, 35, 0.9); border-radius: 25px; padding: 15px; display: flex; justify-content: space-between; backdrop-filter: blur(10px); }
+</style>
+
+<section class="app-section">
+    <div class="container">
+
+        <div class="text-center mb-5">
+            <h2 style="color:white; font-size:42px; font-weight:800; letter-spacing: -1px;">
+                Trade Indian Markets. Seamlessly.
+            </h2>
+            <p style="color:#b9c0d4; font-size:18px; max-width:600px; margin: 15px auto;">
+                Execute trades on NSE/BSE and manage your F&O portfolio with our secure, lightning-fast mobile application.
+            </p>
+        </div>
+
+        <div class="row align-items-center">
+
+            <div class="col-lg-6 mb-5 mb-lg-0">
+                <div class="device-container iphone-17">
+                    <div class="iphone-btn btn-vol-up"></div>
+                    <div class="iphone-btn btn-vol-down"></div>
+                    <div class="iphone-btn btn-power"></div>
+
+                    <div class="device-frame">
+                        <div class="device-screen">
+
+                            <div class="device-reflection"></div>
+
+                            <div class="iphone-island"></div>
+
+                            <div class="app-ui">
+                                <div class="ui-header">
+                                    <div style="font-weight:700;">10:34 AM IST</div>
+                                    <div class="ui-avatar" style="font-size:18px;">🔔</div>
+                                </div>
+
+                                <div class="ui-card">
+                                    <div class="balance-label">Total Portfolio Value</div>
+                                    <div class="balance-amount">₹ 7,55,120.45</div>
+                                    <div class="balance-change">▲ +₹ 9,450 (1.26%)</div>
+                                </div>
+
+                                <div class="action-grid">
+                                    <div class="action-item">
+                                        <div class="action-icon" style="background:#4ade80; color:#000;">B</div>
+                                        <div class="action-text">Buy Equity</div>
+                                    </div>
+                                    <div class="action-item">
+                                        <div class="action-icon" style="background:#ef4444; color:#fff;">S</div>
+                                        <div class="action-text">Sell F&O</div>
+                                    </div>
+                                    <div class="action-item">
+                                        <div class="action-icon">🪙</div>
+                                        <div class="action-text">IPO/SGB</div>
+                                    </div>
+                                    <div class="action-item">
+                                        <div class="action-icon">💳</div>
+                                        <div class="action-text">Funds</div>
+                                    </div>
+                                </div>
+
+                                <div class="market-list">
+                                    <div style="font-size:14px; font-weight:600; margin-bottom:10px; color:#ccc;">Major Indices (Live)</div>
+
+                                    <div class="market-row">
+                                        <div style="display:flex; gap:10px; align-items:center;">
+                                            <div class="coin-icon" style="background:#007bff; font-size:14px;">N50</div>
+                                            <div>
+                                                <div style="font-weight:600;">Nifty 50</div>
+                                                <div style="font-size:11px; color:#888;">NSE</div>
+                                            </div>
+                                        </div>
+                                        <div style="text-align:right;">
+                                            <div style="font-weight:600;">22,145.80</div>
+                                            <div class="balance-change">+0.95%</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="market-row">
+                                        <div style="display:flex; gap:10px; align-items:center;">
+                                            <div class="coin-icon" style="background:#ff6600; font-size:14px;">S30</div>
+                                            <div>
+                                                <div style="font-weight:600;">Sensex</div>
+                                                <div style="font-size:11px; color:#888;">BSE</div>
+                                            </div>
+                                        </div>
+                                        <div style="text-align:right;">
+                                            <div style="font-weight:600;">72,890.15</div>
+                                            <div class="text-red">-0.12%</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="bottom-nav">
+                                    <span>🏠</span>
+                                    <span style="color:#4ade80">📈</span>
+                                    <span>🔔</span>
+                                    <span>👤</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-center mt-4">
+                    <h4 style="color:white; font-weight:600;">iOS App</h4>
+                    <p style="color:#888; font-size:14px;">Optimized for iPhone with face-ID security.</p>
+                    <a href="#" class="download-btn">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/6/67/App_Store_%28iOS%29.svg" width="20" alt="Apple">
+                        Download on the App Store
+                    </a>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="device-container pixel-10">
+                    <div class="pixel-btn btn-pixel-power"></div>
+                    <div class="pixel-btn btn-pixel-vol"></div>
+
+                    <div class="device-frame">
+                        <div class="device-screen">
+                            <div class="device-reflection" style="opacity:0.6;"></div>
+                            <div class="pixel-cam"></div>
+
+                            <div class="app-ui" style="background: #121212;">
+
+                                <div class="ui-header">
+                                    <div style="font-weight:700; color:#fff;">Top Losers Today</div>
+                                    <div class="ui-avatar"></div>
+                                </div>
+
+                                <div style="height:120px; background:linear-gradient(180deg, rgba(239, 68, 68, 0.1), transparent); border-bottom:1px solid rgba(239, 68, 68, 0.3); position:relative; margin-bottom:20px;">
+                                    <svg width="100%" height="100%" viewBox="0 0 200 100" preserveAspectRatio="none">
+                                        <path d="M0,40 C50,40 50,80 100,80 C150,80 150,20 200,60" stroke="#ef4444" stroke-width="2" fill="none" />
+                                    </svg>
+                                    <div style="position:absolute; top:10px; left:10px; font-size:24px; font-weight:bold;">-0.85%</div>
+                                </div>
+
+                                <div class="market-list">
+                                    <div style="font-size:14px; font-weight:600; margin-bottom:10px; color:#ccc;">F&O Watchlist</div>
+
+                                    <div class="market-row">
+                                        <div style="display:flex; gap:10px; align-items:center;">
+                                            <div class="coin-icon" style="background:#007bff; font-weight:bold; font-size:12px;">RIL</div>
+                                            <div>
+                                                <div style="font-weight:600;">Reliance Ind.</div>
+                                                <div style="font-size:11px; color:#888;">FUT @ ₹2905</div>
+                                            </div>
+                                        </div>
+                                        <div style="text-align:right;">
+                                            <div style="font-weight:600; color:#ef4444;">2,905.50</div>
+                                            <div style="font-size:11px;" class="text-red">-0.45%</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="market-row">
+                                        <div style="display:flex; gap:10px; align-items:center;">
+                                            <div class="coin-icon" style="background:#4ade80; color:#000; font-weight:bold; font-size:12px;">TCS</div>
+                                            <div>
+                                                <div style="font-weight:600;">TCS</div>
+                                                <div style="font-size:11px; color:#888;">FUT @ ₹3920</div>
+                                            </div>
+                                        </div>
+                                        <div style="text-align:right;">
+                                            <div style="font-weight:600; color:#4ade80;">3,920.80</div>
+                                            <div style="font-size:11px;" class="balance-change">+1.98%</div>
+                                        </div>
+                                    </div>
+
+                                </div>
+
+                                <div style="position:absolute; bottom:20px; right:20px; width:56px; height:56px; background:#4ade80; border-radius:16px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 15px rgba(74,222,128,0.4); color:#000; font-size:24px;">
+                                    ₹
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-center mt-4">
+                    <h4 style="color:white; font-weight:600;">Android App</h4>
+                    <p style="color:#888; font-size:14px;">High-speed access to NSE/BSE on Google Play.</p>
+                    <a href="#" class="download-btn">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/d/d7/Android_robot.svg" width="20" alt="Android">
+                        Download on Google Play
+                    </a>
+                </div>
+            </div>
+
+        </div>
     </div>
-  </div>
 </section>
 
   <!-- Testimonials -->
@@ -340,259 +611,179 @@
         </div>
     </div>
 </section>
+<!-- ============================
+     ICONS AROUND THE WORLD SECTION
+============================== -->
+<section class="py-5 icon-section" style="background:#0f0b28; color:white; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+    <div class="container">
+        <div class="row align-items-center">
 
-    <!-- F Standard - Icons Section -->
-<section class="py-5" style="background:#0f0b28; color:white;">
-  <div class="container">
-    <div class="row align-items-center">
+            <!-- LEFT TEXT -->
+            <div class="col-lg-4 mb-5 mb-lg-0">
+                <span class="badge-glow px-3 py-1 rounded-pill"
+                      style="background:linear-gradient(45deg,#7b3fe4,#32e6e2); font-size:14px; font-weight:600; box-shadow:0 0 12px rgba(50,230,226,0.7);">
+                    Stars Talk
+                </span>
 
-      <!-- LEFT TEXT -->
-      <div class="col-lg-4 mb-5">
-        <span class="px-3 py-1 rounded-pill" style="background:linear-gradient(45deg,#7b3fe4,#32e6e2); font-size:14px;">
-          Stars Talk
-        </span>
+                <h1 class="mt-4 fw-bold"
+                    style="font-size:55px; line-height:1.1; text-shadow:0 4px 10px rgba(0,0,0,0.5);">
+                    Icons<br>Around<br>the World
+                </h1>
 
-        <h1 class="mt-4 fw-bold" style="font-size:55px; line-height:1.1;">
-          Icons<br> Around<br> the World
-        </h1>
-
-        <p class="mt-4" style="font-size:18px; opacity:.8;">
-          Global leaders are cheering for and supporting
-          <strong>F Standard</strong>. Be part of the best trading journey.
-        </p>
-      </div>
-
-      <!-- VIDEO CARDS -->
-      <div class="col-lg-8">
-        <div class="row g-4">
-
-          <!-- CARD 1 -->
-          <div class="col-md-4">
-            <div class="card border-0 rounded-4" style="background:#1c153e;">
-              <div class="position-relative">
-                <img src="colin.png"
-                     class="card-img-top rounded-4" alt="Image 1">
-
-                <!-- Play Button -->
-                <button class="btn play-btn position-absolute top-50 start-50 translate-middle rounded-circle"
-                        data-bs-toggle="modal" data-bs-target="#videoModal"
-                        data-video="https://www.youtube.com/embed/ScMzIvxBSi4">
-                  <i class="fa-solid fa-play text-white"></i>
-                </button>
-              </div>
-
-              <div class="card-body text-white">
-                <p class="fw-semibold" style="font-size:18px;">“Passion takes you to glory.”</p>
-                <p class="text-white-50 mb-0">Emi Martinez, <span class="fw-light">Footballer</span></p>
-              </div>
+                <p class="mt-4" style="font-size:18px; opacity:.85; max-width:400px;">
+                    Global leaders and champions are cheering for <strong>F Standard</strong>.
+                    Be part of the best trading journey.
+                </p>
             </div>
-          </div>
 
-          <!-- CARD 2 -->
-          <div class="col-md-4">
-            <div class="card border-0 rounded-4" style="background:#1c153e;">
-              <div class="position-relative">
-                <img src="christ_gayle.png"
-                     class="card-img-top rounded-4" alt="Image 2">
+            <!-- RIGHT VIDEO CARDS -->
+            <div class="col-lg-8">
+                <div class="row g-4">
 
-                <button class="btn play-btn position-absolute top-50 start-50 translate-middle rounded-circle"
-                        data-bs-toggle="modal" data-bs-target="#videoModal"
-                        data-video="https://www.youtube.com/embed/tgbNymZ7vqY">
-                  <i class="fa-solid fa-play text-white"></i>
-                </button>
-              </div>
+                    <!-- CARD 1 -->
+                    <div class="col-md-4">
+                        <div class="video-card card border-0 rounded-4"
+                             style="background:#1c153e; box-shadow:0 10px 25px rgba(0,0,0,0.55); transition:0.3s;">
+                            <div class="position-relative">
+                                <img src="https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg"
+                                     class="card-img-top rounded-4" style="height:200px; object-fit:cover;">
 
-              <div class="card-body text-white">
-                <p class="fw-semibold" style="font-size:18px;">“Never give up. Keep moving forward.”</p>
-                <p class="text-white-50 mb-0">Chris Gayle, <span class="fw-light">Cricketer</span></p>
-              </div>
+                                <!-- OPEN MODAL BUTTON -->
+                                <button class="btn play-btn position-absolute top-50 start-50 translate-middle rounded-circle openVideo"
+                                        data-bs-toggle="modal" data-bs-target="#videoModal"
+                                        data-video="https://www.youtube.com/embed/ScMzIvxBSi4"
+                                        style="background:#00aefc; width:70px; height:70px; font-size:22px; border:4px solid rgba(255,255,255,0.4);">
+                                    <i class="fa-solid fa-play text-white"></i>
+                                </button>
+                            </div>
+
+                            <div class="card-body text-white text-center">
+                                <p class="fw-semibold">“Passion takes you to glory.”</p>
+                                <p class="text-white-50 mb-0">Emi Martinez • <span class="fw-light">Footballer</span></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CARD 2 -->
+                    <div class="col-md-4">
+                        <div class="video-card card border-0 rounded-4"
+                             style="background:#1c153e; box-shadow:0 10px 25px rgba(0,0,0,0.55); transition:0.3s;">
+                            <div class="position-relative">
+                                <img src="https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg"
+                                     class="card-img-top rounded-4" style="height:200px; object-fit:cover;">
+
+                                <button class="btn play-btn position-absolute top-50 start-50 translate-middle rounded-circle openVideo"
+                                        data-bs-toggle="modal" data-bs-target="#videoModal"
+                                        data-video="https://www.youtube.com/embed/tgbNymZ7vqY"
+                                        style="background:#00aefc; width:70px; height:70px; font-size:22px; border:4px solid rgba(255,255,255,0.4);">
+                                    <i class="fa-solid fa-play text-white"></i>
+                                </button>
+                            </div>
+
+                            <div class="card-body text-white text-center">
+                                <p class="fw-semibold">“Never give up. Keep moving forward.”</p>
+                                <p class="text-white-50 mb-0">Chris Gayle • <span class="fw-light">Cricketer</span></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CARD 3 -->
+                    <div class="col-md-4">
+                        <div class="video-card card border-0 rounded-4"
+                             style="background:#1c153e; box-shadow:0 10px 25px rgba(0,0,0,0.55); transition:0.3s;">
+                            <div class="position-relative">
+                                <img src="https://images.pexels.com/photos/91227/pexels-photo-91227.jpeg"
+                                     class="card-img-top rounded-4" style="height:200px; object-fit:cover;">
+
+                                <button class="btn play-btn position-absolute top-50 start-50 translate-middle rounded-circle openVideo"
+                                        data-bs-toggle="modal" data-bs-target="#videoModal"
+                                        data-video="https://www.youtube.com/embed/sVPYIRF9RCQ"
+                                        style="background:#00aefc; width:70px; height:70px; font-size:22px; border:4px solid rgba(255,255,255,0.4);">
+                                    <i class="fa-solid fa-play text-white"></i>
+                                </button>
+                            </div>
+
+                            <div class="card-body text-white text-center">
+                                <p class="fw-semibold">“Aim BIG, achieve BIG!”</p>
+                                <p class="text-white-50 mb-0">Colin Munro • <span class="fw-light">Cricketer</span></p>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
             </div>
-          </div>
-
-          <!-- CARD 3 -->
-          <div class="col-md-4">
-            <div class="card border-0 rounded-4" style="background:#1c153e;">
-              <div class="position-relative">
-                <img src="martinez.png"
-                     class="card-img-top rounded-4" alt="Image 3">
-
-                <button class="btn play-btn position-absolute top-50 start-50 translate-middle rounded-circle"
-                        data-bs-toggle="modal" data-bs-target="#videoModal"
-                        data-video="https://www.youtube.com/embed/sVPYIRF9RCQ">
-                  <i class="fa-solid fa-play text-white"></i>
-                </button>
-              </div>
-
-              <div class="card-body text-white">
-                <p class="fw-semibold" style="font-size:18px;">“Aim BIG, achieve BIG!”</p>
-                <p class="text-white-50 mb-0">Colin Munro, <span class="fw-light">Cricketer</span></p>
-              </div>
-            </div>
-          </div>
 
         </div>
-      </div>
-
     </div>
-  </div>
 </section>
-<style>
-    .play-btn {
-  background:#00aefc;
-  width:70px;
-  height:70px;
-  font-size:22px;
-}
-.play-btn:hover {
-  background:#0088c9;
-}
-</style>
-<!-- VIDEO MODAL -->
-<div class="modal fade" id="videoModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div class="modal-content bg-dark p-0">
-      <div class="ratio ratio-16x9">
-        <iframe id="videoFrame" src="" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-      </div>
-    </div>
-  </div>
-</div>
-<script>
-var videoModal = document.getElementById('videoModal');
-var videoFrame = document.getElementById('videoFrame');
 
-videoModal.addEventListener('show.bs.modal', function (event) {
-  var button = event.relatedTarget;
-  var videoURL = button.getAttribute('data-video') + "?autoplay=1";
-  videoFrame.src = videoURL;
+
+<!-- ============================
+     VIDEO MODAL
+============================== -->
+<div class="modal fade" id="videoModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content bg-dark p-0" style="border-radius:12px; overflow:hidden;">
+
+            <div class="ratio ratio-16x9 position-relative">
+
+                <!-- YouTube PLAYER -->
+                <iframe id="videoFrame" src="" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+
+                <!-- PLAY BUTTON INSIDE MODAL -->
+                <button id="modalPlayBtn"
+                        style="
+                            position:absolute;
+                            top:50%; left:50%;
+                            transform:translate(-50%, -50%);
+                            width:85px; height:85px;
+                            background:#00aefc;
+                            border:none;
+                            border-radius:50%;
+                            font-size:30px;
+                            display:flex;
+                            align-items:center;
+                            justify-content:center;
+                            cursor:pointer;
+                            box-shadow:0 0 20px rgba(0,174,252,0.8);
+                        ">
+                    <i class="fa-solid fa-play" style="color:white; margin-left:4px;"></i>
+                </button>
+
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+<!-- ============================
+     VIDEO PLAY SCRIPT
+============================== -->
+<script>
+let storedURL = "";
+
+// When clicking a card → open modal (but DO NOT play yet)
+document.querySelectorAll(".openVideo").forEach(btn => {
+    btn.addEventListener("click", function () {
+        storedURL = this.getAttribute("data-video");
+        document.getElementById("modalPlayBtn").style.display = "flex";
+        document.getElementById("videoFrame").src = ""; // Clear before play
+    });
 });
 
-videoModal.addEventListener('hidden.bs.modal', function () {
-  videoFrame.src = "";
+// When clicking play button inside modal → start video
+document.getElementById("modalPlayBtn").addEventListener("click", function () {
+    const finalURL = storedURL + "?autoplay=1&mute=0&controls=1&rel=0&modestbranding=1";
+    document.getElementById("videoFrame").src = finalURL;
+    this.style.display = "none"; // hide play button
+});
+
+// When modal closes → STOP video
+document.getElementById("videoModal").addEventListener("hidden.bs.modal", function () {
+    document.getElementById("videoFrame").src = "";
+    document.getElementById("modalPlayBtn").style.display = "flex";
 });
 </script>
-<section style="background:#0D0D24; padding:60px 0;">
-  <div class="container">
 
-    <!-- Small Top Badge -->
-    <div class="text-center mb-3">
-      <span style="
-        color:#89A9FF;
-        border:1px solid #3D4F91;
-        padding:6px 16px;
-        border-radius:20px;
-        font-size:14px;">
-        Trader Feedback & Analysis
-      </span>
-    </div>
-
-    <!-- Title -->
-    <h2 class="text-center"
-        style="color:white; font-size:44px; font-weight:700; margin-bottom:10px;">
-        Our Traders Love Us
-    </h2>
-
-    <!-- Subtitle -->
-    <p class="text-center mx-auto"
-       style="color:#b9c0d4; max-width:650px; font-size:17px;">
-      F Standard shines with traders like you! See what real traders say about our
-      best-in-class prop trading ecosystem.
-    </p>
-
-    <!-- Rating Block -->
-    <div class="text-center mt-3 mb-5">
-      <h4 style="color:white; font-size:24px; font-weight:600; margin-bottom:6px;">
-        Excellent
-        <img src="https://via.placeholder.com/80x20/00b67a/ffffff?text=★★★★★"
-             style="height:22px; margin-left:4px;">
-      </h4>
-
-      <div style="color:#7e8aa6; font-size:15px;">
-        Rated 4.9 / 5 based on <u>12,482 reviews</u> on
-        <span style="color:#00b67a; font-weight:600;">★ Trustpilot</span>
-      </div>
-    </div>
-
-    <!-- Reviews Grid -->
-    <div class="row g-4">
-
-      <!-- Review Card -->
-      <div class="col-md-4">
-        <div style="background:white; border-radius:12px; padding:20px;">
-          <img src="https://via.placeholder.com/120x24/f5f5f5/00b67a?text=★★★★☆"
-               style="height:24px; margin-bottom:10px;">
-          <div style="font-size:14px; color:#6b6f76; margin-bottom:6px;">
-            Amaan R • 20 minutes ago
-          </div>
-          <h6 style="font-weight:700;">Super Fast Support!</h6>
-          <p style="margin:0;">Amazing trading platform & instant response team.</p>
-        </div>
-      </div>
-
-      <!-- Review Card -->
-      <div class="col-md-4">
-        <div style="background:white; border-radius:12px; padding:20px;">
-          <img src="https://via.placeholder.com/120x24/f5f5f5/00b67a?text=★★★★★"
-               style="height:24px; margin-bottom:10px;">
-          <div style="font-size:14px; color:#6b6f76; margin-bottom:6px;">
-            Dhruv S • 1 hour ago
-          </div>
-          <h6 style="font-weight:700;">One of the Best Prop Firms</h6>
-          <p style="margin:0;">Rules are clean, payouts are on time. Love this firm!</p>
-        </div>
-      </div>
-
-      <!-- Review Card -->
-      <div class="col-md-4">
-        <div style="background:white; border-radius:12px; padding:20px;">
-          <img src="https://via.placeholder.com/120x24/f5f5f5/00b67a?text=★★★☆☆"
-               style="height:24px; margin-bottom:10px;">
-          <div style="font-size:14px; color:#6b6f76; margin-bottom:6px;">
-            Priya K • 2 hours ago
-          </div>
-          <h6 style="font-weight:700;">Great Community</h6>
-          <p style="margin:0;">Learnt so much from F Standard’s trader community.</p>
-        </div>
-      </div>
-
-      <!-- More Cards -->
-      <div class="col-md-4">
-        <div style="background:white; border-radius:12px; padding:20px;">
-          <img src="https://via.placeholder.com/120x24/f5f5f5/00b67a?text=★★★★★"
-               style="height:24px; margin-bottom:10px;">
-          <div style="font-size:14px; color:#6b6f76; margin-bottom:6px;">
-            Zaid M • 3 hours ago
-          </div>
-          <h6 style="font-weight:700;">Fantastic Services</h6>
-          <p style="margin:0;">My best trading experience so far.</p>
-        </div>
-      </div>
-
-      <div class="col-md-4">
-        <div style="background:white; border-radius:12px; padding:20px;">
-          <img src="https://via.placeholder.com/120x24/f5f5f5/00b67a?text=★★★★★"
-               style="height:24px; margin-bottom:10px;">
-          <div style="font-size:14px; color:#6b6f76; margin-bottom:6px;">
-            Mehul P • 4 hours ago
-          </div>
-          <h6 style="font-weight:700;">Very Helpful Team</h6>
-          <p style="margin:0;">They helped me fix account issues instantly.</p>
-        </div>
-      </div>
-
-      <div class="col-md-4">
-        <div style="background:white; border-radius:12px; padding:20px;">
-          <img src="https://via.placeholder.com/120x24/f5f5f5/00b67a?text=★★★★☆"
-               style="height:24px; margin-bottom:10px;">
-          <div style="font-size:14px; color:#6b6f76; margin-bottom:6px;">
-            Surya T • 5 hours ago
-          </div>
-          <h6 style="font-weight:700;">Best for Beginners</h6>
-          <p style="margin:0;">I'm learning fast thanks to their guidance.</p>
-        </div>
-      </div>
-
-    </div>
-  </div>
-</section>
 @endsection
