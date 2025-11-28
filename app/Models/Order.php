@@ -1,96 +1,87 @@
 <?php
 
+// 2. app/Models/Order.php
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Order extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array
-     */
+    protected $table = 'orders';
+
     protected $fillable = [
-        'order_number',
         'user_id',
-        'restaurant_id',
-        'subtotal',
-        'delivery_cost',
-        'total',
+        'stock_symbol',
+        'order_side',
+        'order_type', // 1=Limit, 2=Market
+        'price',
+        'quantity',
+        'filled_quantity',
+        'filled_percentage',
+        'average_price',
+        'total_amount',
+        'brokerage',
         'status',
-        'payment_mode',
-        'payment_status',
-        'items',
-        'delivery_address',
-        'order_type',
-        'notes',
+        'trx'
     ];
 
-    /**
-     * The attributes that should be cast to native types.
-     *
-     * @var array
-     */
     protected $casts = [
-        'items' => 'array',
-        'status' => 'string',
-        'payment_mode' => 'string',
-        'payment_status' => 'string',
-        'order_type' => 'string',
-        'subtotal' => 'float',
-        'delivery_cost' => 'float',
-        'total' => 'float',
+        'price'           => 'decimal:2',
+        'quantity'        => 'decimal:4',
+        'filled_quantity' => 'decimal:4',
+        'average_price'   => 'decimal:2',
+        'total_amount'    => 'decimal:2',
+        'brokerage'       => 'decimal:2',
     ];
 
-    /**
-     * Get the user that placed the order.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-     */
+    const STATUS_OPEN           = 0;
+    const STATUS_COMPLETED      = 1;
+    const STATUS_PARTIAL        = 2;
+    const STATUS_CANCELLED      = 9;
+
+    // Relationships
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * Get the restaurant associated with the order.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-     */
-    public function restaurant()
+    public function trades()
     {
-        return $this->belongsTo(Restaurant::class);
+        return $this->hasMany(Trade::class);
     }
 
-    /**
-     * Get the payments associated with the order.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
-     */
-    public function payments()
+    // Scopes
+    public function scopeOpen($query)
     {
-        return $this->hasMany(Payment::class);
+        return $query->where('status', 0);
     }
 
-    /**
-     * Generate a unique order number based on the current year.
-     *
-     * @return string
-     */
-    public static function generateOrderNumber()
+    public function scopeBuy($query)
     {
-        $year = date('Y');
-        $prefix = "ORD-$year-";
-        $lastOrder = self::where('order_number', 'like', "$prefix%")
-            ->orderBy('order_number', 'desc')
-            ->first();
-        $number = $lastOrder ? (int) substr($lastOrder->order_number, strlen($prefix)) + 1 : 1;
-        return $prefix . str_pad($number, 3, '0', STR_PAD_LEFT);
+        return $query->where('order_side', 1);
+    }
+
+    public function scopeSell($query)
+    {
+        return $query->where('order_side', 2);
+    }
+
+    // Accessors
+    public function getStatusBadgeAttribute()
+    {
+        return match($this->status) {
+            0 => '<span class="badge bg-warning">Open</span>',
+            1 => '<span class="badge bg-success">Completed</span>',
+            2 => '<span class="badge bg-info">Partial</span>',
+            9 => '<span class="badge bg-danger">Cancelled</span>',
+        };
+    }
+
+    public function getSideTextAttribute()
+    {
+        return $this->order_side == 1 ? 'BUY' : 'SELL';
     }
 }
-?>

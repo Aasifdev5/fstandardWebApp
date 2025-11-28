@@ -3,12 +3,7 @@
 @section('title', __('Panel'))
 
 @section('content')
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>F Standard Dashboard</title>
+
 
   <!-- Bootstrap -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -60,7 +55,8 @@
     .sidebar-logo {
       font-size: 26px;
       font-weight: 700;
-      margin-bottom: 40px;
+      margin-bottom: -10px;
+      margin-top: -30px;
       display: flex;
       align-items: center;
       gap: 10px;
@@ -331,30 +327,29 @@
       box-shadow: 0 0 0 0.2rem rgba(255, 140, 0, 0.25);
     }
   </style>
-</head>
 
-<body>
 
 <!-- SIDEBAR -->
 <div class="sidebar">
-  <a href="index.html" class="text-white text-decoration-none">
+  <a href="{{ url('/') }}" class="text-white text-decoration-none">
   <div class="sidebar-logo">
-    <i class="fa-solid fa-infinity"></i>
-    <span class="ms-2">F Standard</span>
+    <img src="{{ asset('dlogo.png') }}" alt="">
+
   </div>
 </a>
 
 
   <div class="menu-item active" data-page="overview"><i class="fa-solid fa-chart-line"></i> Progress</div>
-  <div class="menu-item" data-page="rules"><i class="fa-solid fa-book"></i> Rules</div>
-  <div class="menu-item" data-page="accounts"><i class="fa-solid fa-user"></i> Accounts</div>
-  <div class="menu-item" data-page="withdrawals"><i class="fa-solid fa-wallet"></i> Withdrawals</div>
+  <div class="menu-item" data-page="rules"><i class="fa-solid fa-book"></i> Manage Orders</div>
+  <div class="menu-item" data-page="accounts"><i class="fa-solid fa-user"></i> Trade History</div>
+  <div class="menu-item" ><i class="fa-solid fa-wallet"></i> Deposit History</div>
+  <div class="menu-item" data-page="withdrawals"><i class="fa-solid fa-wallet"></i> Withdraw History</div>
   <div class="menu-item" data-page="kyc"><i class="fa-solid fa-id-card"></i> KYC</div>
-  <div class="menu-item" data-page="offers"><i class="fa-solid fa-gift"></i> Offers</div>
-  <div class="menu-item" data-page="referrals"><i class="fa-solid fa-people-group"></i> Referrals</div>
-  <div class="menu-item" data-page="faq"><i class="fa-solid fa-circle-question"></i> FAQ</div>
-  <div class="menu-item" data-page="contact"><i class="fa-solid fa-envelope"></i> Contact</div>
-  <div class="menu-item" data-page="calculators"><i class="fa-solid fa-calculator"></i> Calculators</div>
+  {{-- <div class="menu-item" data-page="offers"><i class="fa-solid fa-gift"></i> Offers</div> --}}
+  <div class="menu-item" data-page="referrals"><i class="fa-solid fa-people-group"></i> My Affiliation</div>
+  <div class="menu-item" data-page="faq"><i class="fa-solid fa-circle-question"></i> Calculator</div>
+  <div class="menu-item" data-page="contact"><i class="fa-solid fa-envelope"></i> Transaction History</div>
+  <div class="menu-item" data-page="calculators"><i class="fa-solid fa-calculator"></i> Get Support</div>
  <div class="menu-item"
      style="cursor:pointer; color:#fff; padding:12px 16px; display:flex; align-items:center; gap:10px; border-radius:8px; transition:0.3s;"
      onmouseover="this.style.background='rgba(255,255,255,0.15)'; this.children[0].style.transform='rotate(-10deg)';"
@@ -1028,6 +1023,4 @@
   });
 </script>
 
-</body>
-</html>
 @endsection

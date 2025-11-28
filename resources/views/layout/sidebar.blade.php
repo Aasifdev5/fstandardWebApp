@@ -59,6 +59,24 @@
                                     </a>
                                 </li>
                                 <li>
+                                    <a class="{{ Request::is('settings/mail-configuration') ? 'active' : '' }}"
+                                        href="{{ route('settings.mail-configuration') }}">
+                                        <span>{{ __('SMS Configuration') }}</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="{{ Request::is('settings/mail-configuration') ? 'active' : '' }}"
+                                        href="{{ route('settings.mail-configuration') }}">
+                                        <span>{{ __('Push Notification Configuration') }}</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="{{ Request::is('settings/mail-configuration') ? 'active' : '' }}"
+                                        href="{{ route('settings.mail-configuration') }}">
+                                        <span>{{ __('Notification Templates') }}</span>
+                                    </a>
+                                </li>
+                                <li>
                                     <a class="{{ Request::is('settings/payment_method_settings') ? 'active' : '' }}"
                                         href="{{ route('settings.payment_method_settings') }}">
                                         <span>{{ __('Payment Options') }}</span>
@@ -134,13 +152,13 @@
 
 
 
-                        <li class="sidebar-list {{ Request::is('banners') ? 'active' : '' }}"><i
+                        {{-- <li class="sidebar-list {{ Request::is('banners') ? 'active' : '' }}"><i
                                 class="fa fa-thumb-tack"></i>
                             <a class="sidebar-link sidebar-title link-nav" href="{{ route('admin.banners.index') }}">
                                 <i data-feather="monitor"></i>
                                 <span>Slider</span>
                             </a>
-                        </li>
+                        </li> --}}
                         {{-- <li class="sidebar-list"><i class="fa fa-thumb-tack"></i><a class="sidebar-link sidebar-title"
                                 href="javascript:void(0)"><i data-feather="message-circle"></i><span>Chat</span></a>
                             <ul class="sidebar-submenu">
@@ -199,6 +217,28 @@
                         <li class="sidebar-list {{ Request::is('blogs*') ? 'active' : '' }}"><i
                                 class="fa fa-thumb-tack"></i>
                             <a class="sidebar-link sidebar-title" href="javascript:void(0)">
+                                <i class="fa fa-bar-chart-o text-light"></i>&nbsp;&nbsp;
+                                <span>{{ __('Manage Trade') }}</span>
+                            </a>
+                            <ul class="sidebar-submenu">
+                                 <li><a class="{{ Request::is('blog/blog-category/index') ? 'active' : '' }}"
+                                        href="{{ route('blog.blog-category.index') }}">{{ __('Trade History') }}</a>
+                                </li>
+                                <li><a class="{{ Request::is('blog/create') ? 'active' : '' }}"
+                                        href="{{ route('blog.create') }}">{{ __('Open Order') }}</a></li>
+                                <li><a class="{{ Request::is('blog/index') ? 'active' : '' }}"
+                                        href="{{ route('blog.index') }}">{{ __('Order History') }}</a></li>
+                                <li><a class="{{ Request::is('blog/blog-comment-list') ? 'active' : '' }}"
+                                        href="{{ route('blog.blog-comment-list') }}">{{ __('Open Position') }}</a>
+                                </li>
+                                <li><a class="{{ Request::is('blog/blog-category/index') ? 'active' : '' }}"
+                                        href="{{ route('blog.blog-category.index') }}">{{ __('Position History') }}</a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="sidebar-list {{ Request::is('blogs*') ? 'active' : '' }}"><i
+                                class="fa fa-thumb-tack"></i>
+                            <a class="sidebar-link sidebar-title" href="javascript:void(0)">
                                 <i class="icofont icofont-social-blogger text-light"></i>&nbsp;&nbsp;
                                 <span>{{ __('Blogs') }}</span>
                             </a>
@@ -216,29 +256,62 @@
                             </ul>
                         </li>
 
-                        <li class="sidebar-list {{ Request::is('admin/pages') ? 'active' : '' }}"><i
+                        {{-- <li class="sidebar-list {{ Request::is('admin/pages') ? 'active' : '' }}"><i
                                 class="fa fa-thumb-tack"></i>
                             <a class="sidebar-link sidebar-title link-nav" href="{{ url('admin/pages') }}">
                                 <i data-feather="book"></i>
                                 <span>{{ __('Pages') }}</span>
                             </a>
-                        </li>
-
+                        </li> --}}
                         <li class="sidebar-list {{ Request::is('admin/mail-templates') ? 'active' : '' }}"><i
+                                class="fa fa-thumb-tack"></i>
+                            <a class="sidebar-link sidebar-title link-nav" href="{{ url('admin/mail-templates') }}">
+                                <i class="fa fa-gavel text-light"></i>&nbsp;&nbsp;
+                                <span>{{ __('Manage Orders') }}</span>
+                            </a>
+                        </li>
+                        {{-- <li class="sidebar-list {{ Request::is('admin/mail-templates') ? 'active' : '' }}"><i
                                 class="fa fa-thumb-tack"></i>
                             <a class="sidebar-link sidebar-title link-nav" href="{{ url('admin/mail-templates') }}">
                                 <i data-feather="mail"></i>
                                 <span>{{ __('Mail Template') }}</span>
                             </a>
+                        </li> --}}
+                        <li class="sidebar-list {{ Request::is('admin/mail-templates') ? 'active' : '' }}"><i
+                                class="fa fa-thumb-tack"></i>
+                            <a class="sidebar-link sidebar-title link-nav" href="{{ url('admin/mail-templates') }}">
+                                <i data-feather="lock"></i>
+                                <span>{{ __('Trade Rules') }}</span>
+                            </a>
                         </li>
-
-                        <li class="sidebar-list {{ Request::is('admin/language') ? 'active' : '' }}"><i
+                        <li class="sidebar-list {{ Request::is('admin/mail-templates') ? 'active' : '' }}"><i
+                                class="fa fa-thumb-tack"></i>
+                            <a class="sidebar-link sidebar-title link-nav" href="{{ url('admin/mail-templates') }}">
+                                <i data-feather="gift"></i>
+                                <span>{{ __('Manage Referral') }}</span>
+                            </a>
+                        </li>
+                        <li class="sidebar-list {{ Request::is('admin/mail-templates') ? 'active' : '' }}"><i
+                                class="fa fa-thumb-tack"></i>
+                            <a class="sidebar-link sidebar-title link-nav" href="{{ url('admin/mail-templates') }}">
+                                <i data-feather="trending-down"></i>
+                                <span>{{ __('Deposits') }}</span>
+                            </a>
+                        </li>
+                        <li class="sidebar-list {{ Request::is('admin/mail-templates') ? 'active' : '' }}"><i
+                                class="fa fa-thumb-tack"></i>
+                            <a class="sidebar-link sidebar-title link-nav" href="{{ url('admin/mail-templates') }}">
+                                <i data-feather="trending-up"></i>
+                                <span>{{ __('Withdrawals') }}</span>
+                            </a>
+                        </li>
+                        {{-- <li class="sidebar-list {{ Request::is('admin/language') ? 'active' : '' }}"><i
                                 class="fa fa-thumb-tack"></i>
                             <a class="sidebar-link sidebar-title link-nav" href="{{ url('admin/language') }}">
                                 <i class="fa fa-language text-light"></i> &nbsp;&nbsp;
                                 <span>{{ __('Multi Language') }}</span>
                             </a>
-                        </li>
+                        </li> --}}
 
                         <li class="sidebar-list {{ Request::is('support-ticket*') ? 'active' : '' }}"><i
                                 class="fa fa-thumb-tack"></i>
@@ -253,18 +326,34 @@
                                         href="{{ route('support-ticket.open') }}">{{ __('Open Ticket') }}</a></li>
                             </ul>
                         </li>
-
+                        <li class="sidebar-list {{ Request::is('support-ticket*') ? 'active' : '' }}"><i
+                                class="fa fa-thumb-tack"></i>
+                            <a class="sidebar-link sidebar-title" href="javascript:void(0)">
+                                <i data-feather="file-text"></i>
+                                <span>{{ __('Report') }}</span>
+                            </a>
+                            <ul class="sidebar-submenu">
+                                <li><a class="{{ Request::is('support-ticket/index') ? 'active' : '' }}"
+                                        href="{{ route('support-ticket.index') }}">{{ __('Transaction History') }}</a>
+                                </li>
+                                <li><a class="{{ Request::is('support-ticket/open') ? 'active' : '' }}"
+                                        href="{{ route('support-ticket.open') }}">{{ __('Login History') }}</a></li>
+                                <li><a class="{{ Request::is('support-ticket/open') ? 'active' : '' }}"
+                                        href="{{ route('support-ticket.open') }}">{{ __('Notification History') }}</a>
+                                </li>
+                            </ul>
+                        </li>
                     </ul>
                 </div>
                 <div class="right-arrow" id="right-arrow"><i data-feather="arrow-right"></i></div>
             </nav>
         </div>
     </div>
-    @else
-     <div class="sidebar-wrapper">
+@else
+    <div class="sidebar-wrapper">
         <div>
-            <div class="logo-wrapper"><a href="{{ route('dashboard') }}"><img class=" for-light" src="<?php echo '/' . $general_setting['app_footer_payment_image'] ?? ''; ?>"
-                        width="157px" height="80px" alt=""></a>
+            <div class="logo-wrapper"><a href="{{ route('dashboard') }}"><img class=" for-light"
+                        src="<?php echo '/' . $general_setting['app_footer_payment_image'] ?? ''; ?>" width="157px" height="80px" alt=""></a>
                 <div class="back-btn"><i data-feather="grid"></i></div>
                 <div class="toggle-sidebar icon-box-sidebar"><i class="status_toggle middle sidebar-toggle"
                         data-feather="grid"> </i></div>

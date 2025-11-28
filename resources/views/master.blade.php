@@ -1055,8 +1055,8 @@
 
         <a class="navbar-brand d-flex align-items-center" href="{{ url('/') }}"
            style="font-size:1.5rem; font-weight:700; color:var(--primary); transition:.3s;">
-            <img src="{{ '/' . ($general_setting['app_logo'] ?? '') }}" width="55" height="55" class="me-2" alt="">
-            F Standard
+            <img src="{{ '/' . ($general_setting['app_logo'] ?? '') }}" width="90" height="90" class="me-2" alt="">
+
         </a>
 
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu"
@@ -1150,8 +1150,8 @@
         <div class="container position-relative">
             <div class="row">
                 <div class="col-md-4 mb-4">
-                    <h4 class="fw-bold mb-3"><img src="<?php echo '/' . $general_setting['app_preloader'] ?? ''; ?>" alt="" width="170"
-                            height="170"> F Standard</h4>
+                    <h4 class="fw-bold mb-3"><img src="<?php echo '/' . $general_setting['app_logo'] ?? ''; ?>" alt="" width="200"
+                            height="200"></h4>
                     <p class="text-white">Empowering traders worldwide with limitless opportunities and premium funding
                         programs.</p>
                     <div class="social-icons mt-4">

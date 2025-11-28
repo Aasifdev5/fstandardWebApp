@@ -99,6 +99,41 @@ class User extends Authenticatable
             }
         });
     }
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
+    }
+
+    public function trades()
+    {
+        return $this->hasMany(Trade::class);
+    }
+
+    public function deposits()
+    {
+        return $this->hasMany(Deposit::class);
+    }
+
+    public function withdrawals()
+    {
+        return $this->hasMany(Withdrawal::class);
+    }
+
+    public function balance()
+    {
+        return $this->hasOne(UserBalance::class);
+    }
+
+    // Helper
+    public function getWalletBalanceAttribute()
+    {
+        return $this->balance?->balance ?? 0.00;
+    }
+
+    public function getAvailableBalanceAttribute()
+    {
+        return $this->balance?->getAvailableBalanceAttribute() ?? 0.00;
+    }
     public static function getUserFullname($id)
     {
         $userinfo = User::find($id);
