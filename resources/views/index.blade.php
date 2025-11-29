@@ -121,106 +121,84 @@
       </div>
     </div>
   </section>
+<!-- FUNDING PLANS SECTION -->
+<section class="py-5" style="background:#f3f3f3; min-height:100vh;">
+    <div class="container py-4">
+        <h2 class="text-center mb-5 section-title" style="font-size: 3rem; font-weight: 800; color:#222;">
+            Funding Plans
+        </h2>
 
-  <!-- FUNDING PLANS SECTION -->
-  <section class="py-5 page-content active" id="home-plans" style="background:#f3f3f3;">
-    <div class="container">
-      <h2 class="text-center mb-5 section-title">Funding Plans</h2>
-      <div class="row gy-4 justify-content-center">
-        <!-- 20L CARD -->
-        <div class="col-lg-3 col-md-6">
-          <div class="fund-card active">
-            <div class="fund-big-bg">20L</div>
-            <h2 style="font-weight:700;">20L</h2>
-            <div class="line"></div>
-            <p style="font-style:italic; margin-top:-5px;">Funding</p>
-            <p style="font-size:13px; letter-spacing:1px; font-weight:600;">CAPITAL: ₹20,00,000</p>
-            <hr>
-            <h3 style="font-weight:700;">₹37,000</h3>
-            <small>One-time assessment fee</small>
-            <div class="fund-list mt-4">
-              <p><strong>Profit Target</strong> <span class="float-end">8%</span></p>
-              <p><strong>Max Loss</strong> <span class="float-end">6%</span></p>
-              <p><strong>Drawdown Type</strong> <span class="float-end">Trailing</span></p>
-              <p><strong>Payout Cycle</strong> <span class="float-end">20 Days</span></p>
-              <p><strong>News Trading</strong> <span class="float-end">Allowed</span></p>
-              <p><strong>Weekend Holding</strong> <span class="float-end">Allowed</span></p>
-            </div>
-            <button class="btn-orange mt-3">Start Evaluation</button>
-          </div>
-        </div>
+        <div class="row gy-4 justify-content-center">
+            @forelse($plans as $plan)
+                <div class="col-lg-3 col-md-6">
+                    <div class="fund-card {{ $loop->first ? 'active' : '' }}">
+                        <!-- Big Background Text -->
+                        <div class="fund-big-bg">{{ $plan->title }}</div>
 
-        <!-- 50L CARD -->
-        <div class="col-lg-3 col-md-6">
-          <div class="fund-card">
-            <div class="fund-big-bg">50L</div>
-            <h2 style="font-weight:700;">50L</h2>
-            <div class="line"></div>
-            <p style="font-style:italic; margin-top:-5px;">Funding</p>
-            <p style="font-size:13px; letter-spacing:1px; font-weight:600;">CAPITAL: ₹50,00,000</p>
-            <hr>
-            <h3 style="font-weight:700;">₹55,000</h3>
-            <small>One-time assessment fee</small>
-            <div class="fund-list mt-4">
-              <p><strong>Profit Target</strong> <span class="float-end">8%</span></p>
-              <p><strong>Max Loss</strong> <span class="float-end">6%</span></p>
-              <p><strong>Drawdown Type</strong> <span class="float-end">Trailing</span></p>
-              <p><strong>Payout Cycle</strong> <span class="float-end">20 Days</span></p>
-              <p><strong>News Trading</strong> <span class="float-end">Allowed</span></p>
-              <p><strong>Weekend Holding</strong> <span class="float-end">Allowed</span></p>
-            </div>
-            <button class="btn-black mt-3">Start Evaluation</button>
-          </div>
-        </div>
+                        <div class="text-center position-relative" style="z-index:1;">
+                            <h2 style="font-weight:700; font-size:2.8rem; color:#222;">{{ $plan->title }}</h2>
+                            <div class="line"></div>
+                            <p style="font-style:italic; margin-top:-5px; color:#f89c10;">Funding</p>
 
-        <!-- 75L CARD -->
-        <div class="col-lg-3 col-md-6">
-          <div class="fund-card">
-            <div class="fund-big-bg">75L</div>
-            <h2 style="font-weight:700;">75L</h2>
-            <div class="line"></div>
-            <p style="font-style:italic; margin-top:-5px;">Funding</p>
-            <p style="font-size:13px; letter-spacing:1px; font-weight:600;">CAPITAL: ₹75,00,000</p>
-            <hr>
-            <h3 style="font-weight:700;">₹77,000</h3>
-            <small>One-time assessment fee</small>
-            <div class="fund-list mt-4">
-              <p><strong>Profit Target</strong> <span class="float-end">8%</span></p>
-              <p><strong>Max Loss</strong> <span class="float-end">6%</span></p>
-              <p><strong>Drawdown Type</strong> <span class="float-end">Trailing</span></p>
-              <p><strong>Payout Cycle</strong> <span class="float-end">20 Days</span></p>
-              <p><strong>News Trading</strong> <span class="float-end">Allowed</span></p>
-              <p><strong>Weekend Holding</strong> <span class="float-end">Allowed</span></p>
-            </div>
-            <button class="btn-black mt-3">Start Evaluation</button>
-          </div>
-        </div>
+                            <p style="font-size:13px; letter-spacing:1px; font-weight:600; color:#333;">
+                                CAPITAL: {{ $plan->capital_formatted }}
+                            </p>
+                            <hr style="border-color:#eee; margin:20px 0;">
 
-        <!-- 1Cr CARD -->
-        <div class="col-lg-3 col-md-6">
-          <div class="fund-card">
-            <div class="fund-big-bg">1Cr</div>
-            <h2 style="font-weight:700;">1Cr</h2>
-            <div class="line"></div>
-            <p style="font-style:italic; margin-top:-5px;">Funding</p>
-            <p style="font-size:13px; letter-spacing:1px; font-weight:600;">CAPITAL: ₹1,00,00,000</p>
-            <hr>
-            <h3 style="font-weight:700;">₹1,00,000</h3>
-            <small>One-time assessment fee</small>
-            <div class="fund-list mt-4">
-              <p><strong>Profit Target</strong> <span class="float-end">8%</span></p>
-              <p><strong>Max Loss</strong> <span class="float-end">6%</span></p>
-              <p><strong>Drawdown Type</strong> <span class="float-end">Trailing</span></p>
-              <p><strong>Payout Cycle</strong> <span class="float-end">20 Days</span></p>
-              <p><strong>News Trading</strong> <span class="float-end">Allowed</span></p>
-              <p><strong>Weekend Holding</strong> <span class="float-end">Allowed</span></p>
-            </div>
-            <button class="btn-black mt-3">Start Evaluation</button>
-          </div>
+                            <h3 style="font-weight:700; font-size:2.2rem; color:#222;">
+                                {{ $plan->fee_formatted }}
+                            </h3>
+                            <small style="color:#777; display:block; margin-bottom:20px;">One-time assessment fee</small>
+
+                            <div class="fund-list">
+                                <p><strong>Profit Target</strong>
+                                    <span class="float-end text-success">{{ $plan->profit_target }}</span>
+                                </p>
+                                <p><strong>Max Loss</strong>
+                                    <span class="float-end text-danger">{{ $plan->max_loss }}</span>
+                                </p>
+                                <p><strong>Drawdown Type</strong>
+                                    <span class="float-end">{{ $plan->drawdown_type }}</span>
+                                </p>
+                                <p><strong>Payout Cycle</strong>
+                                    <span class="float-end">{{ $plan->payout_cycle }}</span>
+                                </p>
+                                <p><strong>News Trading</strong>
+                                    <span class="float-end {{ $plan->news_trading ? 'text-success' : 'text-danger' }}">
+                                        {{ $plan->news_trading ? 'Allowed' : 'Not Allowed' }}
+                                    </span>
+                                </p>
+                                <p><strong>Weekend Holding</strong>
+                                    <span class="float-end {{ $plan->weekend_holding ? 'text-success' : 'text-danger' }}">
+                                        {{ $plan->weekend_holding ? 'Allowed' : 'Not Allowed' }}
+                                    </span>
+                                </p>
+                            </div>
+
+                            <!-- Start Evaluation Button -->
+                            @if (!empty($user_session))
+                                <form action="{{ route('purchase.plan', $plan->id) }}"  class="mt-4">
+                                    @csrf
+                                    <button type="submit" class="btn-orange">
+                                        Start Evaluation
+                                    </button>
+                                </form>
+                            @else
+                                <a href="{{ url('Userlogin') }}" class="btn-orange d-block text-center text-decoration-none">
+                                    Start Evaluation
+                                </a>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            @empty
+                <div class="col-12 text-center py-5">
+                    <h4 class="text-muted">No funding plans available at the moment.</h4>
+                </div>
+            @endforelse
         </div>
-      </div>
     </div>
-  </section>
+</section>
 <style>
  /* ==========================================================
    SECTION & CARD STYLES (Clean & Modern Dark Theme)
@@ -614,176 +592,92 @@
 <!-- ============================
      ICONS AROUND THE WORLD SECTION
 ============================== -->
-<section class="py-5 icon-section" style="background:#0f0b28; color:white; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+<section class="py-5" style="background:#0f0b28; color:white;">
     <div class="container">
-        <div class="row align-items-center">
 
-            <!-- LEFT TEXT -->
-            <div class="col-lg-4 mb-5 mb-lg-0">
-                <span class="badge-glow px-3 py-1 rounded-pill"
-                      style="background:linear-gradient(45deg,#7b3fe4,#32e6e2); font-size:14px; font-weight:600; box-shadow:0 0 12px rgba(50,230,226,0.7);">
-                    Stars Talk
-                </span>
+        <!-- Section Title -->
+        <div class="text-center mb-5">
+            <h2 class="fw-bold" style="font-size:2.2rem;">Our Celebrity Endorsements</h2>
+            <p class="text-white-50 mt-2">Trusted by influential voices across industries</p>
+        </div>
 
-                <h1 class="mt-4 fw-bold"
-                    style="font-size:55px; line-height:1.1; text-shadow:0 4px 10px rgba(0,0,0,0.5);">
-                    Icons<br>Around<br>the World
-                </h1>
-
-                <p class="mt-4" style="font-size:18px; opacity:.85; max-width:400px;">
-                    Global leaders and champions are cheering for <strong>F Standard</strong>.
-                    Be part of the best trading journey.
-                </p>
-            </div>
-
-            <!-- RIGHT VIDEO CARDS -->
+        <div class="row justify-content-center">
             <div class="col-lg-8">
                 <div class="row g-4">
 
-                    <!-- CARD 1 -->
-                    <div class="col-md-4">
-                        <div class="video-card card border-0 rounded-4"
-                             style="background:#1c153e; box-shadow:0 10px 25px rgba(0,0,0,0.55); transition:0.3s;">
-                            <div class="position-relative">
-                                <img src="https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg"
-                                     class="card-img-top rounded-4" style="height:200px; object-fit:cover;">
+                    @foreach($endorsements as $star)
+                        <div class="col-md-4">
+                            <div class="video-card card border-0 rounded-4"
+                                 style="background:#1c153e; box-shadow:0 10px 25px rgba(0,0,0,0.55); transition:0.3s;">
 
-                                <!-- OPEN MODAL BUTTON -->
-                                <button class="btn play-btn position-absolute top-50 start-50 translate-middle rounded-circle openVideo"
-                                        data-bs-toggle="modal" data-bs-target="#videoModal"
-                                        data-video="https://www.youtube.com/embed/ScMzIvxBSi4"
-                                        style="background:#00aefc; width:70px; height:70px; font-size:22px; border:4px solid rgba(255,255,255,0.4);">
-                                    <i class="fa-solid fa-play text-white"></i>
-                                </button>
-                            </div>
+                                <div class="position-relative">
+                                    <img src="{{ $star->image
+                                        ? asset($star->image)
+                                        : 'https://via.placeholder.com/400x300/1a1a2e/ffffff?text='.urlencode($star->name) }}"
+                                         class="card-img-top rounded-4"
+                                         style="height:200px; object-fit:cover;">
 
-                            <div class="card-body text-white text-center">
-                                <p class="fw-semibold">“Passion takes you to glory.”</p>
-                                <p class="text-white-50 mb-0">Emi Martinez • <span class="fw-light">Footballer</span></p>
-                            </div>
-                        </div>
-                    </div>
+                                    <!-- Play Button -->
+                                    <button class="btn play-btn position-absolute top-50 start-50 translate-middle rounded-circle openVideo"
+                                            data-bs-toggle="modal" data-bs-target="#videoModal"
+                                            data-video="https://www.youtube.com/embed/{{ $star->youtube_id }}"
+                                            style="background:#00aefc; width:70px; height:70px; font-size:22px; border:4px solid rgba(255,255,255,0.4);">
+                                        <i class="fa-solid fa-play text-white"></i>
+                                    </button>
+                                </div>
 
-                    <!-- CARD 2 -->
-                    <div class="col-md-4">
-                        <div class="video-card card border-0 rounded-4"
-                             style="background:#1c153e; box-shadow:0 10px 25px rgba(0,0,0,0.55); transition:0.3s;">
-                            <div class="position-relative">
-                                <img src="https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg"
-                                     class="card-img-top rounded-4" style="height:200px; object-fit:cover;">
+                                <!-- Card Text -->
+                                <div class="card-body text-center text-white">
+                                    <p class="fw-semibold">“{{ $star->quote }}”</p>
+                                    <p class="text-white-50 mb-0">
+                                        {{ $star->name }} • <span class="fw-light">{{ $star->role }}</span>
+                                    </p>
+                                </div>
 
-                                <button class="btn play-btn position-absolute top-50 start-50 translate-middle rounded-circle openVideo"
-                                        data-bs-toggle="modal" data-bs-target="#videoModal"
-                                        data-video="https://www.youtube.com/embed/tgbNymZ7vqY"
-                                        style="background:#00aefc; width:70px; height:70px; font-size:22px; border:4px solid rgba(255,255,255,0.4);">
-                                    <i class="fa-solid fa-play text-white"></i>
-                                </button>
-                            </div>
-
-                            <div class="card-body text-white text-center">
-                                <p class="fw-semibold">“Never give up. Keep moving forward.”</p>
-                                <p class="text-white-50 mb-0">Chris Gayle • <span class="fw-light">Cricketer</span></p>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- CARD 3 -->
-                    <div class="col-md-4">
-                        <div class="video-card card border-0 rounded-4"
-                             style="background:#1c153e; box-shadow:0 10px 25px rgba(0,0,0,0.55); transition:0.3s;">
-                            <div class="position-relative">
-                                <img src="https://images.pexels.com/photos/91227/pexels-photo-91227.jpeg"
-                                     class="card-img-top rounded-4" style="height:200px; object-fit:cover;">
-
-                                <button class="btn play-btn position-absolute top-50 start-50 translate-middle rounded-circle openVideo"
-                                        data-bs-toggle="modal" data-bs-target="#videoModal"
-                                        data-video="https://www.youtube.com/embed/sVPYIRF9RCQ"
-                                        style="background:#00aefc; width:70px; height:70px; font-size:22px; border:4px solid rgba(255,255,255,0.4);">
-                                    <i class="fa-solid fa-play text-white"></i>
-                                </button>
-                            </div>
-
-                            <div class="card-body text-white text-center">
-                                <p class="fw-semibold">“Aim BIG, achieve BIG!”</p>
-                                <p class="text-white-50 mb-0">Colin Munro • <span class="fw-light">Cricketer</span></p>
-                            </div>
-                        </div>
-                    </div>
+                    @endforeach
 
                 </div>
             </div>
-
         </div>
     </div>
 </section>
-
-
-<!-- ============================
-     VIDEO MODAL
-============================== -->
-<div class="modal fade" id="videoModal" tabindex="-1">
+<!-- Video Modal -->
+<div class="modal fade" id="videoModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content bg-dark p-0" style="border-radius:12px; overflow:hidden;">
-
-            <div class="ratio ratio-16x9 position-relative">
-
-                <!-- YouTube PLAYER -->
-                <iframe id="videoFrame" src="" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-
-                <!-- PLAY BUTTON INSIDE MODAL -->
-                <button id="modalPlayBtn"
-                        style="
-                            position:absolute;
-                            top:50%; left:50%;
-                            transform:translate(-50%, -50%);
-                            width:85px; height:85px;
-                            background:#00aefc;
-                            border:none;
-                            border-radius:50%;
-                            font-size:30px;
-                            display:flex;
-                            align-items:center;
-                            justify-content:center;
-                            cursor:pointer;
-                            box-shadow:0 0 20px rgba(0,174,252,0.8);
-                        ">
-                    <i class="fa-solid fa-play" style="color:white; margin-left:4px;"></i>
-                </button>
-
+        <div class="modal-content bg-dark border-0">
+            <div class="modal-header border-0">
+                <h5 class="modal-title text-white">Celebrity Endorsement</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
 
+            <div class="modal-body p-0">
+                <div class="ratio ratio-16x9">
+                    <iframe id="videoPlayer" src="" allowfullscreen></iframe>
+                </div>
+            </div>
         </div>
     </div>
 </div>
-
-
-<!-- ============================
-     VIDEO PLAY SCRIPT
-============================== -->
 <script>
-let storedURL = "";
+document.addEventListener("DOMContentLoaded", function () {
 
-// When clicking a card → open modal (but DO NOT play yet)
-document.querySelectorAll(".openVideo").forEach(btn => {
-    btn.addEventListener("click", function () {
-        storedURL = this.getAttribute("data-video");
-        document.getElementById("modalPlayBtn").style.display = "flex";
-        document.getElementById("videoFrame").src = ""; // Clear before play
+    // open video
+    document.querySelectorAll('.openVideo').forEach(btn => {
+        btn.addEventListener('click', function () {
+            let videoUrl = this.getAttribute('data-video') + '?autoplay=1';
+            document.getElementById('videoPlayer').src = videoUrl;
+        });
     });
-});
 
-// When clicking play button inside modal → start video
-document.getElementById("modalPlayBtn").addEventListener("click", function () {
-    const finalURL = storedURL + "?autoplay=1&mute=0&controls=1&rel=0&modestbranding=1";
-    document.getElementById("videoFrame").src = finalURL;
-    this.style.display = "none"; // hide play button
-});
+    // stop video when modal closed
+    document.getElementById('videoModal').addEventListener('hidden.bs.modal', function () {
+        document.getElementById('videoPlayer').src = "";
+    });
 
-// When modal closes → STOP video
-document.getElementById("videoModal").addEventListener("hidden.bs.modal", function () {
-    document.getElementById("videoFrame").src = "";
-    document.getElementById("modalPlayBtn").style.display = "flex";
 });
 </script>
+
 
 @endsection

@@ -148,4 +148,16 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
+    // Helper to get latest purchase with plan
+    public function getLatestPurchase()
+    {
+        return $this->purchases()
+            ->with('plan')
+            ->latest()
+            ->first();
+    }
+    public function purchases()
+    {
+        return $this->hasMany(PlanPurchase::class);
+    }
 }

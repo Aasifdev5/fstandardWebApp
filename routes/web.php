@@ -5,61 +5,69 @@ use App\Http\Controllers\Admin\AboutUsController;
 use App\Http\Controllers\Admin\Admin;
 
 
+use App\Http\Controllers\Admin\AdminPlanPurchaseController;
 use App\Http\Controllers\Admin\BankController;
 use App\Http\Controllers\Admin\BannerController;
 use App\Http\Controllers\Admin\BlogCategoryController;
+
 use App\Http\Controllers\Admin\BlogController;
-
 use App\Http\Controllers\Admin\CategoryController;
-use App\Http\Controllers\Admin\ChatController;
-use App\Http\Controllers\Admin\ContactUsController;
+use App\Http\Controllers\Admin\CelebrityEndorsementController;
 
+
+use App\Http\Controllers\Admin\ChatController;
+
+use App\Http\Controllers\Admin\ContactUsController;
 
 use App\Http\Controllers\Admin\CurrencyController;
 
+
 use App\Http\Controllers\Admin\FacebookSocialiteController;
+
 
 use App\Http\Controllers\Admin\ForumCategoryController;
 
-
+use App\Http\Controllers\Admin\FundingPlanController;
 use App\Http\Controllers\Admin\GoogleController;
 
-
 use App\Http\Controllers\Admin\HomeSettingController;
-
 use App\Http\Controllers\Admin\LanguageController;
 use App\Http\Controllers\Admin\LocationController;
 
+
 use App\Http\Controllers\Admin\MailTemplateController;
 use App\Http\Controllers\Admin\MediaController;
+
+
 use App\Http\Controllers\Admin\NewsController;
 
-
 use App\Http\Controllers\Admin\Pages;
+
 use App\Http\Controllers\Admin\PortfolioController;
-
-
 use App\Http\Controllers\Admin\QRCodeController;
-
 use App\Http\Controllers\Admin\ResetPasswordController;
-
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\SubcategoryController;
 use App\Http\Controllers\Admin\SupportTicketController;
+
 use App\Http\Controllers\Admin\TagController;
 use App\Http\Controllers\Admin\TestimonialController;
 use App\Http\Controllers\AffiliateController;
-
+use App\Http\Controllers\User\PlanPurchaseController;
 use App\Http\Controllers\UserController;
+
 use App\Http\Middleware\SetLocale;
 use App\Models\Language;
 use App\Models\User;
 use Carbon\Carbon;
-
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Session;
+
+
+
+
 
 
 
@@ -159,7 +167,47 @@ Route::group(['middleware' => ['prevent-back-history', SetLocale::class]], funct
     Route::get('newsDetails/{id}', [UserController::class, 'newsDetails'])->name('newsDetails');
 
     Route::get('/dashboard', [UserController::class, 'dashboard'])->name('dashboard')->middleware('isLoggedIn');
+    Route::get('/overview', [UserController::class, 'overview'])->name('overview')->middleware('isLoggedIn');
+
+    Route::get('/orders', [UserController::class, 'orders'])->name('orders')->middleware('isLoggedIn');
+    Route::get('/trade-history', [UserController::class, 'tradeHistory'])->name('trade.history')->middleware('isLoggedIn');
+    Route::get('/deposit-history', [UserController::class, 'depositHistory'])->name('deposit.history')->middleware('isLoggedIn');
+    Route::get('/withdraw-history', [UserController::class, 'withdrawHistory'])->name('withdraw.history')->middleware('isLoggedIn');
+    Route::get('/kyc', [UserController::class, 'kyc'])->name('kyc')->middleware('isLoggedIn');
+    Route::get('/affiliation', [UserController::class, 'affiliation'])->name('affiliation')->middleware('isLoggedIn');
+    Route::get('/calculator', [UserController::class, 'calculator'])->name('calculator')->middleware('isLoggedIn');
+    Route::get('/transactions', [UserController::class, 'transactions'])->name('transactions')->middleware('isLoggedIn');
+    Route::get('/support', [UserController::class, 'support'])->name('support')->middleware('isLoggedIn');
     Route::get('/dashboard-data', [UserController::class, 'getDashboardData'])->name('getDashboardData');
+
+
+    // 1. Show Purchase Page (Beautiful design you already have)
+    Route::get('/purchase/{id}', [PlanPurchaseController::class, 'selectPlan'])
+        ->name('purchase.plan')->middleware('isLoggedIn');
+
+    // 2. Initiate Payment (After user selects gateway)
+    Route::post('/payment/initiate/{Id}', [PlanPurchaseController::class, 'initiatePayment'])
+        ->name('payment.initiate');
+
+    // 3. Payment Callbacks (From Gateways)
+    Route::post('/payment/callback/razorpay', [PlanPurchaseController::class, 'handleRazorpayCallback'])
+        ->name('payment.callback.razorpay');
+
+    Route::match(['get', 'post'], '/payment/callback/phonepe', [PlanPurchaseController::class, 'handlePhonePeCallback'])
+        ->name('payment.callback.phonepe');
+
+    Route::get('/payment/callback/paypal', [PlanPurchaseController::class, 'handlePayPalCallback'])
+        ->name('payment.callback.paypal');
+
+    // 4. Final Status Pages
+    Route::get('/payment/success', [PlanPurchaseController::class, 'paymentSuccess'])
+        ->name('payment.success');
+
+    Route::get('/payment/failed', [PlanPurchaseController::class, 'paymentFailed'])
+        ->name('payment.failed');
+
+    Route::get('/payment/cancel', [PlanPurchaseController::class, 'paymentCancel'])
+        ->name('payment.cancel');
 
 
     Route::get('blog', [UserController::class, 'blogs'])->name('blog');
@@ -236,9 +284,31 @@ Route::group(['prefix' => 'admin', 'middleware' => ['check.session']], function 
 
 
 
+        Route::resource('funding-plans', FundingPlanController::class)
+            ->except(['show']);
 
+        Route::delete('/funding-plans/bulk-delete', [FundingPlanController::class, 'bulkDelete'])
+            ->name('funding-plans.bulk-delete');
 
+        Route::get('/plan-purchases', [AdminPlanPurchaseController::class, 'index'])
+            ->name('plan-purchases.index');
 
+        Route::get('/plan-purchases/{id}', [AdminPlanPurchaseController::class, 'show'])
+            ->name('plan-purchases.show');
+
+        Route::post('/plan-purchases/{id}/approve', [AdminPlanPurchaseController::class, 'approve'])
+            ->name('plan-purchases.approve');
+
+        Route::post('/plan-purchases/{id}/reject', [AdminPlanPurchaseController::class, 'reject'])
+            ->name('plan-purchases.reject');
+
+        Route::post('/plan-purchases/bulk-action', [AdminPlanPurchaseController::class, 'bulkAction'])
+            ->name('plan-purchases.bulk');
+
+        Route::resource('celebrity-endorsements', CelebrityEndorsementController::class);
+
+        Route::post('celebrity-endorsements/{id}/toggle', [CelebrityEndorsementController::class, 'toggle'])
+            ->name('celebrity-endorsements.toggle');
 
         Route::get('balance-management', [Admin::class, 'balanceManagement'])->name('balance.management');
         Route::post('add-balance', [Admin::class, 'addBalance'])->name('admin.add.balance');

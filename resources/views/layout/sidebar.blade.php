@@ -5,7 +5,7 @@
     <div class="sidebar-wrapper">
         <div>
             <div class="logo-wrapper"><a href="{{ route('dashboard') }}"><img class=" for-light" src="<?php echo '/' . $general_setting['app_logo'] ?? ''; ?>"
-                        width="157px" height="80px" alt=""></a>
+                        width="120px" height="120px" style="margin-top: -26px;margin-left: 32px;" alt=""></a>
                 <div class="back-btn"><i data-feather="grid"></i></div>
                 <div class="toggle-sidebar icon-box-sidebar"><i class="status_toggle middle sidebar-toggle"
                         data-feather="grid"> </i></div>
@@ -132,6 +132,29 @@
                                 <span>Client Manage</span>
                             </a>
                         </li>
+                        <li class="sidebar-list {{ Request::segment(2) == 'funding-plans' ? 'active' : '' }}">
+                            <i class="fa fa-thumb-tack"></i>
+                            <a class="sidebar-link sidebar-title link-nav" href="{{ route('funding-plans.index') }}">
+                                <i class="fa fa-trophy text-warning"></i>&nbsp;&nbsp;&nbsp;
+                                <span>Funding Plans</span>
+                            </a>
+                        </li>
+                        <li class="sidebar-list {{ Request::is('admin/plan-purchases*') ? 'active' : '' }}">
+                            <i class="fa fa-thumb-tack"></i>
+                            <a class="sidebar-link sidebar-title" href="{{ route('plan-purchases.index') }}">
+                                <i class="fa fa-credit-card "></i>&nbsp;&nbsp;
+                                <span>Plan Purchases</span>
+                            </a>
+                        </li>
+                        <!-- Icons Around the World (Celebrity Endorsements) -->
+                        <li class="sidebar-list {{ Request::is('admin/celebrity-endorsements*') ? 'active' : '' }}">
+                            <i class="fa fa-thumb-tack"></i>
+                            <a class="sidebar-link sidebar-title"
+                                href="{{ route('celebrity-endorsements.index') }}">
+                                <i class="fas fa-star text-warning"></i>&nbsp;&nbsp;
+                                <span>Starz</span>
+                            </a>
+                        </li>
                         {{-- <li class="sidebar-list {{ Request::is('admin/portfolios') ? 'active' : '' }}"><i
                                 class="fa fa-thumb-tack"></i>
                             <a class="sidebar-link sidebar-title link-nav" href="{{ route('portfolios.index') }}">
@@ -221,7 +244,7 @@
                                 <span>{{ __('Manage Trade') }}</span>
                             </a>
                             <ul class="sidebar-submenu">
-                                 <li><a class="{{ Request::is('blog/blog-category/index') ? 'active' : '' }}"
+                                <li><a class="{{ Request::is('blog/blog-category/index') ? 'active' : '' }}"
                                         href="{{ route('blog.blog-category.index') }}">{{ __('Trade History') }}</a>
                                 </li>
                                 <li><a class="{{ Request::is('blog/create') ? 'active' : '' }}"
@@ -337,7 +360,8 @@
                                         href="{{ route('support-ticket.index') }}">{{ __('Transaction History') }}</a>
                                 </li>
                                 <li><a class="{{ Request::is('support-ticket/open') ? 'active' : '' }}"
-                                        href="{{ route('support-ticket.open') }}">{{ __('Login History') }}</a></li>
+                                        href="{{ route('support-ticket.open') }}">{{ __('Login History') }}</a>
+                                </li>
                                 <li><a class="{{ Request::is('support-ticket/open') ? 'active' : '' }}"
                                         href="{{ route('support-ticket.open') }}">{{ __('Notification History') }}</a>
                                 </li>

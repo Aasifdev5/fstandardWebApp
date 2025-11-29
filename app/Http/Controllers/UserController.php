@@ -13,20 +13,22 @@ use App\Models\BlogComment;
 
 use App\Models\Category;
 
+use App\Models\CelebrityEndorsement;
 use App\Models\City;
 use App\Models\Comment;
+
 use App\Models\Country;
 
+use App\Models\FundingPlan;
 use App\Models\News;
 
 use App\Models\Notification;
 use App\Models\Page;
-
 use App\Models\PasswordReset;
 use App\Models\Reaction;
+
 use App\Models\Sales;
 use App\Models\SupportTicketQuestion;
-
 use App\Models\Testimonial;
 use App\Models\User;
 use App\Notifications\NewUserRegisteredNotification;
@@ -77,6 +79,10 @@ class UserController extends Controller
 
         $user_session = User::where('id', Session::get('LoggedIn'))->first();
         $testimonials = Testimonial::all();
+        $plans = FundingPlan::orderBy('sort_order')->get();
+         $endorsements = CelebrityEndorsement::orderBy('sort_order')
+            ->orderByDesc('id')
+            ->get();
         $sliders = Banner::all()->map(function ($slider) {
             // Split every 4 words into a new line
             $words = explode(' ', $slider->title1);
@@ -85,7 +91,7 @@ class UserController extends Controller
             return $slider;
         });
 
-        return view('index', compact('user_session', 'sliders', 'testimonials'));
+        return view('index', compact('user_session', 'sliders', 'testimonials','plans','endorsements'));
     }
 
     public function membership()
@@ -272,7 +278,7 @@ class UserController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Account created successfully!',
-                'redirect' => url('/dashboard')
+                'redirect' => url('/overview')
             ]);
         }
 
@@ -346,7 +352,7 @@ class UserController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Login successful!',
-                'redirect' => url('/dashboard')
+                'redirect' => url('/overview')
             ]);
         }
 
@@ -410,7 +416,114 @@ class UserController extends Controller
     }
 
 
+private function authenticatedUser()
+    {
+        if (!Session::has('LoggedIn')) {
+            return redirect('/login')->with('fail', 'You must be logged in first.');
+        }
 
+        $user_session = User::where('id', Session::get('LoggedIn'))->first();
+
+        if (!$user_session) {
+            Session::forget('LoggedIn');
+            return redirect('/login')->with('fail', 'Session expired. Please login again.');
+        }
+
+        return $user_session;
+    }
+
+    // 1. Dashboard / Overview
+    public function overview()
+    {
+        if (!Session::has('LoggedIn')) {
+            return redirect('login')->with('fail', 'Please login first.');
+        }
+
+        $user_session = \App\Models\User::find(Session::get('LoggedIn'));
+
+        return view('overview', compact('user_session'));
+    }
+
+    // 2. Manage Orders
+    public function orders()
+    {
+        $user_session = $this->authenticatedUser();
+        if ($user_session instanceof \Illuminate\Http\RedirectResponse) return $user_session;
+
+        return view('orders', compact('user_session'));
+    }
+
+    // 3. Trade History
+    public function tradeHistory()
+    {
+        $user_session = $this->authenticatedUser();
+        if ($user_session instanceof \Illuminate\Http\RedirectResponse) return $user_session;
+
+        return view('trade-history', compact('user_session'));
+    }
+
+    // 4. Deposit History
+    public function depositHistory()
+    {
+        $user_session = $this->authenticatedUser();
+        if ($user_session instanceof \Illuminate\Http\RedirectResponse) return $user_session;
+
+        return view('deposit-history', compact('user_session'));
+    }
+
+    // 5. Withdraw History
+    public function withdrawHistory()
+    {
+        $user_session = $this->authenticatedUser();
+        if ($user_session instanceof \Illuminate\Http\RedirectResponse) return $user_session;
+
+        return view('withdraw-history', compact('user_session'));
+    }
+
+    // 6. KYC
+    public function kyc()
+    {
+        $user_session = $this->authenticatedUser();
+        if ($user_session instanceof \Illuminate\Http\RedirectResponse) return $user_session;
+
+        return view('kyc', compact('user_session'));
+    }
+
+    // 7. My Affiliation (Referrals)
+    public function affiliation()
+    {
+        $user_session = $this->authenticatedUser();
+        if ($user_session instanceof \Illuminate\Http\RedirectResponse) return $user_session;
+
+        return view('affiliation', compact('user_session'));
+    }
+
+    // 8. Calculator
+    public function calculator()
+    {
+        $user_session = $this->authenticatedUser();
+        if ($user_session instanceof \Illuminate\Http\RedirectResponse) return $user_session;
+
+        return view('calculator', compact('user_session'));
+    }
+
+    // 9. Transaction History
+    public function transactions()
+    {
+        $user_session = $this->authenticatedUser();
+        if ($user_session instanceof \Illuminate\Http\RedirectResponse) return $user_session;
+
+        return view('transactions', compact('user_session'));
+    }
+
+    // 10. Get Support
+    public function support()
+    {
+        $user_session = $this->authenticatedUser();
+        if ($user_session instanceof \Illuminate\Http\RedirectResponse) return $user_session;
+
+        return view('support', compact('user_session'));
+    }
 
 
     public function verification()
@@ -549,7 +662,7 @@ class UserController extends Controller
             // dd($sales);
             $pages = Page::all();
 
-            return view('dashboard', compact('user_session', 'pages'));
+            return view('overview', compact('user_session', 'pages'));
         } else {
             // Redirect to the login page if the user is not logged in
             return redirect()->route('Userlogin'); // or use 'login' if you have a named route for login
