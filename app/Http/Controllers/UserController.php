@@ -25,8 +25,9 @@ use App\Models\News;
 use App\Models\Notification;
 use App\Models\Page;
 use App\Models\PasswordReset;
-use App\Models\Reaction;
+use App\Models\PlanPurchase;
 
+use App\Models\Reaction;
 use App\Models\Sales;
 use App\Models\SupportTicketQuestion;
 use App\Models\Testimonial;
@@ -80,7 +81,7 @@ class UserController extends Controller
         $user_session = User::where('id', Session::get('LoggedIn'))->first();
         $testimonials = Testimonial::all();
         $plans = FundingPlan::orderBy('sort_order')->get();
-         $endorsements = CelebrityEndorsement::orderBy('sort_order')
+        $endorsements = CelebrityEndorsement::orderBy('sort_order')
             ->orderByDesc('id')
             ->get();
         $sliders = Banner::all()->map(function ($slider) {
@@ -91,7 +92,7 @@ class UserController extends Controller
             return $slider;
         });
 
-        return view('index', compact('user_session', 'sliders', 'testimonials','plans','endorsements'));
+        return view('index', compact('user_session', 'sliders', 'testimonials', 'plans', 'endorsements'));
     }
 
     public function membership()
@@ -255,6 +256,7 @@ class UserController extends Controller
         $user = User::create([
             'account_type'   => 'user',
             'refer' => $request->refer,
+            'referral_code' => strtoupper(substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), 0, 10)),
             'name'           => $request->name,
             'email'          => $request->email,
             'whatsapp_number'  => '91' . $mobile,
@@ -416,7 +418,7 @@ class UserController extends Controller
     }
 
 
-private function authenticatedUser()
+    private function authenticatedUser()
     {
         if (!Session::has('LoggedIn')) {
             return redirect('/login')->with('fail', 'You must be logged in first.');
@@ -464,12 +466,18 @@ private function authenticatedUser()
 
     // 4. Deposit History
     public function depositHistory()
-    {
-        $user_session = $this->authenticatedUser();
-        if ($user_session instanceof \Illuminate\Http\RedirectResponse) return $user_session;
+{
+    $user_session = $this->authenticatedUser();
+    if ($user_session instanceof \Illuminate\Http\RedirectResponse) return $user_session;
 
-        return view('deposit-history', compact('user_session'));
-    }
+    // Fix: Use 'user_id' instead of 'id'
+    $purchases = PlanPurchase::with(['plan', 'approver'])
+        ->where('user_id', $user_session->id)
+        ->latest()
+        ->get();
+// dd($purchases);
+    return view('deposit-history', compact('user_session', 'purchases'));
+}
 
     // 5. Withdraw History
     public function withdrawHistory()
@@ -481,13 +489,7 @@ private function authenticatedUser()
     }
 
     // 6. KYC
-    public function kyc()
-    {
-        $user_session = $this->authenticatedUser();
-        if ($user_session instanceof \Illuminate\Http\RedirectResponse) return $user_session;
 
-        return view('kyc', compact('user_session'));
-    }
 
     // 7. My Affiliation (Referrals)
     public function affiliation()

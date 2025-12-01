@@ -95,7 +95,7 @@ class SupportTicketController extends Controller
     {
         if (Session::has('LoggedIn')) {
             $data['user_session'] = User::where('id', Session::get('LoggedIn'))->first();
-
+$data['priorities'] = TicketPriority::all(); // Retrieve all priorities
             $data['title'] = 'Support Ticket List';
             $data['navSupportTicketParentActiveClass'] = 'mm-active';
             $data['subNavSupportTicketIndexActiveClass'] = 'mm-active';

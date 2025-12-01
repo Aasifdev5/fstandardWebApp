@@ -4,66 +4,76 @@ use App\Http\Controllers\Admin\AboutUsController;
 
 use App\Http\Controllers\Admin\Admin;
 
-
 use App\Http\Controllers\Admin\AdminPlanPurchaseController;
 use App\Http\Controllers\Admin\BankController;
 use App\Http\Controllers\Admin\BannerController;
 use App\Http\Controllers\Admin\BlogCategoryController;
-
 use App\Http\Controllers\Admin\BlogController;
+
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\CelebrityEndorsementController;
-
-
 use App\Http\Controllers\Admin\ChatController;
+
 
 use App\Http\Controllers\Admin\ContactUsController;
 
 use App\Http\Controllers\Admin\CurrencyController;
-
 
 use App\Http\Controllers\Admin\FacebookSocialiteController;
 
 
 use App\Http\Controllers\Admin\ForumCategoryController;
 
-use App\Http\Controllers\Admin\FundingPlanController;
-use App\Http\Controllers\Admin\GoogleController;
 
+use App\Http\Controllers\Admin\FundingPlanController;
+
+use App\Http\Controllers\Admin\GoogleController;
 use App\Http\Controllers\Admin\HomeSettingController;
+
 use App\Http\Controllers\Admin\LanguageController;
 use App\Http\Controllers\Admin\LocationController;
-
-
 use App\Http\Controllers\Admin\MailTemplateController;
+
+
 use App\Http\Controllers\Admin\MediaController;
-
-
 use App\Http\Controllers\Admin\NewsController;
 
-use App\Http\Controllers\Admin\Pages;
 
+use App\Http\Controllers\Admin\NotificationSettingController;
+
+use App\Http\Controllers\Admin\NotificationTemplateController;
+
+use App\Http\Controllers\Admin\Pages;
 use App\Http\Controllers\Admin\PortfolioController;
 use App\Http\Controllers\Admin\QRCodeController;
+use App\Http\Controllers\Admin\ReferralSettingController;
 use App\Http\Controllers\Admin\ResetPasswordController;
 use App\Http\Controllers\Admin\SettingController;
+
 use App\Http\Controllers\Admin\SubcategoryController;
 use App\Http\Controllers\Admin\SupportTicketController;
-
+use App\Http\Controllers\Admin\SystemTradeConfigController;
 use App\Http\Controllers\Admin\TagController;
 use App\Http\Controllers\Admin\TestimonialController;
+
 use App\Http\Controllers\AffiliateController;
+use App\Http\Controllers\KycVerificationController;
 use App\Http\Controllers\User\PlanPurchaseController;
 use App\Http\Controllers\UserController;
-
 use App\Http\Middleware\SetLocale;
 use App\Models\Language;
+use App\Models\PlanPurchase;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Session;
+
+
+
+
+
 
 
 
@@ -172,8 +182,9 @@ Route::group(['middleware' => ['prevent-back-history', SetLocale::class]], funct
     Route::get('/orders', [UserController::class, 'orders'])->name('orders')->middleware('isLoggedIn');
     Route::get('/trade-history', [UserController::class, 'tradeHistory'])->name('trade.history')->middleware('isLoggedIn');
     Route::get('/deposit-history', [UserController::class, 'depositHistory'])->name('deposit.history')->middleware('isLoggedIn');
+
     Route::get('/withdraw-history', [UserController::class, 'withdrawHistory'])->name('withdraw.history')->middleware('isLoggedIn');
-    Route::get('/kyc', [UserController::class, 'kyc'])->name('kyc')->middleware('isLoggedIn');
+
     Route::get('/affiliation', [UserController::class, 'affiliation'])->name('affiliation')->middleware('isLoggedIn');
     Route::get('/calculator', [UserController::class, 'calculator'])->name('calculator')->middleware('isLoggedIn');
     Route::get('/transactions', [UserController::class, 'transactions'])->name('transactions')->middleware('isLoggedIn');
@@ -235,7 +246,15 @@ Route::group(['middleware' => ['prevent-back-history', SetLocale::class]], funct
     Route::post('/affiliate/login', [AffiliateController::class, 'login'])->name('affiliate.login');
     Route::get('/affiliate/dashboard', [AffiliateController::class, 'dashboard'])->name('affiliate.dashboard');
     Route::post('/affiliate/logout', [AffiliateController::class, 'logout'])->name('affiliate.logout');
+    Route::get('create', [SupportTicketController::class, 'create'])->name('tickets.create');
+    Route::get('/kyc', [KycVerificationController::class, 'kyc'])->name('kyc')->middleware('isLoggedIn');
+    Route::get('/kyc/create', [KycVerificationController::class, 'create'])->name('kyc.create');
+    Route::post('/kyc', [KycVerificationController::class, 'store'])->name('kyc.store');
+    Route::get('/kyc/{kyc}', [KycVerificationController::class, 'show'])->name('kyc.show');
+    Route::get('/kyc/{kyc}/download/{type}', [KycVerificationController::class, 'downloadDocument'])->name('kyc.download');
 
+    Route::get('show/{uuid}', [SupportTicketController::class, 'ticketUserShow'])->name('show')->middleware('isLoggedIn');
+    Route::post('store', [SupportTicketController::class, 'store'])->name('tickets.store');
     Route::post('/reg', [UserController::class, 'registration'])->name('register');
     Route::get('/contact', [UserController::class, 'contact'])->name('contact');
     Route::get('/about', [UserController::class, 'about'])->name('about');
@@ -283,6 +302,45 @@ Route::group(['prefix' => 'admin', 'middleware' => ['check.session']], function 
     Route::group(['middleware' => 'admin-prevent-back-history', SetLocale::class], function () {
 
 
+        Route::get('/kyc', [KycVerificationController::class, 'adminIndex'])->name('kyc.index');
+        Route::post('/kyc/{kyc}/approve', [KycVerificationController::class, 'approve'])->name('kyc.approve');
+        Route::post('/kyc/{kyc}/reject', [KycVerificationController::class, 'reject'])->name('kyc.reject');
+        Route::post('/kyc/bulk-action', [KycVerificationController::class, 'bulkAction'])->name('kyc.bulk-action');
+        Route::get('/kyc/export', [KycVerificationController::class, 'export'])->name('kyc.export');
+
+        Route::get('/system-trade-config', [SystemTradeConfigController::class, 'edit'])
+            ->name('system-trade-config.edit');
+
+        Route::put('/system-trade-config', [SystemTradeConfigController::class, 'update'])
+            ->name('system-trade-config.update');
+        Route::get('/referral-settings', [ReferralSettingController::class, 'index'])
+            ->name('admin.referral.settings');
+
+        Route::put('/referral-settings', [ReferralSettingController::class, 'update'])
+            ->name('admin.referral.settings.update');
+
+        Route::get('/notification-settings', [NotificationSettingController::class, 'index'])
+            ->name('admin.notification.settings');
+
+        Route::put('/notification-settings', [NotificationSettingController::class, 'update'])
+            ->name('admin.notification.update');
+
+
+        // Notification Templates - Index Page
+        Route::get('/notification-templates', [NotificationTemplateController::class, 'index'])
+            ->name('notification.template.index');
+
+        // Edit Template Page
+        Route::get('/notification-template/{id}/edit', [NotificationTemplateController::class, 'edit'])
+            ->name('notification.template.edit');
+
+        // Update Template
+        Route::put('/notification-template/{id}', [NotificationTemplateController::class, 'update'])
+            ->name('notification.template.update');
+
+        // AJAX Toggle (Email/SMS/Push Status)
+        Route::post('/notification-template/toggle', [NotificationTemplateController::class, 'toggle'])
+            ->name('notification.template.toggle');
 
         Route::resource('funding-plans', FundingPlanController::class)
             ->except(['show']);
@@ -309,6 +367,8 @@ Route::group(['prefix' => 'admin', 'middleware' => ['check.session']], function 
 
         Route::post('celebrity-endorsements/{id}/toggle', [CelebrityEndorsementController::class, 'toggle'])
             ->name('celebrity-endorsements.toggle');
+
+
 
         Route::get('balance-management', [Admin::class, 'balanceManagement'])->name('balance.management');
         Route::post('add-balance', [Admin::class, 'addBalance'])->name('admin.add.balance');

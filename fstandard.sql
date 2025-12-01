@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Nov 29, 2025 at 10:30 AM
+-- Generation Time: Dec 01, 2025 at 12:25 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -441,7 +441,8 @@ CREATE TABLE `celebrity_endorsements` (
 --
 
 INSERT INTO `celebrity_endorsements` (`id`, `name`, `role`, `quote`, `image`, `youtube_id`, `is_active`, `sort_order`, `created_at`, `updated_at`) VALUES
-(1, 'Barra Cuadrada de Aluminio', 'footer', 'sadsadsad', 'uploads/celebrities/1764408209-xkLKhJwUDA.png', 'qs8ySjeT2wA', 1, 0, '2025-11-29 03:48:06', '2025-11-29 03:53:29');
+(1, 'Barra Cuadrada de Aluminio', 'footer', 'sadsadsad', 'uploads/celebrities/1764408209-xkLKhJwUDA.png', 'qs8ySjeT2wA', 1, 0, '2025-11-29 03:48:06', '2025-11-29 03:53:29'),
+(2, 'chrish', 'crickert', 'sdfxcvxzczcdsdf', 'uploads/celebrities/1764467574-JFrmNk3k3y.png', 'zpfZby3NOkU', 1, 0, '2025-11-29 20:22:54', '2025-11-29 20:22:54');
 
 -- --------------------------------------------------------
 
@@ -779,40 +780,17 @@ CREATE TABLE `currencies` (
 --
 
 INSERT INTO `currencies` (`id`, `currency_code`, `symbol`, `currency_placement`, `current_currency`, `created_at`, `updated_at`) VALUES
-(1, 'USD', '$', 'before', 'off', NULL, '2025-11-27 09:15:03'),
-(2, 'BDT', '৳', 'before', 'off', NULL, '2025-11-27 09:15:03'),
-(3, 'INR', '₹', 'before', 'off', NULL, '2025-11-27 09:15:03'),
-(4, 'GBP', '£', 'after', 'off', NULL, '2025-11-27 09:15:03'),
-(5, 'MXN', '$', 'before', 'off', NULL, '2025-11-27 09:15:03'),
-(6, 'SAR', 'SR', 'before', 'off', NULL, '2025-11-27 09:15:03'),
-(7, 'TRY', '₺', 'after', 'off', NULL, '2025-11-27 09:15:03'),
-(8, 'ARS', '$', 'before', 'off', NULL, '2025-11-27 09:15:03'),
-(9, 'EUR', '€', 'before', 'off', NULL, '2025-11-27 09:15:03'),
-(11, 'BS', 'Bs', 'before', 'on', '2024-06-07 04:12:21', '2025-11-27 09:15:03'),
-(12, 'Dinars', 'Dinar', 'after', 'off', '2024-06-07 04:20:07', '2025-11-27 09:15:03');
-
--- --------------------------------------------------------
-
---
--- Table structure for table `deposits`
---
-
-CREATE TABLE `deposits` (
-  `id` bigint(20) UNSIGNED NOT NULL,
-  `user_id` int(10) UNSIGNED NOT NULL,
-  `amount` decimal(15,2) NOT NULL DEFAULT 0.00 COMMENT 'Amount in INR',
-  `charge` decimal(10,2) NOT NULL DEFAULT 0.00 COMMENT 'Gateway or bank charge',
-  `final_amount` decimal(15,2) NOT NULL DEFAULT 0.00 COMMENT 'Credited amount = amount - charge',
-  `payment_method` varchar(50) DEFAULT NULL COMMENT 'UPI, NetBanking, IMPS, NEFT',
-  `utr` varchar(100) DEFAULT NULL COMMENT 'UPI Transaction ID / Reference No.',
-  `trx` varchar(50) NOT NULL COMMENT 'Our system transaction ID',
-  `detail` text DEFAULT NULL COMMENT 'Bank name, remarks, etc.',
-  `status` tinyint(1) NOT NULL DEFAULT 0 COMMENT '0=Pending, 1=Success, 2=Failed, 3=Cancelled',
-  `admin_feedback` varchar(255) DEFAULT NULL,
-  `from_api` tinyint(1) NOT NULL DEFAULT 0 COMMENT '1 if auto via payment gateway',
-  `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+(1, 'USD', '$', 'before', 'off', NULL, '2025-12-01 00:13:36'),
+(2, 'BDT', '৳', 'before', 'off', NULL, '2025-12-01 00:13:36'),
+(3, 'INR', '₹', 'before', 'on', NULL, '2025-12-01 00:13:36'),
+(4, 'GBP', '£', 'after', 'off', NULL, '2025-12-01 00:13:36'),
+(5, 'MXN', '$', 'before', 'off', NULL, '2025-12-01 00:13:36'),
+(6, 'SAR', 'SR', 'before', 'off', NULL, '2025-12-01 00:13:36'),
+(7, 'TRY', '₺', 'after', 'off', NULL, '2025-12-01 00:13:36'),
+(8, 'ARS', '$', 'before', 'off', NULL, '2025-12-01 00:13:36'),
+(9, 'EUR', '€', 'before', 'off', NULL, '2025-12-01 00:13:36'),
+(11, 'BS', 'Bs', 'before', 'off', '2024-06-07 04:12:21', '2025-12-01 00:13:36'),
+(12, 'Dinars', 'Dinar', 'after', 'off', '2024-06-07 04:20:07', '2025-12-01 00:13:36');
 
 -- --------------------------------------------------------
 
@@ -1006,6 +984,86 @@ INSERT INTO `funding_plans` (`id`, `title`, `capital`, `fee`, `profit_target`, `
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `kyc_verifications`
+--
+
+CREATE TABLE `kyc_verifications` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `user_id` bigint(20) UNSIGNED NOT NULL,
+  `pan_number` varchar(255) DEFAULT NULL,
+  `aadhaar_number` varchar(255) DEFAULT NULL,
+  `first_name` varchar(255) DEFAULT NULL,
+  `middle_name` varchar(255) DEFAULT NULL,
+  `last_name` varchar(255) DEFAULT NULL,
+  `date_of_birth` date DEFAULT NULL,
+  `gender` enum('male','female','other') DEFAULT NULL,
+  `father_name` varchar(255) DEFAULT NULL,
+  `mother_name` varchar(255) DEFAULT NULL,
+  `mobile_number` varchar(255) DEFAULT NULL,
+  `email` varchar(255) DEFAULT NULL,
+  `alternate_contact` varchar(255) DEFAULT NULL,
+  `permanent_address` text DEFAULT NULL,
+  `permanent_city` varchar(255) DEFAULT NULL,
+  `permanent_state` varchar(255) DEFAULT NULL,
+  `permanent_pincode` varchar(255) DEFAULT NULL,
+  `permanent_country` varchar(255) NOT NULL DEFAULT 'India',
+  `correspondence_address` text DEFAULT NULL,
+  `correspondence_city` varchar(255) DEFAULT NULL,
+  `correspondence_state` varchar(255) DEFAULT NULL,
+  `correspondence_pincode` varchar(255) DEFAULT NULL,
+  `correspondence_country` varchar(255) NOT NULL DEFAULT 'India',
+  `same_as_permanent` tinyint(1) NOT NULL DEFAULT 1,
+  `bank_name` varchar(255) DEFAULT NULL,
+  `account_number` varchar(255) DEFAULT NULL,
+  `account_holder_name` varchar(255) DEFAULT NULL,
+  `ifsc_code` varchar(255) DEFAULT NULL,
+  `branch_name` varchar(255) DEFAULT NULL,
+  `bank_address` varchar(255) DEFAULT NULL,
+  `occupation_type` enum('salaried','business','professional','housewife','student','retired','other') DEFAULT NULL,
+  `company_name` varchar(255) DEFAULT NULL,
+  `designation` varchar(255) DEFAULT NULL,
+  `annual_income` decimal(12,2) DEFAULT NULL,
+  `income_source` enum('salary','business','investments','pension','other') DEFAULT NULL,
+  `pan_card_path` varchar(255) DEFAULT NULL,
+  `aadhaar_front_path` varchar(255) DEFAULT NULL,
+  `aadhaar_back_path` varchar(255) DEFAULT NULL,
+  `passport_photo_path` varchar(255) DEFAULT NULL,
+  `signature_path` varchar(255) DEFAULT NULL,
+  `cancelled_cheque_path` varchar(255) DEFAULT NULL,
+  `address_proof_path` varchar(255) DEFAULT NULL,
+  `income_proof_path` varchar(255) DEFAULT NULL,
+  `status` enum('pending','submitted','under_review','approved','rejected') NOT NULL DEFAULT 'pending',
+  `rejection_reason` text DEFAULT NULL,
+  `submitted_at` timestamp NULL DEFAULT NULL,
+  `verified_at` timestamp NULL DEFAULT NULL,
+  `verified_by` bigint(20) UNSIGNED DEFAULT NULL,
+  `demat_account_number` varchar(255) DEFAULT NULL,
+  `trading_account_number` varchar(255) DEFAULT NULL,
+  `dp_id` varchar(255) DEFAULT NULL,
+  `client_id` varchar(255) DEFAULT NULL,
+  `risk_appetite` enum('low','moderate','high') NOT NULL DEFAULT 'moderate',
+  `investment_experience` enum('beginner','intermediate','expert') NOT NULL DEFAULT 'beginner',
+  `investment_objectives` text DEFAULT NULL,
+  `politically_exposed` tinyint(1) NOT NULL DEFAULT 0,
+  `us_citizen` tinyint(1) NOT NULL DEFAULT 0,
+  `agree_terms` tinyint(1) NOT NULL DEFAULT 0,
+  `agree_declaration` tinyint(1) NOT NULL DEFAULT 0,
+  `submission_ip` varchar(45) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `kyc_verifications`
+--
+
+INSERT INTO `kyc_verifications` (`id`, `user_id`, `pan_number`, `aadhaar_number`, `first_name`, `middle_name`, `last_name`, `date_of_birth`, `gender`, `father_name`, `mother_name`, `mobile_number`, `email`, `alternate_contact`, `permanent_address`, `permanent_city`, `permanent_state`, `permanent_pincode`, `permanent_country`, `correspondence_address`, `correspondence_city`, `correspondence_state`, `correspondence_pincode`, `correspondence_country`, `same_as_permanent`, `bank_name`, `account_number`, `account_holder_name`, `ifsc_code`, `branch_name`, `bank_address`, `occupation_type`, `company_name`, `designation`, `annual_income`, `income_source`, `pan_card_path`, `aadhaar_front_path`, `aadhaar_back_path`, `passport_photo_path`, `signature_path`, `cancelled_cheque_path`, `address_proof_path`, `income_proof_path`, `status`, `rejection_reason`, `submitted_at`, `verified_at`, `verified_by`, `demat_account_number`, `trading_account_number`, `dp_id`, `client_id`, `risk_appetite`, `investment_experience`, `investment_objectives`, `politically_exposed`, `us_citizen`, `agree_terms`, `agree_declaration`, `submission_ip`, `created_at`, `updated_at`, `deleted_at`) VALUES
+(1, 5, 'BPXPA0623Q', '443929863390', 'Aasif', 'saddam', 'Ahmed', '2003-02-01', 'male', 'abid', 'rafiya', '9589642080', 'hrnatrajinfotech@gmail.com', '9876543210', '722 Azad Nagar Indore', 'Indore', 'Maharashtra', '452001', 'India', '722 Azad Nagar Indore', 'Indore', 'Maharashtra', '452001', 'India', 1, 'HDFC Bank', '98765432154', 'aasif ahmed', NULL, 'indore', '722 Azad Nagar Indore', 'salaried', 'arstech', 'Web Developer', 100000.00, 'salary', 'uploads/kyc/documents/5/1764579921-Wv37uEkMxQ.png', 'uploads/kyc/documents/5/1764579921-FlmCXYat9h.png', 'uploads/kyc/documents/5/1764579921-AgX6HW5K4V.png', 'uploads/kyc/documents/5/1764579921-VOb35Lnqz5.png', 'uploads/kyc/documents/5/1764579921-54UzkauTNy.png', 'uploads/kyc/documents/5/1764579921-EHqBPpeoIT.png', 'uploads/kyc/documents/5/1764579921-1MgeDshm9V.png', 'uploads/kyc/documents/5/1764579921-YNql9xGPzp.png', 'submitted', NULL, '2025-12-01 03:35:21', NULL, NULL, NULL, NULL, NULL, NULL, 'low', 'intermediate', 'sddsda', 1, 1, 1, 1, '127.0.0.1', '2025-12-01 03:34:53', '2025-12-01 03:35:21', NULL);
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `languages`
 --
 
@@ -1026,10 +1084,10 @@ CREATE TABLE `languages` (
 --
 
 INSERT INTO `languages` (`id`, `language`, `iso_code`, `flag`, `rtl`, `status`, `default_language`, `created_at`, `updated_at`) VALUES
-(2, 'Spanish', 'es', '<i class=\"flag-icon flag-icon-es\"></i>', 0, 1, 'off', '2024-04-03 08:08:17', '2025-11-27 09:15:03'),
-(3, 'Portuguese', 'pt', '<i class=\"flag-icon flag-icon-pt\"></i>', 0, 1, 'off', '2024-10-30 05:02:08', '2025-11-27 09:15:03'),
-(4, 'English', 'gb', '<i class=\"flag-icon flag-icon-gb\"></i>', 0, 1, 'on', '2024-10-30 05:02:08', '2025-11-27 09:15:03'),
-(10, 'Hindi', 'in', 'in', 0, 1, 'off', '2025-01-13 02:33:50', '2025-11-27 09:15:03');
+(2, 'Spanish', 'es', '<i class=\"flag-icon flag-icon-es\"></i>', 0, 1, 'off', '2024-04-03 08:08:17', '2025-12-01 00:13:36'),
+(3, 'Portuguese', 'pt', '<i class=\"flag-icon flag-icon-pt\"></i>', 0, 1, 'off', '2024-10-30 05:02:08', '2025-12-01 00:13:36'),
+(4, 'English', 'gb', '<i class=\"flag-icon flag-icon-gb\"></i>', 0, 1, 'on', '2024-10-30 05:02:08', '2025-12-01 00:13:36'),
+(10, 'Hindi', 'in', 'in', 0, 1, 'off', '2025-01-13 02:33:50', '2025-12-01 00:13:36');
 
 -- --------------------------------------------------------
 
@@ -1194,7 +1252,10 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (55, '2025_11_29_054809_update_plan_purchases_table_add_fields', 37),
 (56, '2025_11_29_062227_add_gateway_fields_to_plan_purchases_table', 38),
 (57, '2025_11_29_080938_add_mt4_credentials_to_plan_purchases_table', 39),
-(58, '2025_11_29_090721_create_celebrity_endorsements_table', 40);
+(58, '2025_11_29_090721_create_celebrity_endorsements_table', 40),
+(59, '2025_12_01_022449_create_system_trade_configs_table', 41),
+(60, '2025_12_01_034040_create_referral_settings_table', 42),
+(61, '2025_12_01_035805_create_notification_settings_table', 43);
 
 -- --------------------------------------------------------
 
@@ -1242,7 +1303,8 @@ INSERT INTO `notifications` (`id`, `uuid`, `sender_id`, `user_id`, `text`, `targ
 (2, 'ae2f9e83-575d-4df2-84b5-b34cb9fcf827', 9, 9, 'A new user has registered on the platform.', 'http://127.0.0.1:8000/admin/users', 'no', 1, '2025-11-24 06:04:54', '2025-11-24 06:04:54'),
 (3, 'c85cfee8-e80b-4a53-a980-11a6d1e77c11', 10, 10, 'A new user has registered on the platform.', 'http://127.0.0.1:8000/admin/users', 'no', 1, '2025-11-24 06:07:25', '2025-11-24 06:07:25'),
 (4, '2fdb001a-9517-4c3b-a3b7-1d117e39bf22', 11, 11, 'A new user has registered on the platform.', 'http://127.0.0.1:8000/admin/users', 'no', 1, '2025-11-24 06:21:06', '2025-11-24 06:21:06'),
-(5, '583dc31f-4ba2-40a9-8302-bf59ac6df265', 13, 13, 'A new user has registered on the platform.', 'http://127.0.0.1:8000/admin/users', 'no', 1, '2025-11-24 06:38:35', '2025-11-24 06:38:35');
+(5, '583dc31f-4ba2-40a9-8302-bf59ac6df265', 13, 13, 'A new user has registered on the platform.', 'http://127.0.0.1:8000/admin/users', 'no', 1, '2025-11-24 06:38:35', '2025-11-24 06:38:35'),
+(6, 'bb77fc74-4632-46dc-a57e-6a3cc10811ad', 5, 5, 'Un nuevo ticket ha sido creado con el siguiente asunto', 'http://127.0.0.1:8000/admin/support-ticket/index', 'no', 1, '2025-12-01 00:51:54', '2025-12-01 00:51:54');
 
 -- --------------------------------------------------------
 
@@ -1263,6 +1325,35 @@ CREATE TABLE `notification_logs` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `notification_settings`
+--
+
+CREATE TABLE `notification_settings` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `fcm_api_key` varchar(255) DEFAULT NULL,
+  `fcm_auth_domain` varchar(255) DEFAULT NULL,
+  `fcm_project_id` varchar(255) DEFAULT NULL,
+  `fcm_storage_bucket` varchar(255) DEFAULT NULL,
+  `fcm_messaging_sender_id` varchar(255) DEFAULT NULL,
+  `fcm_app_id` varchar(255) DEFAULT NULL,
+  `fcm_measurement_id` varchar(255) DEFAULT NULL,
+  `sms_provider` enum('nexmo','twilio','msg91','textlocal') NOT NULL DEFAULT 'nexmo',
+  `nexmo_api_key` varchar(255) DEFAULT NULL,
+  `nexmo_api_secret` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `notification_settings`
+--
+
+INSERT INTO `notification_settings` (`id`, `fcm_api_key`, `fcm_auth_domain`, `fcm_project_id`, `fcm_storage_bucket`, `fcm_messaging_sender_id`, `fcm_app_id`, `fcm_measurement_id`, `sms_provider`, `nexmo_api_key`, `nexmo_api_secret`, `created_at`, `updated_at`) VALUES
+(1, 'AIzaSyBsyabUP_yV7PTbsWtV6Be-eWVra9w_QDPg', 'fstandard-project.firebaseapp.com', 'fstandard-project', 'fstandard-project.appspot.com', '678649964403', '1:678649964403:web:94d6f4bcaf22ad2550706', 'G-X0Y03EL75D', 'twilio', 'cfzsfsdfdsfasdasd', NULL, '2025-11-30 22:31:46', '2025-11-30 22:35:22');
 
 -- --------------------------------------------------------
 
@@ -1295,7 +1386,7 @@ CREATE TABLE `notification_templates` (
 --
 
 INSERT INTO `notification_templates` (`id`, `act`, `name`, `subject`, `push_title`, `email_body`, `sms_body`, `push_body`, `shortcodes`, `email_status`, `email_sent_from_name`, `email_sent_from_address`, `sms_status`, `sms_sent_from`, `push_status`, `created_at`, `updated_at`) VALUES
-(1, 'BAL_ADD', 'Balance - Added', 'Your Account has been Credited', NULL, '<div style=\"font-family: Montserrat, sans-serif;\">{{amount}} INR has been added to your account.</div><div style=\"font-family: Montserrat, sans-serif;\"><br></div><div style=\"font-family: Montserrat, sans-serif;\">Transaction Number: {{trx}}</div><div style=\"font-family: Montserrat, sans-serif;\"><br></div><div style=\"font-family: Montserrat, sans-serif;\">Your Current Balance: <b>{{post_balance}} INR</b></div><div style=\"font-family: Montserrat, sans-serif;\"><br></div><div>Admin Note: {{remark}}</div>', '{{amount}} INR credited to your account. Current Balance {{post_balance}} INR. TRX: #{{trx}}', NULL, '{\"trx\":\"Transaction number\",\"amount\":\"Amount added\",\"remark\":\"Admin remark\",\"post_balance\":\"Balance after transaction\"}', 1, NULL, NULL, 1, NULL, 0, '2021-11-03 06:30:00', '2025-11-28 04:30:00'),
+(1, 'BAL_ADD', 'Balance - Added', 'Your Account has been Credited', NULL, '<div style=\"font-family: Montserrat, sans-serif;\">{{amount}} INR has been credited to your account.</div><div style=\"font-family: Montserrat, sans-serif;\"><br></div><div style=\"font-family: Montserrat, sans-serif;\">Transaction Number: {{trx}}</div><div style=\"font-family: Montserrat, sans-serif;\"><br></div><div style=\"font-family: Montserrat, sans-serif;\">Your Current Balance: <b>{{post_balance}} INR</b></div><div style=\"font-family: Montserrat, sans-serif;\"><br></div><div>Admin Note: {{remark}}</div>', '{{amount}} INR credited to your account. Current Balance {{post_balance}} INR. TRX: #{{trx}}', NULL, '{\"trx\":\"Transaction number\",\"amount\":\"Amount added\",\"remark\":\"Admin remark\",\"post_balance\":\"Balance after transaction\"}', 1, NULL, NULL, 1, NULL, 0, '2021-11-03 06:30:00', '2025-12-01 00:02:26'),
 (2, 'BAL_SUB', 'Balance - Subtracted', 'Your Account has been Debited', NULL, '<div style=\"font-family: Montserrat, sans-serif;\">{{amount}} INR has been deducted from your account.</div><div style=\"font-family: Montserrat, sans-serif;\"><br></div><div style=\"font-family: Montserrat, sans-serif;\">Transaction Number: {{trx}}</div><div style=\"font-family: Montserrat, sans-serif;\"><br></div><div style=\"font-family: Montserrat, sans-serif;\">Your Current Balance: <b>{{post_balance}} INR</b></div><div>Admin Note: {{remark}}</div>', '{{amount}} INR debited from your account. Current Balance {{post_balance}} INR. TRX: #{{trx}}', NULL, '{\"trx\":\"Transaction number\",\"amount\":\"Amount deducted\",\"remark\":\"Admin remark\",\"post_balance\":\"Balance after transaction\"}', 1, NULL, NULL, 1, NULL, 0, '2021-11-03 06:30:00', '2025-11-28 04:30:00'),
 (3, 'DEPOSIT_COMPLETE', 'Deposit - Successful', 'Deposit Completed Successfully', NULL, '<div>Your deposit of <b>{{amount}} INR</b> has been completed successfully.<br><br>Transaction ID: {{trx}}<br><br>Your current balance is <b>{{post_balance}} INR</b></div>', '{{amount}} INR deposited successfully. TRX: {{trx}}', NULL, '{\"trx\":\"Transaction ID\",\"amount\":\"Deposited amount\",\"post_balance\":\"Balance after deposit\"}', 1, NULL, NULL, 1, NULL, 0, '2021-11-03 06:30:00', '2025-11-28 04:30:00'),
 (4, 'DEPOSIT_APPROVE', 'Deposit - Approved', 'Your Deposit is Approved', NULL, '<div>Your deposit of <b>{{amount}} INR</b> has been approved.<br><br>Transaction ID: {{trx}}<br><br>Your current balance is <b>{{post_balance}} INR</b></div>', 'Your {{amount}} INR deposit approved. TRX: {{trx}}', NULL, '{\"trx\":\"Transaction ID\",\"amount\":\"Deposited amount\",\"post_balance\":\"Balance after deposit\"}', 1, NULL, NULL, 1, NULL, 0, '2021-11-03 06:30:00', '2025-11-28 04:30:00'),
@@ -1594,7 +1685,7 @@ CREATE TABLE `plan_purchases` (
 --
 
 INSERT INTO `plan_purchases` (`id`, `user_id`, `funding_plan_id`, `amount`, `gateway`, `transaction_id`, `gateway_order_id`, `gateway_payment_id`, `gateway_response`, `gateway_signature`, `payment_response`, `status`, `notes`, `approved_by`, `approved_at`, `expires_at`, `mt4_login`, `mt4_password`, `mt4_server`, `created_at`, `updated_at`) VALUES
-(1, 5, 2, 55000.00, 'razorpay', 'TXN_QTOMV7TOKW1Y', 'order_dummy_1', 'pay_dummy_1', '\"{\\\"simulated\\\":true,\\\"message\\\":\\\"Test payment success\\\"}\"', NULL, NULL, 'approved', 'approve got money', 1, '2025-11-29 03:26:32', NULL, '8087314', 'vcyi2mLy5s', 'YourBroker-Live', '2025-11-29 01:46:23', '2025-11-29 03:26:32');
+(1, 5, 2, 55000.00, 'razorpay', 'TXN_XHYIP4KITJB6', 'order_dummy_1', 'pay_dummy_1', '\"{\\\"simulated\\\":true,\\\"message\\\":\\\"Test payment success\\\"}\"', NULL, NULL, 'approved', 'approvd got the money', 1, '2025-11-29 20:19:39', NULL, '8779831', 'xq3bl0OJjQ', 'YourBroker-Live', '2025-11-29 20:18:11', '2025-11-29 20:19:39');
 
 -- --------------------------------------------------------
 
@@ -1632,6 +1723,34 @@ CREATE TABLE `referrals` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `referral_settings`
+--
+
+CREATE TABLE `referral_settings` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `referral_enabled` tinyint(1) NOT NULL DEFAULT 1,
+  `referral_bonus_amount` decimal(12,2) NOT NULL DEFAULT 10.00,
+  `bonus_currency` varchar(255) NOT NULL DEFAULT 'USD',
+  `bonus_type` enum('fixed','percentage') NOT NULL DEFAULT 'fixed',
+  `referral_percentage` decimal(5,2) NOT NULL DEFAULT 10.00,
+  `minimum_deposit_for_bonus` int(11) NOT NULL DEFAULT 100,
+  `bonus_expiry_days` int(11) NOT NULL DEFAULT 30,
+  `max_referrals_per_user` int(11) NOT NULL DEFAULT 0,
+  `terms_conditions` text DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `referral_settings`
+--
+
+INSERT INTO `referral_settings` (`id`, `referral_enabled`, `referral_bonus_amount`, `bonus_currency`, `bonus_type`, `referral_percentage`, `minimum_deposit_for_bonus`, `bonus_expiry_days`, `max_referrals_per_user`, `terms_conditions`, `created_at`, `updated_at`) VALUES
+(1, 1, 500.00, 'INR', 'fixed', 10.00, 1000, 30, 0, 'Get ₹500 bonus for every friend you refer who deposits minimum ₹1000. Bonus expires in 30 days. Only for Indian users.', '2025-11-30 22:15:06', '2025-11-30 22:15:06');
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `settings`
 --
 
@@ -1654,7 +1773,7 @@ INSERT INTO `settings` (`id`, `option_key`, `option_value`, `created_at`, `updat
 (4, 'app_location', 'India', '2022-12-04 17:05:33', '2025-11-22 02:37:07'),
 (5, 'app_date_format', 'd F, Y', '2022-12-04 17:05:33', '2024-10-27 00:11:55'),
 (6, 'app_timezone', 'Asia/Dhaka', '2022-12-04 17:05:33', '2022-12-04 17:05:33'),
-(7, 'allow_preloader', NULL, '2022-12-04 17:05:33', '2025-11-27 09:15:03'),
+(7, 'allow_preloader', '0', '2022-12-04 17:05:33', '2025-12-01 00:13:36'),
 (8, 'app_preloader', 'uploads/setting/1763799555-qMliPDLEOW.gif', '2022-12-04 17:05:33', '2025-11-22 02:49:15'),
 (9, 'app_logo', 'uploads/setting/1764254703-2Z2ORxSc8o.png', '2022-12-04 17:05:33', '2025-11-27 09:15:03'),
 (10, 'app_fav_icon', 'uploads/setting/1764254703-FXJye21SDH.png', '2022-12-04 17:05:33', '2025-11-27 09:15:03'),
@@ -1815,7 +1934,7 @@ INSERT INTO `settings` (`id`, `option_key`, `option_value`, `created_at`, `updat
 (165, 'sell_commission', '10', '2022-12-04 17:05:33', '2024-10-27 00:11:55'),
 (166, 'app_version', '21', '2022-12-04 17:05:33', '2022-12-04 17:05:33'),
 (167, 'current_version', '6.1', '2022-12-04 17:05:33', '2022-12-04 17:05:33'),
-(262, 'currency_id', '11', '2024-03-07 01:46:36', '2025-11-22 02:37:56'),
+(262, 'currency_id', '3', '2024-03-07 01:46:36', '2025-12-01 00:13:36'),
 (263, 'FORCE_HTTPS', 'false', '2024-03-07 01:46:36', '2024-03-07 01:46:36'),
 (264, 'language_id', '4', '2024-03-07 01:46:36', '2025-01-27 00:14:39'),
 (265, 'TIMEZONE', 'UTC', '2024-03-07 01:46:36', '2025-01-13 01:02:06'),
@@ -2034,6 +2153,41 @@ INSERT INTO `support_ticket_questions` (`id`, `question`, `answer`, `created_at`
 (3, 'Are there any time limits for completing the challenge?', 'No, there are no time limits for completing either phase of our evaluation process. You can take as long as you need to reach your profit targets, allowing you to trade at your own pace without pressure.', '2022-12-04 17:05:33', '2025-11-24 23:03:09'),
 (17, 'tesst', 'dfsdfdsf', '2025-11-24 22:33:05', '2025-11-24 23:03:09'),
 (18, 'dfdsfdsfdsf', 'dsfsfdsfdsffsdf', '2025-11-24 23:03:09', '2025-11-24 23:03:09');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `system_trade_configs`
+--
+
+CREATE TABLE `system_trade_configs` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `max_buy_order` int(10) UNSIGNED NOT NULL DEFAULT 5,
+  `min_decrease` decimal(5,2) NOT NULL DEFAULT 1.00,
+  `max_decrease` decimal(5,2) NOT NULL DEFAULT 2.00,
+  `buy_order_amount_range` decimal(5,2) NOT NULL DEFAULT 10.00,
+  `buy_order_matching_chance` tinyint(3) UNSIGNED NOT NULL DEFAULT 0,
+  `buy_order_matching_price_increase_up_to` decimal(5,2) NOT NULL DEFAULT 10.00,
+  `max_sell_order` int(10) UNSIGNED NOT NULL DEFAULT 5,
+  `min_increase` decimal(5,2) NOT NULL DEFAULT 1.00,
+  `max_increase` decimal(5,2) NOT NULL DEFAULT 2.00,
+  `sell_order_amount_range` decimal(5,2) NOT NULL DEFAULT 10.00,
+  `sell_order_matching_chance` tinyint(3) UNSIGNED NOT NULL DEFAULT 0,
+  `sell_order_matching_price_decrease_up_to` decimal(5,2) NOT NULL DEFAULT 10.00,
+  `buy_matching_with_system_trade` enum('yes','no') NOT NULL DEFAULT 'no',
+  `sell_matching_with_system_trade` enum('yes','no') NOT NULL DEFAULT 'no',
+  `buy_order_remains_minutes` int(10) UNSIGNED NOT NULL DEFAULT 5,
+  `sell_order_remains_minutes` int(10) UNSIGNED NOT NULL DEFAULT 5,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `system_trade_configs`
+--
+
+INSERT INTO `system_trade_configs` (`id`, `max_buy_order`, `min_decrease`, `max_decrease`, `buy_order_amount_range`, `buy_order_matching_chance`, `buy_order_matching_price_increase_up_to`, `max_sell_order`, `min_increase`, `max_increase`, `sell_order_amount_range`, `sell_order_matching_chance`, `sell_order_matching_price_decrease_up_to`, `buy_matching_with_system_trade`, `sell_matching_with_system_trade`, `buy_order_remains_minutes`, `sell_order_remains_minutes`, `created_at`, `updated_at`) VALUES
+(1, 5, 1.00, 2.00, 10.00, 0, 10.00, 7, 1.00, 2.00, 10.00, 0, 10.00, 'no', 'no', 5, 5, '2025-12-01 02:57:57', '2025-11-30 21:29:44');
 
 -- --------------------------------------------------------
 
@@ -2345,9 +2499,9 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `uid`, `fcm_token`, `rating`, `username`, `is_active`, `profile_photo`, `mode`, `account_type`, `balance`, `is_subscribed`, `refer`, `level`, `is_online`, `last_seen`, `birth_date`, `role`, `permissions`, `name`, `email`, `google_id`, `email_verified_at`, `password`, `custom_password`, `whatsapp_number`, `about`, `city`, `facebook`, `instagram`, `linkedin`, `twitter`, `address`, `status`, `remember_token`, `ip_address`, `is_system`, `country`, `created_by`, `deleted_at`, `language`, `is_super_admin`, `created_at`, `updated_at`, `is_affiliate`, `referral_code`, `affiliate_earnings`, `commission_rate`) VALUES
-(1, NULL, NULL, NULL, NULL, 1, '', 'dark', 'admin', NULL, 0, NULL, NULL, 1, '2025-11-29 02:44:51', NULL, '1', NULL, 'SUPER ADMINISTRADOR', 'admin@fstandard.lat', NULL, '2023-03-23 07:45:02', '$2y$10$sgLXLiwlfSqKV7pPTSgco.SLKcpQwOg.L4VrnH.DBVirfour.CGLa', '987654321', '8878326802', NULL, 'bolivia', NULL, NULL, NULL, NULL, 'sdfafa', 1, NULL, '127.0.0.1', 1, '1', NULL, NULL, 'es', 1, '2023-03-23 07:45:02', '2025-11-29 02:44:51', 0, NULL, 0.00, 18.00),
+(1, NULL, NULL, NULL, NULL, 1, '', 'dark', 'admin', NULL, 0, NULL, NULL, 1, '2025-12-01 03:45:25', NULL, '1', NULL, 'SUPER ADMINISTRADOR', 'admin@fstandard.lat', NULL, '2023-03-23 07:45:02', '$2y$10$sgLXLiwlfSqKV7pPTSgco.SLKcpQwOg.L4VrnH.DBVirfour.CGLa', '987654321', '8878326802', NULL, 'bolivia', NULL, NULL, NULL, NULL, 'sdfafa', 1, NULL, '127.0.0.1', 1, '1', NULL, NULL, 'es', 1, '2023-03-23 07:45:02', '2025-12-01 00:56:40', 0, NULL, 0.00, 18.00),
 (4, NULL, NULL, NULL, NULL, 1, NULL, 'dark', 'user', NULL, NULL, NULL, '0', 1, '2025-10-18 18:22:47', NULL, 'Trabajador', NULL, 'Juan Perez', 'arstech2a@gmail.com', NULL, NULL, '$2y$10$DG1ruRDoU1bRb9JA.Y4JZ.aSnnW.9mmA8NRNbC6PrM2Ua0/Rv4z5G', '987654321', '591591594332', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, NULL, NULL, 0, NULL, NULL, NULL, '\'en\'', 0, '2025-10-17 01:19:30', '2025-10-18 18:22:47', 0, NULL, 0.00, 18.00),
-(5, NULL, NULL, NULL, NULL, 1, NULL, 'light', 'user', NULL, NULL, NULL, '0', 0, '2025-11-28 22:44:08', NULL, 'Trabajador', NULL, 'Aasif Ahmed', 'hrnatrajinfotech@gmail.com', NULL, NULL, '$2y$10$4KiwKo1otj1W6hm2aqVSju7bonYEIaa38SAMa6YHaCH0eWUzEMoK6', NULL, '919876543210', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, NULL, '127.0.0.1', 0, NULL, NULL, NULL, '\'en\'', 0, '2025-11-24 05:09:31', '2025-11-29 02:44:08', 0, NULL, 0.00, 18.00),
+(5, NULL, NULL, NULL, NULL, 1, NULL, 'light', 'user', NULL, NULL, NULL, '0', 1, '2025-12-01 00:15:54', NULL, 'Trabajador', NULL, 'Aasif Ahmed', 'hrnatrajinfotech@gmail.com', NULL, NULL, '$2y$10$4KiwKo1otj1W6hm2aqVSju7bonYEIaa38SAMa6YHaCH0eWUzEMoK6', NULL, '919876543210', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, NULL, '127.0.0.1', 0, NULL, NULL, NULL, '\'en\'', 0, '2025-11-24 05:09:31', '2025-12-01 00:15:54', 0, '9XTD4BQM7P', 0.00, 18.00),
 (13, NULL, NULL, NULL, NULL, 1, NULL, 'light', 'user', NULL, NULL, NULL, '0', 0, '2025-11-24 03:31:57', NULL, 'Trabajador', NULL, 'Tarija', 'aasifdev5@gmail.com', NULL, '2025-11-24 06:38:54', '$2y$10$.wBqoNcObZUM8schU9Mx5eZvNAx61U0Pa1/RmSQTSHajqNAJcSG7C', NULL, '919876543210', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, NULL, '127.0.0.1', 0, NULL, NULL, NULL, '\'en\'', 0, '2025-11-24 06:38:32', '2025-11-24 07:31:57', 0, NULL, 0.00, 18.00);
 
 -- --------------------------------------------------------
@@ -2568,17 +2722,6 @@ ALTER TABLE `currencies`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indexes for table `deposits`
---
-ALTER TABLE `deposits`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uniq_trx` (`trx`),
-  ADD UNIQUE KEY `uniq_utr` (`utr`),
-  ADD KEY `idx_user` (`user_id`),
-  ADD KEY `idx_status` (`status`),
-  ADD KEY `idx_created` (`created_at`);
-
---
 -- Indexes for table `failed_jobs`
 --
 ALTER TABLE `failed_jobs`
@@ -2632,6 +2775,12 @@ ALTER TABLE `funding_plans`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indexes for table `kyc_verifications`
+--
+ALTER TABLE `kyc_verifications`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- Indexes for table `languages`
 --
 ALTER TABLE `languages`
@@ -2677,6 +2826,12 @@ ALTER TABLE `news`
 ALTER TABLE `notifications`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `notifications_uuid_unique` (`uuid`);
+
+--
+-- Indexes for table `notification_settings`
+--
+ALTER TABLE `notification_settings`
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `orders`
@@ -2735,6 +2890,12 @@ ALTER TABLE `portfolio_items`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indexes for table `referral_settings`
+--
+ALTER TABLE `referral_settings`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- Indexes for table `settings`
 --
 ALTER TABLE `settings`
@@ -2763,6 +2924,12 @@ ALTER TABLE `subcategories`
 -- Indexes for table `support_ticket_questions`
 --
 ALTER TABLE `support_ticket_questions`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `system_trade_configs`
+--
+ALTER TABLE `system_trade_configs`
   ADD PRIMARY KEY (`id`);
 
 --
@@ -2936,7 +3103,7 @@ ALTER TABLE `categories`
 -- AUTO_INCREMENT for table `celebrity_endorsements`
 --
 ALTER TABLE `celebrity_endorsements`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `chats`
@@ -2999,12 +3166,6 @@ ALTER TABLE `currencies`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 
 --
--- AUTO_INCREMENT for table `deposits`
---
-ALTER TABLE `deposits`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
 -- AUTO_INCREMENT for table `failed_jobs`
 --
 ALTER TABLE `failed_jobs`
@@ -3050,7 +3211,13 @@ ALTER TABLE `forum_post_comments`
 -- AUTO_INCREMENT for table `funding_plans`
 --
 ALTER TABLE `funding_plans`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- AUTO_INCREMENT for table `kyc_verifications`
+--
+ALTER TABLE `kyc_verifications`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `languages`
@@ -3080,7 +3247,7 @@ ALTER TABLE `metas`
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=59;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=62;
 
 --
 -- AUTO_INCREMENT for table `news`
@@ -3092,7 +3259,13 @@ ALTER TABLE `news`
 -- AUTO_INCREMENT for table `notifications`
 --
 ALTER TABLE `notifications`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+
+--
+-- AUTO_INCREMENT for table `notification_settings`
+--
+ALTER TABLE `notification_settings`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `orders`
@@ -3143,6 +3316,12 @@ ALTER TABLE `portfolio_items`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
+-- AUTO_INCREMENT for table `referral_settings`
+--
+ALTER TABLE `referral_settings`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
 -- AUTO_INCREMENT for table `settings`
 --
 ALTER TABLE `settings`
@@ -3173,6 +3352,12 @@ ALTER TABLE `support_ticket_questions`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
 
 --
+-- AUTO_INCREMENT for table `system_trade_configs`
+--
+ALTER TABLE `system_trade_configs`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
 -- AUTO_INCREMENT for table `tags`
 --
 ALTER TABLE `tags`
@@ -3194,7 +3379,7 @@ ALTER TABLE `testimonials`
 -- AUTO_INCREMENT for table `tickets`
 --
 ALTER TABLE `tickets`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT for table `ticket_departments`
@@ -3206,7 +3391,7 @@ ALTER TABLE `ticket_departments`
 -- AUTO_INCREMENT for table `ticket_messages`
 --
 ALTER TABLE `ticket_messages`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `ticket_priorities`

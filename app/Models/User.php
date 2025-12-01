@@ -87,6 +87,10 @@ class User extends Authenticatable
 
         return $userinfo;
     }
+    public function kycVerification()
+    {
+        return $this->hasOne(KycVerification::class);
+    }
     public function comments()
     {
         return $this->hasMany(Comment::class);

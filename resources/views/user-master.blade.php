@@ -122,7 +122,7 @@
             <i class="fa-solid fa-history"></i> Trade History
         </div>
         <div class="menu-item {{ request()->is('deposit-history') ? 'active' : '' }}" onclick="window.location='{{ route('deposit.history') }}'">
-            <i class="fa-solid fa-wallet"></i> Deposit History
+            <i class="fa-solid fa-wallet"></i> Plan Purchases
         </div>
         <div class="menu-item {{ request()->is('withdraw-history') ? 'active' : '' }}" onclick="window.location='{{ route('withdraw.history') }}'">
             <i class="fa-solid fa-money-bill-transfer"></i> Withdraw History
@@ -139,7 +139,7 @@
         <div class="menu-item {{ request()->is('transactions') ? 'active' : '' }}" onclick="window.location='{{ route('transactions') }}'">
             <i class="fa-solid fa-exchange-alt"></i> Transactions
         </div>
-        <div class="menu-item {{ request()->is('support') ? 'active' : '' }}" onclick="window.location='{{ route('support') }}'">
+        <div class="menu-item {{ request()->is('support') ? 'active' : '' }}" onclick="window.location='{{ route('tickets.create') }}'">
             <i class="fa-solid fa-headset"></i> Support
         </div>
 

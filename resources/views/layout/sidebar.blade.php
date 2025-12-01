@@ -58,21 +58,16 @@
                                         <span>{{ __('Mail Configuration') }}</span>
                                     </a>
                                 </li>
+
                                 <li>
-                                    <a class="{{ Request::is('settings/mail-configuration') ? 'active' : '' }}"
-                                        href="{{ route('settings.mail-configuration') }}">
-                                        <span>{{ __('SMS Configuration') }}</span>
+                                    <a class="{{ Request::is('admin/notification-settings') ? 'active' : '' }}"
+                                        href="{{ route('admin.notification.settings') }}">
+                                        <span>{{ __('Notification Configuration') }}</span>
                                     </a>
                                 </li>
                                 <li>
-                                    <a class="{{ Request::is('settings/mail-configuration') ? 'active' : '' }}"
-                                        href="{{ route('settings.mail-configuration') }}">
-                                        <span>{{ __('Push Notification Configuration') }}</span>
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="{{ Request::is('settings/mail-configuration') ? 'active' : '' }}"
-                                        href="{{ route('settings.mail-configuration') }}">
+                                    <a class="{{ Request::is('admin/notification-templates*') ? 'active' : '' }}"
+                                        href="{{ route('notification.template.index') }}">
                                         <span>{{ __('Notification Templates') }}</span>
                                     </a>
                                 </li>
@@ -132,6 +127,13 @@
                                 <span>Client Manage</span>
                             </a>
                         </li>
+                        <li class="sidebar-list {{ Request::is('kyc*') ? 'active' : '' }}">
+                            <a class="sidebar-link sidebar-title link-nav" href="{{ route('kyc.index') }}">
+                                <i class="fa fa-id-card text-light"></i>&nbsp;&nbsp;&nbsp;
+                                <span>KYC Manage</span>
+                            </a>
+                        </li>
+
                         <li class="sidebar-list {{ Request::segment(2) == 'funding-plans' ? 'active' : '' }}">
                             <i class="fa fa-thumb-tack"></i>
                             <a class="sidebar-link sidebar-title link-nav" href="{{ route('funding-plans.index') }}">
@@ -141,15 +143,15 @@
                         </li>
                         <li class="sidebar-list {{ Request::is('admin/plan-purchases*') ? 'active' : '' }}">
                             <i class="fa fa-thumb-tack"></i>
-                            <a class="sidebar-link sidebar-title" href="{{ route('plan-purchases.index') }}">
-                                <i class="fa fa-credit-card "></i>&nbsp;&nbsp;
+                            <a class="sidebar-link sidebar-title link-nav" href="{{ route('plan-purchases.index') }}">
+                                <i class="fa fa-credit-card text-light"></i>&nbsp;&nbsp;
                                 <span>Plan Purchases</span>
                             </a>
                         </li>
                         <!-- Icons Around the World (Celebrity Endorsements) -->
                         <li class="sidebar-list {{ Request::is('admin/celebrity-endorsements*') ? 'active' : '' }}">
                             <i class="fa fa-thumb-tack"></i>
-                            <a class="sidebar-link sidebar-title"
+                            <a class="sidebar-link sidebar-title link-nav"
                                 href="{{ route('celebrity-endorsements.index') }}">
                                 <i class="fas fa-star text-warning"></i>&nbsp;&nbsp;
                                 <span>Starz</span>
@@ -270,9 +272,9 @@
                                         href="{{ route('blog.create') }}">{{ __('Add Blog') }}</a></li>
                                 <li><a class="{{ Request::is('blog/index') ? 'active' : '' }}"
                                         href="{{ route('blog.index') }}">{{ __('Blog List') }}</a></li>
-                                <li><a class="{{ Request::is('blog/blog-comment-list') ? 'active' : '' }}"
+                                {{-- <li><a class="{{ Request::is('blog/blog-comment-list') ? 'active' : '' }}"
                                         href="{{ route('blog.blog-comment-list') }}">{{ __('Lista de Comentarios') }}</a>
-                                </li>
+                                </li> --}}
                                 <li><a class="{{ Request::is('blog/blog-category/index') ? 'active' : '' }}"
                                         href="{{ route('blog.blog-category.index') }}">{{ __('Blog Categeory') }}</a>
                                 </li>
@@ -300,27 +302,25 @@
                                 <span>{{ __('Mail Template') }}</span>
                             </a>
                         </li> --}}
-                        <li class="sidebar-list {{ Request::is('admin/mail-templates') ? 'active' : '' }}"><i
-                                class="fa fa-thumb-tack"></i>
-                            <a class="sidebar-link sidebar-title link-nav" href="{{ url('admin/mail-templates') }}">
-                                <i data-feather="lock"></i>
-                                <span>{{ __('Trade Rules') }}</span>
+                        <li
+                            class="sidebar-list {{ Request::is('admin/system-trade-config') || Request::is('admin/system-trade-config/*') ? 'active' : '' }}">
+                            <i class="fa fa-thumb-tack"></i>
+                            <a class="sidebar-link sidebar-title link-nav"
+                                href="{{ route('system-trade-config.edit') }}">
+                                <i data-feather="activity"></i>
+                                <!-- or "dollar-sign", "shuffle", "settings" – choose what fits your theme -->
+                                <span>{{ __('Trade Config') }}</span>
                             </a>
                         </li>
-                        <li class="sidebar-list {{ Request::is('admin/mail-templates') ? 'active' : '' }}"><i
-                                class="fa fa-thumb-tack"></i>
-                            <a class="sidebar-link sidebar-title link-nav" href="{{ url('admin/mail-templates') }}">
-                                <i data-feather="gift"></i>
+                        <li class="sidebar-list {{ Request::is('admin/referral-settings') ? 'active' : '' }}">
+                            <i class="fa fa-thumb-tack"></i>
+                            <a class="sidebar-link sidebar-title link-nav"
+                                href="{{ url('admin/referral-settings') }}">
+                                <i data-feather="users"></i>
                                 <span>{{ __('Manage Referral') }}</span>
                             </a>
                         </li>
-                        <li class="sidebar-list {{ Request::is('admin/mail-templates') ? 'active' : '' }}"><i
-                                class="fa fa-thumb-tack"></i>
-                            <a class="sidebar-link sidebar-title link-nav" href="{{ url('admin/mail-templates') }}">
-                                <i data-feather="trending-down"></i>
-                                <span>{{ __('Deposits') }}</span>
-                            </a>
-                        </li>
+
                         <li class="sidebar-list {{ Request::is('admin/mail-templates') ? 'active' : '' }}"><i
                                 class="fa fa-thumb-tack"></i>
                             <a class="sidebar-link sidebar-title link-nav" href="{{ url('admin/mail-templates') }}">
