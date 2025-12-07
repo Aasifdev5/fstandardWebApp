@@ -58,6 +58,7 @@ use App\Http\Controllers\Admin\TestimonialController;
 
 use App\Http\Controllers\AffiliateController;
 use App\Http\Controllers\KycVerificationController;
+use App\Http\Controllers\OrderController;
 use App\Http\Controllers\User\PlanPurchaseController;
 use App\Http\Controllers\UserController;
 use App\Http\Middleware\SetLocale;
@@ -69,6 +70,7 @@ use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Session;
+
 
 
 
@@ -180,6 +182,8 @@ Route::group(['middleware' => ['prevent-back-history', SetLocale::class]], funct
     Route::get('/overview', [UserController::class, 'overview'])->name('overview')->middleware('isLoggedIn');
 
     Route::get('/orders', [UserController::class, 'orders'])->name('orders')->middleware('isLoggedIn');
+    Route::post('/orders/sync', [OrderController::class, 'sync'])->name('orders.sync');
+    Route::delete('/orders/{order}', [OrderController::class, 'destroy'])->name('orders.cancel');
     Route::get('/trade-history', [UserController::class, 'tradeHistory'])->name('trade.history')->middleware('isLoggedIn');
     Route::get('/deposit-history', [UserController::class, 'depositHistory'])->name('deposit.history')->middleware('isLoggedIn');
 

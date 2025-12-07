@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Dec 01, 2025 at 12:25 PM
+-- Generation Time: Dec 07, 2025 at 06:19 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -253,6 +253,44 @@ INSERT INTO `banners` (`id`, `title1`, `title2`, `title3`, `button`, `link`, `im
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `behavioural_metrics`
+--
+
+CREATE TABLE `behavioural_metrics` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `user_id` bigint(20) UNSIGNED NOT NULL,
+  `for_date` date NOT NULL,
+  `scores` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`scores`)),
+  `stability_index` decimal(8,4) DEFAULT NULL,
+  `discipline_score` decimal(8,4) DEFAULT NULL,
+  `emotional_stability` decimal(8,4) DEFAULT NULL,
+  `impulse_score` decimal(8,4) DEFAULT NULL,
+  `meta` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`meta`)),
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `blockchain_hash_records`
+--
+
+CREATE TABLE `blockchain_hash_records` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `user_id` bigint(20) UNSIGNED NOT NULL,
+  `for_date` date NOT NULL,
+  `chain` varchar(255) DEFAULT NULL,
+  `tx_hash` varchar(255) DEFAULT NULL,
+  `behaviour_metrics_hash` text NOT NULL,
+  `meta` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`meta`)),
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `blogs`
 --
 
@@ -443,6 +481,58 @@ CREATE TABLE `celebrity_endorsements` (
 INSERT INTO `celebrity_endorsements` (`id`, `name`, `role`, `quote`, `image`, `youtube_id`, `is_active`, `sort_order`, `created_at`, `updated_at`) VALUES
 (1, 'Barra Cuadrada de Aluminio', 'footer', 'sadsadsad', 'uploads/celebrities/1764408209-xkLKhJwUDA.png', 'qs8ySjeT2wA', 1, 0, '2025-11-29 03:48:06', '2025-11-29 03:53:29'),
 (2, 'chrish', 'crickert', 'sdfxcvxzczcdsdf', 'uploads/celebrities/1764467574-JFrmNk3k3y.png', 'zpfZby3NOkU', 1, 0, '2025-11-29 20:22:54', '2025-11-29 20:22:54');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `challenges`
+--
+
+CREATE TABLE `challenges` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `plan_id` int(11) NOT NULL,
+  `capacity_value` decimal(16,2) NOT NULL,
+  `start_balance` decimal(16,2) NOT NULL,
+  `current_balance` decimal(16,2) NOT NULL,
+  `peak_balance` decimal(16,2) DEFAULT NULL,
+  `total_profit` decimal(16,2) NOT NULL DEFAULT 0.00,
+  `total_loss` decimal(16,2) NOT NULL DEFAULT 0.00,
+  `daily_drawdown` decimal(8,2) NOT NULL DEFAULT 0.00,
+  `overall_drawdown` decimal(8,2) NOT NULL DEFAULT 0.00,
+  `phase` tinyint(4) NOT NULL DEFAULT 1,
+  `status` varchar(255) NOT NULL DEFAULT 'active',
+  `min_days_required` int(11) NOT NULL DEFAULT 5,
+  `valid_days_completed_days` int(11) NOT NULL DEFAULT 0,
+  `max_trading_days` int(11) DEFAULT NULL,
+  `trading_days_elapsed` int(11) NOT NULL DEFAULT 0,
+  `profit_target_percent` decimal(8,2) NOT NULL,
+  `max_daily_loss_percent` decimal(8,2) NOT NULL,
+  `max_overall_loss_percent` decimal(8,2) NOT NULL,
+  `current_daily_loss_percent` decimal(8,2) NOT NULL DEFAULT 0.00,
+  `current_overall_loss_percent` decimal(8,2) NOT NULL DEFAULT 0.00,
+  `next_payout_eligible_at` timestamp NULL DEFAULT NULL,
+  `payout_amount` decimal(16,2) NOT NULL DEFAULT 0.00,
+  `last_payout_at` timestamp NULL DEFAULT NULL,
+  `started_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `ended_at` timestamp NULL DEFAULT NULL,
+  `passed_at` timestamp NULL DEFAULT NULL,
+  `failed_at` timestamp NULL DEFAULT NULL,
+  `account_id` varchar(255) DEFAULT NULL,
+  `meta` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`meta`)),
+  `is_demo` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `challenges`
+--
+
+INSERT INTO `challenges` (`id`, `user_id`, `plan_id`, `capacity_value`, `start_balance`, `current_balance`, `peak_balance`, `total_profit`, `total_loss`, `daily_drawdown`, `overall_drawdown`, `phase`, `status`, `min_days_required`, `valid_days_completed_days`, `max_trading_days`, `trading_days_elapsed`, `profit_target_percent`, `max_daily_loss_percent`, `max_overall_loss_percent`, `current_daily_loss_percent`, `current_overall_loss_percent`, `next_payout_eligible_at`, `payout_amount`, `last_payout_at`, `started_at`, `ended_at`, `passed_at`, `failed_at`, `account_id`, `meta`, `is_demo`, `created_at`, `updated_at`) VALUES
+(1, 15, 7, 1000000.00, 1000000.00, 1035075.00, 1052000.00, 35075.00, 0.00, 0.00, 0.00, 1, 'active', 5, 3, NULL, 4, 8.00, 5.00, 10.00, 0.00, 0.00, NULL, 0.00, NULL, '2025-12-02 22:25:18', NULL, NULL, NULL, 'DEMO-04QlDogz', '{\"note\":\"Demo challenge for testing\"}', 1, '2025-12-06 22:25:18', '2025-12-06 22:25:18'),
+(2, 15, 8, 1000000.00, 1000000.00, 1035075.00, 1052000.00, 35075.00, 0.00, 0.00, 0.00, 1, 'active', 5, 3, NULL, 4, 8.00, 5.00, 10.00, 0.00, 0.00, NULL, 0.00, NULL, '2025-12-02 22:29:18', NULL, NULL, NULL, 'DEMO-VHTERVPN', '{\"seeder\":true}', 1, '2025-12-06 22:29:18', '2025-12-06 22:29:18'),
+(3, 15, 9, 1000000.00, 1000000.00, 1035075.00, 1052000.00, 35075.00, 0.00, 0.00, 0.00, 1, 'active', 5, 3, NULL, 4, 8.00, 5.00, 10.00, 0.00, 0.00, NULL, 0.00, NULL, '2025-12-02 22:31:52', NULL, NULL, NULL, 'DEMO-WZXC1PDM', '{\"seeder\":true}', 1, '2025-12-06 22:31:52', '2025-12-06 22:31:52');
 
 -- --------------------------------------------------------
 
@@ -795,6 +885,43 @@ INSERT INTO `currencies` (`id`, `currency_code`, `symbol`, `currency_placement`,
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `delayed_feed_assignments`
+--
+
+CREATE TABLE `delayed_feed_assignments` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `user_id` bigint(20) UNSIGNED NOT NULL,
+  `delay_seconds` int(11) NOT NULL DEFAULT 0,
+  `reason` varchar(255) DEFAULT NULL,
+  `assigned_at` timestamp NULL DEFAULT NULL,
+  `active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `evaluation_accounts`
+--
+
+CREATE TABLE `evaluation_accounts` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `user_id` bigint(20) UNSIGNED NOT NULL,
+  `start_balance` decimal(18,6) NOT NULL,
+  `current_balance` decimal(18,6) NOT NULL,
+  `peak_balance` decimal(18,6) NOT NULL DEFAULT 0.000000,
+  `total_profit` decimal(18,6) NOT NULL DEFAULT 0.000000,
+  `max_allowed_loss` decimal(18,6) DEFAULT NULL,
+  `rules` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`rules`)),
+  `status` enum('active','failed','passed','paused') NOT NULL DEFAULT 'active',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `failed_jobs`
 --
 
@@ -979,7 +1106,29 @@ INSERT INTO `funding_plans` (`id`, `title`, `capital`, `fee`, `profit_target`, `
 (1, '20L', 2000000.00, 37000.00, '8%', '6%', 'Trailing', '20 Days', 1, 1, 1, 1, '2025-11-29 05:03:53', '2025-11-29 05:03:53'),
 (2, '50L', 5000000.00, 55000.00, '8%', '6%', 'Trailing', '20 Days', 1, 1, 1, 2, '2025-11-29 05:03:53', '2025-11-29 05:03:53'),
 (3, '75L', 7500000.00, 77000.00, '8%', '6%', 'Trailing', '20 Days', 1, 1, 1, 3, '2025-11-29 05:03:53', '2025-11-29 05:03:53'),
-(4, '1Cr', 10000000.00, 100000.00, '8%', '6%', 'Trailing', '20 Days', 1, 1, 1, 4, '2025-11-29 05:03:53', '2025-11-29 05:03:53');
+(4, '1Cr', 10000000.00, 100000.00, '8%', '6%', 'Trailing', '20 Days', 1, 1, 1, 4, '2025-11-29 05:03:53', '2025-11-29 05:03:53'),
+(6, '10K Evaluation', 1000000.00, 15000.00, '8%', '6%', 'Trailing', '20 Days', 1, 1, 1, 1, '2025-12-06 22:24:03', '2025-12-06 22:24:03'),
+(7, '10K Evaluation', 1000000.00, 15000.00, '8%', '6%', 'Trailing', '20 Days', 1, 1, 1, 1, '2025-12-06 22:25:18', '2025-12-06 22:25:18'),
+(8, '10K Evaluation', 1000000.00, 15000.00, '8%', '6%', 'Trailing', '20 Days', 1, 1, 1, 1, '2025-12-06 22:29:18', '2025-12-06 22:29:18'),
+(9, '10K Evaluation', 1000000.00, 15000.00, '8%', '6%', 'Trailing', '20 Days', 1, 1, 1, 1, '2025-12-06 22:31:52', '2025-12-06 22:31:52');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `hedging_monitors`
+--
+
+CREATE TABLE `hedging_monitors` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `user_a` bigint(20) UNSIGNED NOT NULL,
+  `user_b` bigint(20) UNSIGNED DEFAULT NULL,
+  `triggers` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`triggers`)),
+  `hedging_score` decimal(5,4) NOT NULL DEFAULT 0.0000,
+  `action` enum('none','alert','fail') NOT NULL DEFAULT 'none',
+  `evidence` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`evidence`)),
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -1255,7 +1404,18 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (58, '2025_11_29_090721_create_celebrity_endorsements_table', 40),
 (59, '2025_12_01_022449_create_system_trade_configs_table', 41),
 (60, '2025_12_01_034040_create_referral_settings_table', 42),
-(61, '2025_12_01_035805_create_notification_settings_table', 43);
+(61, '2025_12_01_035805_create_notification_settings_table', 43),
+(62, '2025_12_05_033849_create_trade_logs_table', 44),
+(63, '2025_12_05_033917_create_evaluation_accounts_table', 44),
+(64, '2025_12_05_033940_create_behavioural_metrics_table', 44),
+(65, '2025_12_05_035141_create_blockchain_hash_records_table', 44),
+(66, '2025_12_05_035204_create_delayed_feed_assignments_table', 44),
+(67, '2025_12_05_035249_create_slippage_profiles_table', 44),
+(68, '2025_12_05_035309_create_hedging_monitors_table', 44),
+(69, '2025_12_07_025642_create_orders_table', 45),
+(70, '2025_12_07_025736_create_trades_table', 45),
+(71, '2025_12_07_030207_create_challenges_table', 45),
+(72, '2025_12_07_033521_safe_enhance_orders_table', 46);
 
 -- --------------------------------------------------------
 
@@ -1304,7 +1464,9 @@ INSERT INTO `notifications` (`id`, `uuid`, `sender_id`, `user_id`, `text`, `targ
 (3, 'c85cfee8-e80b-4a53-a980-11a6d1e77c11', 10, 10, 'A new user has registered on the platform.', 'http://127.0.0.1:8000/admin/users', 'no', 1, '2025-11-24 06:07:25', '2025-11-24 06:07:25'),
 (4, '2fdb001a-9517-4c3b-a3b7-1d117e39bf22', 11, 11, 'A new user has registered on the platform.', 'http://127.0.0.1:8000/admin/users', 'no', 1, '2025-11-24 06:21:06', '2025-11-24 06:21:06'),
 (5, '583dc31f-4ba2-40a9-8302-bf59ac6df265', 13, 13, 'A new user has registered on the platform.', 'http://127.0.0.1:8000/admin/users', 'no', 1, '2025-11-24 06:38:35', '2025-11-24 06:38:35'),
-(6, 'bb77fc74-4632-46dc-a57e-6a3cc10811ad', 5, 5, 'Un nuevo ticket ha sido creado con el siguiente asunto', 'http://127.0.0.1:8000/admin/support-ticket/index', 'no', 1, '2025-12-01 00:51:54', '2025-12-01 00:51:54');
+(6, 'bb77fc74-4632-46dc-a57e-6a3cc10811ad', 5, 5, 'Un nuevo ticket ha sido creado con el siguiente asunto', 'http://127.0.0.1:8000/admin/support-ticket/index', 'no', 1, '2025-12-01 00:51:54', '2025-12-01 00:51:54'),
+(7, '1330c0b2-62ac-4d74-8064-72570ff45f2b', 14, 14, 'A new user has registered on the platform.', 'http://127.0.0.1:8000/admin/users', 'no', 1, '2025-12-01 21:41:44', '2025-12-01 21:41:44'),
+(8, 'b8abd9f8-0ca0-4852-8953-09499c81b6b3', 14, 14, 'Un nuevo ticket ha sido creado con el siguiente asunto', 'http://127.0.0.1:8000/admin/support-ticket/index', 'no', 1, '2025-12-01 21:43:39', '2025-12-01 21:43:39');
 
 -- --------------------------------------------------------
 
@@ -1413,22 +1575,41 @@ INSERT INTO `notification_templates` (`id`, `act`, `name`, `subject`, `push_titl
 
 CREATE TABLE `orders` (
   `id` bigint(20) UNSIGNED NOT NULL,
-  `user_id` int(10) UNSIGNED NOT NULL,
-  `stock_symbol` varchar(20) NOT NULL COMMENT 'e.g. INFY, TATAMOTORS',
-  `order_side` tinyint(1) NOT NULL COMMENT '1 = Buy, 2 = Sell',
-  `order_type` tinyint(1) NOT NULL DEFAULT 1 COMMENT '1 = Limit, 2 = Market',
-  `price` decimal(12,2) NOT NULL DEFAULT 0.00 COMMENT 'Limit price (0 for Market order)',
-  `quantity` decimal(12,4) NOT NULL DEFAULT 0.0000 COMMENT 'Total shares requested',
-  `filled_quantity` decimal(12,4) NOT NULL DEFAULT 0.0000,
-  `filled_percentage` decimal(5,2) NOT NULL DEFAULT 0.00,
-  `average_price` decimal(12,2) NOT NULL DEFAULT 0.00 COMMENT 'Avg execution price',
-  `total_amount` decimal(15,2) NOT NULL DEFAULT 0.00 COMMENT 'filled_quantity × avg_price',
-  `brokerage` decimal(10,2) NOT NULL DEFAULT 0.00,
-  `status` tinyint(1) NOT NULL DEFAULT 0 COMMENT '0=Open, 1=Completed, 2=Partially Filled, 9=Cancelled',
-  `trx` varchar(50) DEFAULT NULL COMMENT 'Unique order reference',
+  `user_id` bigint(20) UNSIGNED NOT NULL,
+  `challenge_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `stock_symbol` varchar(255) NOT NULL,
+  `security_id` varchar(255) DEFAULT NULL,
+  `order_side` int(11) NOT NULL,
+  `order_type` int(11) NOT NULL,
+  `product_type` varchar(255) NOT NULL DEFAULT 'INTRADAY',
+  `price` decimal(15,2) NOT NULL,
+  `trigger_price` decimal(12,2) DEFAULT NULL,
+  `quantity` decimal(10,4) NOT NULL,
+  `disclosed_quantity` decimal(10,4) NOT NULL DEFAULT 0.0000,
+  `filled_quantity` decimal(10,4) NOT NULL DEFAULT 0.0000,
+  `filled_percentage` int(11) NOT NULL DEFAULT 0,
+  `average_price` decimal(15,2) DEFAULT NULL,
+  `total_amount` decimal(15,2) DEFAULT NULL,
+  `brokerage` decimal(15,2) NOT NULL DEFAULT 0.00,
+  `status` int(11) NOT NULL,
+  `trx` varchar(255) DEFAULT NULL,
+  `parent_order_id` varchar(255) DEFAULT NULL,
+  `correlation_id` varchar(255) DEFAULT NULL,
+  `placed_by` varchar(255) NOT NULL DEFAULT 'user',
+  `meta` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`meta`)),
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `orders`
+--
+
+INSERT INTO `orders` (`id`, `user_id`, `challenge_id`, `stock_symbol`, `security_id`, `order_side`, `order_type`, `product_type`, `price`, `trigger_price`, `quantity`, `disclosed_quantity`, `filled_quantity`, `filled_percentage`, `average_price`, `total_amount`, `brokerage`, `status`, `trx`, `parent_order_id`, `correlation_id`, `placed_by`, `meta`, `created_at`, `updated_at`) VALUES
+(1, 15, 3, 'RELIANCE', '1333', 1, 2, 'INTRADAY', 0.00, NULL, 15.0000, 0.0000, 15.0000, 100, 2575.75, 38636.25, 20.00, 1, '412307150001', NULL, 'ebeba750-a6fd-4d28-a9fc-a5242deaea1d', 'user', NULL, '2025-12-03 22:31:52', '2025-12-03 22:31:52'),
+(2, 15, 3, 'TCS', '11536', 2, 1, 'INTRADAY', 3780.00, NULL, 8.0000, 0.0000, 8.0000, 100, 3780.00, 30240.00, 15.00, 1, '412307150045', NULL, 'c4ec9b9e-34e3-4b09-86b5-613f0f660696', 'user', NULL, '2025-12-04 22:31:52', '2025-12-04 22:31:52'),
+(3, 15, 3, 'INFY', '1594', 1, 1, 'INTRADAY', 1420.00, NULL, 25.0000, 0.0000, 0.0000, 0, NULL, NULL, 0.00, 0, '412307160089', NULL, '9ad60419-38c8-4ec9-9dea-05b31aefc24d', 'user', NULL, '2025-12-06 18:31:52', '2025-12-06 18:31:52'),
+(4, 15, 3, 'HDFCBANK', '1330', 2, 3, 'INTRADAY', 1650.00, 1640.00, 20.0000, 0.0000, 20.0000, 100, 1642.50, 32850.00, 18.00, 1, '412307160112', NULL, '15136919-af6c-4c5a-86ee-ae8d26a07b55', 'user', '{\"sl_hit\":true}', '2025-12-05 22:31:52', '2025-12-05 22:31:52');
 
 -- --------------------------------------------------------
 
@@ -1685,7 +1866,8 @@ CREATE TABLE `plan_purchases` (
 --
 
 INSERT INTO `plan_purchases` (`id`, `user_id`, `funding_plan_id`, `amount`, `gateway`, `transaction_id`, `gateway_order_id`, `gateway_payment_id`, `gateway_response`, `gateway_signature`, `payment_response`, `status`, `notes`, `approved_by`, `approved_at`, `expires_at`, `mt4_login`, `mt4_password`, `mt4_server`, `created_at`, `updated_at`) VALUES
-(1, 5, 2, 55000.00, 'razorpay', 'TXN_XHYIP4KITJB6', 'order_dummy_1', 'pay_dummy_1', '\"{\\\"simulated\\\":true,\\\"message\\\":\\\"Test payment success\\\"}\"', NULL, NULL, 'approved', 'approvd got the money', 1, '2025-11-29 20:19:39', NULL, '8779831', 'xq3bl0OJjQ', 'YourBroker-Live', '2025-11-29 20:18:11', '2025-11-29 20:19:39');
+(1, 5, 2, 55000.00, 'razorpay', 'TXN_XHYIP4KITJB6', 'order_dummy_1', 'pay_dummy_1', '\"{\\\"simulated\\\":true,\\\"message\\\":\\\"Test payment success\\\"}\"', NULL, NULL, 'approved', 'approvd got the money', 1, '2025-11-29 20:19:39', NULL, '8779831', 'xq3bl0OJjQ', 'YourBroker-Live', '2025-11-29 20:18:11', '2025-11-29 20:19:39'),
+(2, 14, 1, 37000.00, 'razorpay', 'TXN_OEHA1WKMDEJO', 'order_dummy_2', 'pay_dummy_2', '\"{\\\"simulated\\\":true,\\\"message\\\":\\\"Test payment success\\\"}\"', NULL, NULL, 'approved', 'approve', 1, '2025-12-01 21:46:04', NULL, '8008201', 'FMO7YKz8Lo', 'YourBroker-Live', '2025-12-01 21:44:22', '2025-12-01 21:46:04');
 
 -- --------------------------------------------------------
 
@@ -2014,6 +2196,24 @@ INSERT INTO `skills` (`id`, `image`, `name`, `description`, `status`, `deleted_a
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `slippage_profiles`
+--
+
+CREATE TABLE `slippage_profiles` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `user_id` bigint(20) UNSIGNED NOT NULL,
+  `min_slippage` decimal(10,4) NOT NULL DEFAULT 0.0000,
+  `max_slippage` decimal(10,4) NOT NULL DEFAULT 0.0000,
+  `symbol_overrides` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`symbol_overrides`)),
+  `time_overrides` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`time_overrides`)),
+  `active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `states`
 --
 
@@ -2187,7 +2387,7 @@ CREATE TABLE `system_trade_configs` (
 --
 
 INSERT INTO `system_trade_configs` (`id`, `max_buy_order`, `min_decrease`, `max_decrease`, `buy_order_amount_range`, `buy_order_matching_chance`, `buy_order_matching_price_increase_up_to`, `max_sell_order`, `min_increase`, `max_increase`, `sell_order_amount_range`, `sell_order_matching_chance`, `sell_order_matching_price_decrease_up_to`, `buy_matching_with_system_trade`, `sell_matching_with_system_trade`, `buy_order_remains_minutes`, `sell_order_remains_minutes`, `created_at`, `updated_at`) VALUES
-(1, 5, 1.00, 2.00, 10.00, 0, 10.00, 7, 1.00, 2.00, 10.00, 0, 10.00, 'no', 'no', 5, 5, '2025-12-01 02:57:57', '2025-11-30 21:29:44');
+(1, 5, 1.00, 2.00, 10.00, 0, 10.00, 5, 1.00, 2.00, 10.00, 0, 10.00, 'no', 'no', 5, 5, '2025-12-01 02:57:57', '2025-12-01 21:36:33');
 
 -- --------------------------------------------------------
 
@@ -2299,7 +2499,8 @@ CREATE TABLE `tickets` (
 
 INSERT INTO `tickets` (`id`, `uuid`, `ticket_number`, `name`, `email`, `subject`, `status`, `user_id`, `department_id`, `related_service_id`, `priority_id`, `created_at`, `updated_at`) VALUES
 (12, '430f9845-4c6f-42c5-92cb-e4725b543f76', 'TCK-672F59AF68576', 'aasif', 'aasifdev5@gmail.com', 'i need to know abot gen', 1, 5, 2, 4, 1, '2024-11-09 07:16:39', '2024-11-09 07:16:39'),
-(13, 'ed8262de-f76b-4ca9-b999-5f7327c23fad', 'TCK-672F5A7FB7BBA', 'aasif', 'aasifdev5@gmail.com', 'Welcome to Sky Forecasting', 1, 5, 2, 4, 1, '2024-11-09 07:20:07', '2024-11-09 07:20:07');
+(13, 'ed8262de-f76b-4ca9-b999-5f7327c23fad', 'TCK-672F5A7FB7BBA', 'aasif', 'aasifdev5@gmail.com', 'Welcome to Sky Forecasting', 1, 5, 2, 4, 1, '2024-11-09 07:20:07', '2024-11-09 07:20:07'),
+(15, '0c6a2ba8-0c93-4374-8d4e-7000f964547a', 'TCK-692E59606D65B', 'tanzila', 'arstecht2a@gmail.com', 'how to purchase a plan', 1, 14, 2, 5, 1, '2025-12-01 21:43:36', '2025-12-01 21:43:36');
 
 -- --------------------------------------------------------
 
@@ -2348,7 +2549,9 @@ INSERT INTO `ticket_messages` (`id`, `ticket_id`, `sender_user_id`, `reply_admin
 (5, 6, NULL, 1, 'test', NULL, '2024-11-09 06:34:43', '2024-11-09 06:34:43'),
 (6, 12, NULL, 1, 'gen is course lareaning platforma nd mlm', NULL, '2024-11-11 00:55:10', '2024-11-11 00:55:10'),
 (7, 12, NULL, 5, 'how can i earn from it', NULL, '2024-11-11 00:56:38', '2024-11-11 00:56:38'),
-(8, 12, NULL, 1, 'by refering course', NULL, '2024-11-11 01:27:40', '2024-11-11 01:27:40');
+(8, 12, NULL, 1, 'by refering course', NULL, '2024-11-11 01:27:40', '2024-11-11 01:27:40'),
+(11, 12, NULL, 1, 'today', NULL, '2025-12-01 21:37:41', '2025-12-01 21:37:41'),
+(12, 15, NULL, 14, 'please explain', NULL, '2025-12-01 21:44:03', '2025-12-01 21:44:03');
 
 -- --------------------------------------------------------
 
@@ -2404,19 +2607,82 @@ INSERT INTO `ticket_related_services` (`id`, `uuid`, `name`, `created_at`, `upda
 
 CREATE TABLE `trades` (
   `id` bigint(20) UNSIGNED NOT NULL,
-  `order_id` bigint(20) UNSIGNED NOT NULL,
-  `user_id` int(10) UNSIGNED NOT NULL,
-  `stock_symbol` varchar(20) NOT NULL COMMENT 'e.g. RELIANCE, TCS, HDFCBANK',
-  `trade_side` tinyint(1) NOT NULL COMMENT '1 = Buy, 2 = Sell',
-  `price` decimal(12,2) NOT NULL DEFAULT 0.00 COMMENT 'Price per share in INR',
-  `quantity` decimal(12,4) NOT NULL DEFAULT 0.0000 COMMENT 'Number of shares',
-  `total_amount` decimal(15,2) NOT NULL DEFAULT 0.00 COMMENT 'quantity × price',
-  `brokerage` decimal(10,2) NOT NULL DEFAULT 0.00 COMMENT 'Brokerage/STT/SEBI charges',
-  `net_amount` decimal(15,2) NOT NULL DEFAULT 0.00 COMMENT 'total + brokerage (debit/credit)',
-  `executed_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `challenge_id` bigint(20) UNSIGNED NOT NULL,
+  `symbol` varchar(255) NOT NULL,
+  `side` varchar(255) NOT NULL,
+  `qty` decimal(10,4) NOT NULL,
+  `entry_price` decimal(15,2) NOT NULL,
+  `exit_price` decimal(15,2) DEFAULT NULL,
+  `pnl` decimal(15,2) DEFAULT NULL,
+  `sl_used` tinyint(1) NOT NULL DEFAULT 0,
+  `tp_used` tinyint(1) NOT NULL DEFAULT 0,
+  `entry_time` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `exit_time` timestamp NULL DEFAULT NULL,
+  `holding_time_seconds` int(11) DEFAULT NULL,
+  `gap_seconds` int(11) DEFAULT NULL,
+  `news_flag` tinyint(1) NOT NULL DEFAULT 0,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `trades`
+--
+
+INSERT INTO `trades` (`id`, `challenge_id`, `symbol`, `side`, `qty`, `entry_price`, `exit_price`, `pnl`, `sl_used`, `tp_used`, `entry_time`, `exit_time`, `holding_time_seconds`, `gap_seconds`, `news_flag`, `created_at`, `updated_at`) VALUES
+(1, 3, 'RELIANCE', 'buy', 15.0000, 2575.75, 2610.00, 513.75, 0, 1, '2025-12-04 04:45:52', '2025-12-04 09:00:52', 19800, 0, 0, '2025-12-06 22:31:52', '2025-12-06 22:31:52'),
+(2, 3, 'HDFCBANK', 'sell', 20.0000, 1642.50, 1630.00, 250.00, 0, 0, '2025-12-06 05:30:52', '2025-12-06 08:15:52', 9900, 0, 0, '2025-12-06 22:31:52', '2025-12-06 22:31:52');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `trade_logs`
+--
+
+CREATE TABLE `trade_logs` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `uuid` char(36) NOT NULL,
+  `user_id` bigint(20) UNSIGNED NOT NULL,
+  `challenge_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `strategy_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `symbol` varchar(255) NOT NULL,
+  `direction` enum('long','short') NOT NULL DEFAULT 'long',
+  `entry_price` decimal(18,8) NOT NULL,
+  `exit_price` decimal(18,8) DEFAULT NULL,
+  `entry_time` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `exit_time` timestamp NULL DEFAULT NULL,
+  `quantity` decimal(20,8) NOT NULL DEFAULT 1.00000000,
+  `profit_loss` decimal(18,8) DEFAULT NULL,
+  `profit_loss_percent` decimal(12,4) DEFAULT NULL,
+  `commission` decimal(18,8) NOT NULL DEFAULT 0.00000000,
+  `swap` decimal(18,8) NOT NULL DEFAULT 0.00000000,
+  `stop_loss` decimal(18,8) DEFAULT NULL,
+  `take_profit` decimal(18,8) DEFAULT NULL,
+  `stop_loss_used` tinyint(1) NOT NULL DEFAULT 0,
+  `take_profit_used` tinyint(1) NOT NULL DEFAULT 0,
+  `trailing_stop_used` tinyint(1) NOT NULL DEFAULT 0,
+  `slippage` decimal(12,4) DEFAULT NULL,
+  `holding_seconds` int(10) UNSIGNED DEFAULT NULL,
+  `trade_type` varchar(255) DEFAULT NULL,
+  `exchange` varchar(255) DEFAULT NULL,
+  `segment` varchar(255) DEFAULT NULL,
+  `order_ids` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`order_ids`)),
+  `broker_trade_ids` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`broker_trade_ids`)),
+  `meta` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`meta`)),
+  `is_paper` tinyint(1) NOT NULL DEFAULT 0,
+  `delayed_feed` tinyint(1) NOT NULL DEFAULT 0,
+  `closed_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `trade_logs`
+--
+
+INSERT INTO `trade_logs` (`id`, `uuid`, `user_id`, `challenge_id`, `strategy_id`, `symbol`, `direction`, `entry_price`, `exit_price`, `entry_time`, `exit_time`, `quantity`, `profit_loss`, `profit_loss_percent`, `commission`, `swap`, `stop_loss`, `take_profit`, `stop_loss_used`, `take_profit_used`, `trailing_stop_used`, `slippage`, `holding_seconds`, `trade_type`, `exchange`, `segment`, `order_ids`, `broker_trade_ids`, `meta`, `is_paper`, `delayed_feed`, `closed_at`, `created_at`, `updated_at`) VALUES
+(1, 'ec26fc43-7840-44fc-8b29-ddae9491586f', 15, 3, NULL, 'RELIANCE', 'long', 2575.75000000, 2610.00000000, '2025-12-04 04:45:52', '2025-12-04 09:00:52', 15.00000000, 513.75000000, 1.3300, 20.00000000, 0.00000000, NULL, 2650.00000000, 0, 1, 0, 0.2500, 19800, 'intraday', 'NSE', 'EQ', '[\"412307150001\"]', '[\"T202512070001\"]', '{\"note\":\"Take profit hit\",\"setup\":\"Breakout\"}', 0, 0, '2025-12-04 09:00:52', '2025-12-06 22:31:52', '2025-12-06 22:31:52'),
+(2, 'eea71d31-3934-4cd1-97dc-2405dee1c520', 15, 3, NULL, 'HDFCBANK', 'short', 1642.50000000, 1630.00000000, '2025-12-06 05:30:52', '2025-12-06 08:15:52', 20.00000000, 250.00000000, 0.7600, 18.00000000, 0.00000000, 1655.00000000, NULL, 0, 0, 0, 0.5000, 9900, 'intraday', 'NSE', 'EQ', '[\"412307160112\"]', '[\"T202512080112\"]', '{\"note\":\"Manual exit\"}', 0, 0, '2025-12-06 08:15:52', '2025-12-06 22:31:52', '2025-12-06 22:31:52');
 
 -- --------------------------------------------------------
 
@@ -2499,10 +2765,12 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `uid`, `fcm_token`, `rating`, `username`, `is_active`, `profile_photo`, `mode`, `account_type`, `balance`, `is_subscribed`, `refer`, `level`, `is_online`, `last_seen`, `birth_date`, `role`, `permissions`, `name`, `email`, `google_id`, `email_verified_at`, `password`, `custom_password`, `whatsapp_number`, `about`, `city`, `facebook`, `instagram`, `linkedin`, `twitter`, `address`, `status`, `remember_token`, `ip_address`, `is_system`, `country`, `created_by`, `deleted_at`, `language`, `is_super_admin`, `created_at`, `updated_at`, `is_affiliate`, `referral_code`, `affiliate_earnings`, `commission_rate`) VALUES
-(1, NULL, NULL, NULL, NULL, 1, '', 'dark', 'admin', NULL, 0, NULL, NULL, 1, '2025-12-01 03:45:25', NULL, '1', NULL, 'SUPER ADMINISTRADOR', 'admin@fstandard.lat', NULL, '2023-03-23 07:45:02', '$2y$10$sgLXLiwlfSqKV7pPTSgco.SLKcpQwOg.L4VrnH.DBVirfour.CGLa', '987654321', '8878326802', NULL, 'bolivia', NULL, NULL, NULL, NULL, 'sdfafa', 1, NULL, '127.0.0.1', 1, '1', NULL, NULL, 'es', 1, '2023-03-23 07:45:02', '2025-12-01 00:56:40', 0, NULL, 0.00, 18.00),
+(1, NULL, NULL, NULL, NULL, 1, '', 'dark', 'admin', NULL, 0, NULL, NULL, 1, '2025-12-01 22:09:30', NULL, '1', NULL, 'SUPER ADMINISTRADOR', 'admin@fstandard.lat', NULL, '2023-03-23 07:45:02', '$2y$10$sgLXLiwlfSqKV7pPTSgco.SLKcpQwOg.L4VrnH.DBVirfour.CGLa', '987654321', '8878326802', NULL, 'bolivia', NULL, NULL, NULL, NULL, 'sdfafa', 1, NULL, '127.0.0.1', 1, '1', NULL, NULL, 'es', 1, '2023-03-23 07:45:02', '2025-12-01 22:09:30', 0, NULL, 0.00, 18.00),
 (4, NULL, NULL, NULL, NULL, 1, NULL, 'dark', 'user', NULL, NULL, NULL, '0', 1, '2025-10-18 18:22:47', NULL, 'Trabajador', NULL, 'Juan Perez', 'arstech2a@gmail.com', NULL, NULL, '$2y$10$DG1ruRDoU1bRb9JA.Y4JZ.aSnnW.9mmA8NRNbC6PrM2Ua0/Rv4z5G', '987654321', '591591594332', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, NULL, NULL, 0, NULL, NULL, NULL, '\'en\'', 0, '2025-10-17 01:19:30', '2025-10-18 18:22:47', 0, NULL, 0.00, 18.00),
-(5, NULL, NULL, NULL, NULL, 1, NULL, 'light', 'user', NULL, NULL, NULL, '0', 1, '2025-12-01 00:15:54', NULL, 'Trabajador', NULL, 'Aasif Ahmed', 'hrnatrajinfotech@gmail.com', NULL, NULL, '$2y$10$4KiwKo1otj1W6hm2aqVSju7bonYEIaa38SAMa6YHaCH0eWUzEMoK6', NULL, '919876543210', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, NULL, '127.0.0.1', 0, NULL, NULL, NULL, '\'en\'', 0, '2025-11-24 05:09:31', '2025-12-01 00:15:54', 0, '9XTD4BQM7P', 0.00, 18.00),
-(13, NULL, NULL, NULL, NULL, 1, NULL, 'light', 'user', NULL, NULL, NULL, '0', 0, '2025-11-24 03:31:57', NULL, 'Trabajador', NULL, 'Tarija', 'aasifdev5@gmail.com', NULL, '2025-11-24 06:38:54', '$2y$10$.wBqoNcObZUM8schU9Mx5eZvNAx61U0Pa1/RmSQTSHajqNAJcSG7C', NULL, '919876543210', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, NULL, '127.0.0.1', 0, NULL, NULL, NULL, '\'en\'', 0, '2025-11-24 06:38:32', '2025-11-24 07:31:57', 0, NULL, 0.00, 18.00);
+(5, NULL, NULL, NULL, NULL, 1, NULL, 'light', 'user', NULL, NULL, NULL, '0', 1, '2025-12-06 22:50:10', NULL, 'Trabajador', NULL, 'Aasif Ahmed', 'hrnatrajinfotech@gmail.com', NULL, NULL, '$2y$10$4KiwKo1otj1W6hm2aqVSju7bonYEIaa38SAMa6YHaCH0eWUzEMoK6', NULL, '919876543210', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, NULL, '127.0.0.1', 0, NULL, NULL, NULL, '\'en\'', 0, '2025-11-24 05:09:31', '2025-12-06 22:50:10', 0, '9XTD4BQM7P', 0.00, 18.00),
+(13, NULL, NULL, NULL, NULL, 1, NULL, 'light', 'user', NULL, NULL, NULL, '0', 0, '2025-11-24 03:31:57', NULL, 'Trabajador', NULL, 'Tarija', 'aasifdev5@gmail.com', NULL, '2025-11-24 06:38:54', '$2y$10$.wBqoNcObZUM8schU9Mx5eZvNAx61U0Pa1/RmSQTSHajqNAJcSG7C', NULL, '919876543210', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, NULL, '127.0.0.1', 0, NULL, NULL, NULL, '\'en\'', 0, '2025-11-24 06:38:32', '2025-11-24 07:31:57', 0, NULL, 0.00, 18.00),
+(14, NULL, NULL, NULL, NULL, 1, NULL, 'light', 'user', NULL, NULL, NULL, '0', 0, '2025-12-01 17:45:06', NULL, 'Trabajador', NULL, 'tanzila', 'arstecht2a@gmail.com', NULL, NULL, '$2y$10$OLelSLqNBP26Kv47GRJpfuJ.vemGAYaZWQCo7R071hAyNBTs4AAxO', NULL, '919876543210', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, NULL, '127.0.0.1', 0, NULL, NULL, NULL, '\'en\'', 0, '2025-12-01 21:41:36', '2025-12-01 21:45:06', 0, 'ODY42L1K7W', 0.00, 18.00),
+(15, NULL, NULL, NULL, NULL, 1, NULL, 'light', NULL, NULL, NULL, NULL, '0', 0, NULL, NULL, 'Trabajador', NULL, 'Demo Trader', 'demo@trader.com', NULL, '2025-12-06 22:31:52', '$2y$10$8wfR49IEv47Qx3PxreYOs.oO/S1vw0CeicI1n/DgrWNJBMTKQdTRu', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 'bU1bduE5z2', NULL, 0, NULL, NULL, NULL, '\'en\'', 0, '2025-12-06 22:31:52', '2025-12-06 22:31:52', 0, NULL, 0.00, 18.00);
 
 -- --------------------------------------------------------
 
@@ -2620,6 +2888,20 @@ ALTER TABLE `banners`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indexes for table `behavioural_metrics`
+--
+ALTER TABLE `behavioural_metrics`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `behavioural_metrics_user_id_index` (`user_id`);
+
+--
+-- Indexes for table `blockchain_hash_records`
+--
+ALTER TABLE `blockchain_hash_records`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `blockchain_hash_records_user_id_index` (`user_id`);
+
+--
 -- Indexes for table `blogs`
 --
 ALTER TABLE `blogs`
@@ -2655,6 +2937,12 @@ ALTER TABLE `categories`
 -- Indexes for table `celebrity_endorsements`
 --
 ALTER TABLE `celebrity_endorsements`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `challenges`
+--
+ALTER TABLE `challenges`
   ADD PRIMARY KEY (`id`);
 
 --
@@ -2722,6 +3010,20 @@ ALTER TABLE `currencies`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indexes for table `delayed_feed_assignments`
+--
+ALTER TABLE `delayed_feed_assignments`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `delayed_feed_assignments_user_id_index` (`user_id`);
+
+--
+-- Indexes for table `evaluation_accounts`
+--
+ALTER TABLE `evaluation_accounts`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `evaluation_accounts_user_id_index` (`user_id`);
+
+--
 -- Indexes for table `failed_jobs`
 --
 ALTER TABLE `failed_jobs`
@@ -2772,6 +3074,12 @@ ALTER TABLE `forum_post_comments`
 -- Indexes for table `funding_plans`
 --
 ALTER TABLE `funding_plans`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `hedging_monitors`
+--
+ALTER TABLE `hedging_monitors`
   ADD PRIMARY KEY (`id`);
 
 --
@@ -2838,11 +3146,10 @@ ALTER TABLE `notification_settings`
 --
 ALTER TABLE `orders`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uniq_trx` (`trx`),
-  ADD KEY `idx_user` (`user_id`),
-  ADD KEY `idx_symbol` (`stock_symbol`),
-  ADD KEY `idx_status` (`status`),
-  ADD KEY `idx_created` (`created_at`);
+  ADD KEY `orders_user_id_created_at_index` (`user_id`,`created_at`),
+  ADD KEY `orders_challenge_id_index` (`challenge_id`),
+  ADD KEY `orders_status_index` (`status`),
+  ADD KEY `orders_trx_index` (`trx`);
 
 --
 -- Indexes for table `our_histories`
@@ -2906,6 +3213,13 @@ ALTER TABLE `settings`
 --
 ALTER TABLE `skills`
   ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `slippage_profiles`
+--
+ALTER TABLE `slippage_profiles`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `slippage_profiles_user_id_index` (`user_id`);
 
 --
 -- Indexes for table `states`
@@ -2989,11 +3303,13 @@ ALTER TABLE `ticket_related_services`
 -- Indexes for table `trades`
 --
 ALTER TABLE `trades`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_user` (`user_id`),
-  ADD KEY `idx_symbol` (`stock_symbol`),
-  ADD KEY `idx_order` (`order_id`),
-  ADD KEY `idx_executed` (`executed_at`);
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `trade_logs`
+--
+ALTER TABLE `trade_logs`
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `users`
@@ -3070,6 +3386,18 @@ ALTER TABLE `banners`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
+-- AUTO_INCREMENT for table `behavioural_metrics`
+--
+ALTER TABLE `behavioural_metrics`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `blockchain_hash_records`
+--
+ALTER TABLE `blockchain_hash_records`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `blogs`
 --
 ALTER TABLE `blogs`
@@ -3104,6 +3432,12 @@ ALTER TABLE `categories`
 --
 ALTER TABLE `celebrity_endorsements`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT for table `challenges`
+--
+ALTER TABLE `challenges`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `chats`
@@ -3166,6 +3500,18 @@ ALTER TABLE `currencies`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 
 --
+-- AUTO_INCREMENT for table `delayed_feed_assignments`
+--
+ALTER TABLE `delayed_feed_assignments`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `evaluation_accounts`
+--
+ALTER TABLE `evaluation_accounts`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `failed_jobs`
 --
 ALTER TABLE `failed_jobs`
@@ -3211,7 +3557,13 @@ ALTER TABLE `forum_post_comments`
 -- AUTO_INCREMENT for table `funding_plans`
 --
 ALTER TABLE `funding_plans`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+
+--
+-- AUTO_INCREMENT for table `hedging_monitors`
+--
+ALTER TABLE `hedging_monitors`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `kyc_verifications`
@@ -3247,7 +3599,7 @@ ALTER TABLE `metas`
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=62;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=73;
 
 --
 -- AUTO_INCREMENT for table `news`
@@ -3259,7 +3611,7 @@ ALTER TABLE `news`
 -- AUTO_INCREMENT for table `notifications`
 --
 ALTER TABLE `notifications`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `notification_settings`
@@ -3271,7 +3623,7 @@ ALTER TABLE `notification_settings`
 -- AUTO_INCREMENT for table `orders`
 --
 ALTER TABLE `orders`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `our_histories`
@@ -3307,7 +3659,7 @@ ALTER TABLE `personal_access_tokens`
 -- AUTO_INCREMENT for table `plan_purchases`
 --
 ALTER TABLE `plan_purchases`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `portfolio_items`
@@ -3332,6 +3684,12 @@ ALTER TABLE `settings`
 --
 ALTER TABLE `skills`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- AUTO_INCREMENT for table `slippage_profiles`
+--
+ALTER TABLE `slippage_profiles`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `states`
@@ -3379,7 +3737,7 @@ ALTER TABLE `testimonials`
 -- AUTO_INCREMENT for table `tickets`
 --
 ALTER TABLE `tickets`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- AUTO_INCREMENT for table `ticket_departments`
@@ -3391,7 +3749,7 @@ ALTER TABLE `ticket_departments`
 -- AUTO_INCREMENT for table `ticket_messages`
 --
 ALTER TABLE `ticket_messages`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT for table `ticket_priorities`
@@ -3409,13 +3767,19 @@ ALTER TABLE `ticket_related_services`
 -- AUTO_INCREMENT for table `trades`
 --
 ALTER TABLE `trades`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT for table `trade_logs`
+--
+ALTER TABLE `trade_logs`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- AUTO_INCREMENT for table `withdrawals`
@@ -3426,6 +3790,12 @@ ALTER TABLE `withdrawals`
 --
 -- Constraints for dumped tables
 --
+
+--
+-- Constraints for table `orders`
+--
+ALTER TABLE `orders`
+  ADD CONSTRAINT `orders_challenge_id_foreign` FOREIGN KEY (`challenge_id`) REFERENCES `challenges` (`id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `user_balances`

@@ -23,14 +23,16 @@ use App\Models\FundingPlan;
 use App\Models\News;
 
 use App\Models\Notification;
+use App\Models\Order;
 use App\Models\Page;
 use App\Models\PasswordReset;
-use App\Models\PlanPurchase;
 
+use App\Models\PlanPurchase;
 use App\Models\Reaction;
 use App\Models\Sales;
 use App\Models\SupportTicketQuestion;
 use App\Models\Testimonial;
+use App\Models\TradeLog;
 use App\Models\User;
 use App\Notifications\NewUserRegisteredNotification;
 use App\Notifications\ResetPasswordNotification;
@@ -346,10 +348,22 @@ class UserController extends Controller
                 'is_online' => 1,
                 'last_seen' => Carbon::now('UTC')
             ]);
+            $user = User::find(15);
 
-            auth()->login($user);
-            Session::put('LoggedIn', $user->id);
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Demo user not found!',
+                ], 404);
+            }
+
+
+            // Store in session (matching your existing logic)
+            Session::put('LoggedIn', $user->id); // 15
             Session::put('user_session', $user);
+            // auth()->login($user);
+            // Session::put('LoggedIn', 15);
+            // Session::put('user_session', $user);
 
             return response()->json([
                 'success' => true,
@@ -442,8 +456,34 @@ class UserController extends Controller
         }
 
         $user_session = \App\Models\User::find(Session::get('LoggedIn'));
+        $challenge = $user_session->challenges()->with('plan')->first();
 
-        return view('overview', compact('user_session'));
+        $openOrders      = Order::where('user_id', $user_session->id)->where('status', 0)->count();
+        $completedTrades = TradeLog::where('user_id', $user_session->id)->whereNotNull('exit_time')->count();
+        $canceledOrders  = Order::where('user_id', $user_session->id)->where('status', 9)->count();
+        $totalPnL        = TradeLog::where('user_id', $user_session->id)->sum('profit_loss');
+
+        $recentOrders = Order::where('user_id', $user_session->id)
+            ->latest()
+            ->limit(5)
+            ->get();
+
+        $recentTrades = TradeLog::where('user_id', $user_session->id)
+            ->whereNotNull('exit_time')
+            ->latest('exit_time')
+            ->limit(5)
+            ->get();
+
+        return view('overview', compact(
+            'user_session',
+            'challenge',
+            'openOrders',
+            'completedTrades',
+            'canceledOrders',
+            'totalPnL',
+            'recentOrders',
+            'recentTrades'
+        ));
     }
 
     // 2. Manage Orders
@@ -451,8 +491,11 @@ class UserController extends Controller
     {
         $user_session = $this->authenticatedUser();
         if ($user_session instanceof \Illuminate\Http\RedirectResponse) return $user_session;
-
-        return view('orders', compact('user_session'));
+        $orders = Order::where('user_id', $user_session->id)
+            ->with('challenge')
+            ->latest()
+            ->paginate(15);
+        return view('orders', compact('user_session', 'orders'));
     }
 
     // 3. Trade History
@@ -460,24 +503,39 @@ class UserController extends Controller
     {
         $user_session = $this->authenticatedUser();
         if ($user_session instanceof \Illuminate\Http\RedirectResponse) return $user_session;
+        $trades = TradeLog::where('user_id', $user_session->id)
+            ->whereNotNull('exit_time')
+            ->latest('exit_time')
+            ->get();
 
-        return view('trade-history', compact('user_session'));
+        $totalTrades = $trades->count();
+        $winningTrades = $trades->where('profit_loss', '>', 0)->count();
+        $winRate = $totalTrades > 0 ? round(($winningTrades / $totalTrades) * 100, 1) : 0;
+        $netProfit = $trades->sum('profit_loss');
+        $avgHolding = $totalTrades > 0
+            ? gmdate('H\hi', (int)$trades->avg('holding_seconds'))
+            : '00h 00m';
+        return view('trade-history', compact('user_session','trades',
+        'winRate',
+        'totalTrades',
+        'netProfit',
+        'avgHolding'));
     }
 
     // 4. Deposit History
     public function depositHistory()
-{
-    $user_session = $this->authenticatedUser();
-    if ($user_session instanceof \Illuminate\Http\RedirectResponse) return $user_session;
+    {
+        $user_session = $this->authenticatedUser();
+        if ($user_session instanceof \Illuminate\Http\RedirectResponse) return $user_session;
 
-    // Fix: Use 'user_id' instead of 'id'
-    $purchases = PlanPurchase::with(['plan', 'approver'])
-        ->where('user_id', $user_session->id)
-        ->latest()
-        ->get();
-// dd($purchases);
-    return view('deposit-history', compact('user_session', 'purchases'));
-}
+        // Fix: Use 'user_id' instead of 'id'
+        $purchases = PlanPurchase::with(['plan', 'approver'])
+            ->where('user_id', $user_session->id)
+            ->latest()
+            ->get();
+        // dd($purchases);
+        return view('deposit-history', compact('user_session', 'purchases'));
+    }
 
     // 5. Withdraw History
     public function withdrawHistory()

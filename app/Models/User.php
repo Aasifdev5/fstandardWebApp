@@ -103,6 +103,46 @@ class User extends Authenticatable
             }
         });
     }
+    /**
+     * All challenges belonging to this user (past + present)
+     */
+    public function challenges()
+    {
+        return $this->hasMany(Challenge::class);
+    }
+
+    /**
+     * Get the user's currently active challenge (only one active at a time)
+     */
+    public function activeChallenge()
+    {
+        return $this->hasOne(Challenge::class)
+                    ->where('status', 'active')
+                    ->latest();
+    }
+
+    /**
+     * Get the current active challenge (magic attribute)
+     * Usage: auth()->user()->current_challenge
+     */
+    public function getCurrentChallengeAttribute()
+    {
+        return $this->activeChallenge()->first();
+    }
+
+    /**
+     * Scope a query to only include users who have an active challenge
+     */
+    public function scopeHasActiveChallenge($query)
+    {
+        return $query->whereHas('challenges', fn($q) => $q->where('status', 'active'));
+    }
+
+    // Bonus: Easy check in Blade / Controller
+    public function hasActiveChallenge(): bool
+    {
+        return $this->activeChallenge()->exists();
+    }
     public function orders()
     {
         return $this->hasMany(Order::class);
