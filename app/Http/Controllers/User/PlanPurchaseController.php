@@ -7,6 +7,7 @@ use App\Models\FundingPlan;
 use App\Models\PlanPurchase;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
 use Razorpay\Api\Api as RazorpayApi;
@@ -29,45 +30,135 @@ class PlanPurchaseController extends Controller
 
     // 2. Initiate Payment After Gateway Selection
     public function initiatePayment(Request $request, $Id)
-    {
-        $request->validate([
-            'gateway' => 'required|in:razorpay,phonepe,paypal'
+{
+    $request->validate([
+        'gateway' => 'required|in:razorpay,phonepe,paypal'
+    ]);
+
+    $plan = FundingPlan::findOrFail($Id);
+    $userId = Session::get('LoggedIn');
+
+    $purchase = PlanPurchase::create([
+        'user_id'         => $userId,
+        'funding_plan_id' => $plan->id,
+        'amount'          => $plan->fee,
+        'gateway'         => $request->gateway,
+        'status'          => 'pending',
+        'transaction_id'  => 'TXN_' . strtoupper(Str::random(12)),
+    ]);
+
+    // -------------------------------------------------------------
+    // DUMMY RAZORPAY MODE (TEST MODE - NO LIVE API CALL)
+    // -------------------------------------------------------------
+    if ($request->gateway === 'razorpay' && config('app.env') !== 'production') {
+
+        $purchase->update([
+            'status'             => 'pending',
+            'gateway_order_id'   => 'order_dummy_' . $purchase->id,
+            'gateway_payment_id' => 'pay_dummy_' . $purchase->id,
+            'gateway_response'   => json_encode(['simulated' => true, 'message' => 'Test payment success']),
         ]);
 
-        $plan = FundingPlan::findOrFail($Id);
-        $userId = Session::get('LoggedIn');
+        // --------------------------
+        // CREATE CHALLENGE DYNAMIC
+        // --------------------------
 
-        $purchase = PlanPurchase::create([
-            'user_id'         => $userId,
-            'funding_plan_id' => $plan->id,
-            'amount'          => $plan->fee,
-            'gateway'         => $request->gateway,
-            'status'          => 'pending',
-            'transaction_id'  => 'TXN_' . strtoupper(Str::random(12)),
+        // Extract percentage numbers (e.g., "8%" → 8)
+        $profitTargetPercent = (float) str_replace('%', '', $plan->profit_target);
+        $maxLossPercent      = (float) str_replace('%', '', $plan->max_loss);
+
+        // Extract number of trading days (e.g., "20 Days" → 20)
+        $maxTradingDays = (int) filter_var($plan->payout_cycle, FILTER_SANITIZE_NUMBER_INT);
+
+        // Dynamic Calculations
+        $startingBalance      = $plan->capital;
+        $profitTargetAmount   = $startingBalance * ($profitTargetPercent / 100);
+        $maxDailyLossAmount   = $startingBalance * ($maxLossPercent / 100);
+        $maxOverallLossAmount = $startingBalance * ($maxLossPercent / 100);
+
+        // Insert Challenge Dynamically
+        DB::table('challenges')->insert([
+            'user_id'                     => $userId,
+            'plan_id'                     => $plan->id,
+
+            // Balances
+            'capacity_value'              => $startingBalance,
+            'start_balance'               => $startingBalance,
+            'current_balance'             => $startingBalance,
+            'peak_balance'                => $startingBalance,
+
+            // P/L
+            'total_profit'                => 0,
+            'total_loss'                  => 0,
+
+            // Drawdowns
+            'daily_drawdown'              => 0,
+            'overall_drawdown'            => 0,
+
+            'phase'                       => 1,
+            'status'                      => 'active',
+
+            // Trading days
+            'min_days_required'           => 5,
+            'valid_days_completed_days'   => 0,
+            'max_trading_days'            => $maxTradingDays ?: null,
+            'trading_days_elapsed'        => 0,
+
+            // Risk rules
+            'profit_target_percent'       => $profitTargetPercent,
+            'max_daily_loss_percent'      => $maxLossPercent,
+            'max_overall_loss_percent'    => $maxLossPercent,
+
+            // Risk in amounts
+            'profit_target_amount'        => $profitTargetAmount,
+            'max_daily_loss_amount'       => $maxDailyLossAmount,
+            'max_overall_loss_amount'     => $maxOverallLossAmount,
+
+            'current_daily_loss_percent'  => 0,
+            'current_overall_loss_percent'=> 0,
+
+            // Payout
+            'next_payout_eligible_at'     => null,
+            'payout_amount'               => 0,
+            'last_payout_at'              => null,
+
+            // Dates
+            'started_at'                  => now(),
+            'ended_at'                    => null,
+            'passed_at'                   => null,
+            'failed_at'                   => null,
+
+            // Account ID
+            'account_id'                  => 'DEMO-' . strtoupper(Str::random(8)),
+
+            // Plan Rules saved inside meta
+            'meta' => json_encode([
+                'drawdown_type'     => $plan->drawdown_type,
+                'payout_cycle'      => $plan->payout_cycle,
+                'news_trading'      => (int) $plan->news_trading,
+                'weekend_holding'   => (int) $plan->weekend_holding,
+            ]),
+
+            'is_demo'                     => true,
+            'created_at'                  => now(),
+            'updated_at'                  => now(),
         ]);
 
-        // DUMMY RAZORPAY MODE (FOR TESTING WITHOUT CREDENTIALS)
-        if ($request->gateway === 'razorpay' && config('app.env') !== 'production') {
-            // Simulate successful payment instantly
-            $purchase->update([
-                'status'             => 'pending',
-                'gateway_order_id'   => 'order_dummy_' . $purchase->id,
-                'gateway_payment_id' => 'pay_dummy_' . $purchase->id,
-                'gateway_response'   => json_encode(['simulated' => true, 'message' => 'Test payment success']),
-            ]);
-
-            return redirect()->route('payment.success')
-                ->with('success', 'Test Payment Successful! (Dummy Mode)');
-        }
-
-        // Real flow for PhonePe & PayPal (or when in production)
-        return match ($request->gateway) {
-            'razorpay' => $this->initiateRazorpayPayment($purchase),
-            'phonepe'  => $this->initiatePhonePePayment($purchase),
-            'paypal'   => $this->initiatePayPalPayment($purchase),
-            default    => back()->with('error', 'Invalid payment method'),
-        };
+        return redirect()->route('payment.success')
+            ->with('success', 'Test Payment Successful! Challenge Created.');
     }
+
+    // -------------------------------------------------------------
+    // LIVE MODE: PhonePe, Razorpay (Production), PayPal
+    // -------------------------------------------------------------
+    return match ($request->gateway) {
+        'razorpay' => $this->initiateRazorpayPayment($purchase),
+        'phonepe'  => $this->initiatePhonePePayment($purchase),
+        'paypal'   => $this->initiatePayPalPayment($purchase),
+        default    => back()->with('error', 'Invalid payment method'),
+    };
+}
+
 
     // ==================== RAZORPAY ====================
     private function initiateRazorpayPayment($purchase)

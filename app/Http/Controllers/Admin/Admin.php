@@ -7,29 +7,32 @@ use App\Helpers\FirebaseHelper;
 use App\Http\Controllers\Controller;
 
 use App\Mail\SendMailreset;
+use App\Models\BackgroundCertificate;
+
+use App\Models\Challenge;
+
+use App\Models\ChambeadorProfile;
 use App\Models\City;
 
 use App\Models\Country;
-
 use App\Models\File;
 use App\Models\Folder;
-
+use App\Models\IdentityCard;
 use App\Models\Notification;
+
+use App\Models\Order;
 use App\Models\PasswordReset;
+use App\Models\TradeLog;
 use App\Models\User;
+
 use App\Notifications\VerifyEmailNotification;
 use App\Traits\SendNotification;
-
 use Carbon\Carbon;
-use App\Models\ChambeadorProfile;
-use App\Models\BackgroundCertificate;
-use App\Models\IdentityCard;
-
-use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash as FacadesHash;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\URL;
@@ -149,16 +152,58 @@ class Admin extends Controller
 
     public function dashboard(Request $request)
     {
-        if (Session::has('LoggedIn')) {
-
-
-
-            $user_session = User::where('id', Session::get('LoggedIn'))->first();
-
-
-
-            return view('dashboards.default_dashboard', compact('user_session'));
+        if (!Session::has('LoggedIn')) {
+            return redirect('login')->with('fail', 'Please login first.');
         }
+
+        $user_session = User::find(Session::get('LoggedIn'));
+
+
+
+        // Stats
+        $totalUsers = User::count();
+        $activeChallenges = Challenge::where('status', 'active')->count();
+        $todayOrders = Order::whereDate('created_at', today())->count();
+
+        // Monthly P&L
+        $monthlyPnL = TradeLog::whereMonth('exit_time', now()->month)
+            ->whereYear('exit_time', now()->year)
+            ->sum('profit_loss');
+
+        // Chart Data - Last 6 months P&L
+        $monthlyLabels = [];
+        $monthlyData = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $date = Carbon::now()->subMonths($i);
+            $monthlyLabels[] = $date->format('M Y');
+            $monthlyData[] = TradeLog::whereMonth('exit_time', $date->month)
+                ->whereYear('exit_time', $date->year)
+                ->sum('profit_loss');
+        }
+
+        // User Growth
+        $thisMonthUsers = User::whereMonth('created_at', now()->month)->count();
+        $lastMonthUsers = User::whereMonth('created_at', now()->subMonth()->month)->count();
+
+        // Recent Trades
+        $recentTrades = TradeLog::with('user')
+            ->whereNotNull('exit_time')
+            ->latest('exit_time')
+            ->limit(10)
+            ->get();
+
+        return view('dashboards.default_dashboard', compact(
+            'user_session',
+            'totalUsers',
+            'activeChallenges',
+            'todayOrders',
+            'monthlyPnL',
+            'monthlyLabels',
+            'monthlyData',
+            'thisMonthUsers',
+            'lastMonthUsers',
+            'recentTrades'
+        ));
     }
     public function file_manager(Request $request)
     {

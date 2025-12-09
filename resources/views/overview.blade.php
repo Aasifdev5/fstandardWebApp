@@ -131,7 +131,7 @@
         <div class="alert alert-info text-center py-5">
             <h4>No Active Challenge</h4>
             <p>Purchase a plan to start trading!</p>
-            <a href="{{ route('plans.index') }}" class="btn btn-primary btn-lg mt-3">View Plans</a>
+            <a href="{{ url('/') }}" class="btn btn-primary btn-lg mt-3">View Plans</a>
         </div>
     @endif
 

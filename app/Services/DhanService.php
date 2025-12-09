@@ -7,111 +7,118 @@ use Illuminate\Support\Facades\Log;
 
 class DhanService
 {
-    protected string $baseUrl = 'https://api.dhan.co/v2/';
+    protected string $baseUrl;
     protected string $clientId;
     protected string $accessToken;
 
     public function __construct()
     {
-        $this->clientId    = env('DHAN_CLIENT_ID');         // e.g., 1100123456
-        $this->accessToken = env('DHAN_ACCESS_TOKEN');      // JWT token from Dhan
+        $this->clientId     = env('DHAN_CLIENT_ID');
+        $this->accessToken  = env('DHAN_ACCESS_TOKEN');
+        $this->baseUrl      = rtrim(env('DHAN_BASE_URL', 'https://api.dhan.co/v2'), '/') . '/';
 
         if (!$this->clientId || !$this->accessToken) {
-            throw new \Exception('DHAN_CLIENT_ID and DHAN_ACCESS_TOKEN must be set in .env');
+            throw new \Exception('Missing DHAN_CLIENT_ID or DHAN_ACCESS_TOKEN in .env');
         }
     }
 
     private function headers(): array
     {
         return [
-            'access-token'      => $this->accessToken,
-            'Content-Type'  => 'application/json',
-            'Accept'        => 'application/json',
+            'client-id'    => $this->clientId,
+            'access-token' => $this->accessToken,
+            'Content-Type' => 'application/json',
+            'Accept'       => 'application/json',
         ];
     }
 
-    // ====================================================================
-    // ORDERS
-    // ====================================================================
+    // -------------------------------
+    // ORDER API
+    // -------------------------------
     public function placeOrder(array $payload)
     {
-        $payload['dhanClientId'] = $this->clientId; // REQUIRED in body
-        return Http::withHeaders($this->headers())
-                   ->post($this->baseUrl . 'orders', $payload);
+        $payload['dhanClientId'] = $this->clientId;
+
+        $response = Http::withHeaders($this->headers())
+            ->post($this->baseUrl . 'orders', $payload);
+
+        return $this->handle($response);
     }
 
-    public function getOrderStatus(string $orderId)
+    public function getOrderStatus($orderId)
     {
-        return Http::withHeaders($this->headers())
-                   ->get($this->baseUrl . 'orders/' . $orderId);
+        $response = Http::withHeaders($this->headers())
+            ->get($this->baseUrl . "orders/{$orderId}");
+
+        return $this->handle($response);
     }
 
+    // -------------------------------
+    // BOOKS
+    // -------------------------------
     public function getOrderBook()
     {
-        return Http::withHeaders($this->headers())
-                   ->get($this->baseUrl . 'orders');
+        return $this->handle(
+            Http::withHeaders($this->headers())
+                ->get($this->baseUrl . 'orders')
+        );
     }
 
-    public function modifyOrder(string $orderId, array $payload)
-    {
-        $payload['dhanClientId'] = $this->clientId;
-        return Http::withHeaders($this->headers())
-                   ->put($this->baseUrl . 'orders/' . $orderId, $payload);
-    }
-
-    public function cancelOrder(string $orderId)
-    {
-        return Http::withHeaders($this->headers())
-                   ->delete($this->baseUrl . 'orders/' . $orderId);
-    }
-
-    // ====================================================================
-    // TRADES & POSITIONS
-    // ====================================================================
     public function getTradeBook()
     {
-        return Http::withHeaders($this->headers())
-                   ->get($this->baseUrl . 'trades');
+        return $this->handle(
+            Http::withHeaders($this->headers())
+                ->get($this->baseUrl . 'trades')
+        );
     }
 
     public function getPositions()
     {
-        return Http::withHeaders($this->headers())
-                   ->get($this->baseUrl . 'positions');
+        return $this->handle(
+            Http::withHeaders($this->headers())
+                ->get($this->baseUrl . 'positions')
+        );
     }
 
     public function getHoldings()
     {
-        return Http::withHeaders($this->headers())
-                   ->get($this->baseUrl . 'holdings');
+        return $this->handle(
+            Http::withHeaders($this->headers())
+                ->get($this->baseUrl . 'holdings')
+        );
     }
 
-    // ====================================================================
-    // FUND LIMITS
-    // ====================================================================
+    // -------------------------------
+    // FUND LIMIT
+    // -------------------------------
     public function getFundLimits()
     {
-        return Http::withHeaders($this->headers())
-                   ->get($this->baseUrl . 'fundlimit');
+        return $this->handle(
+            Http::withHeaders($this->headers())
+                ->get($this->baseUrl . 'fundlimit')
+        );
     }
 
-    // ====================================================================
-    // Helper
-    // ====================================================================
-    public function success($response): bool
+    // -------------------------------
+    // RESPONSE HANDLER
+    // -------------------------------
+    private function handle($response)
     {
-        return $response->successful() && ($response->json('status') ?? $response->json('orderStatus')) !== 'REJECTED';
-    }
-
-    public function handle($response)
-    {
-        if (!$this->success($response)) {
-            Log::error('Dhan API Error', [
+        if (!$response->successful()) {
+            Log::error('Dhan API ERROR', [
                 'status' => $response->status(),
-                'body'   => $response->body(),
+                'body'   => $response->body()
             ]);
-            return ['success' => false, 'data' => $response->json()];
+
+            return [
+                'success' => false,
+                'error'   => $response->json()
+            ];
         }
-        return ['success' => true, 'data' => $response->json()];
+
+        return [
+            'success' => true,
+            'data'    => $response->json()
+        ];
     }
 }

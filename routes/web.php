@@ -56,9 +56,10 @@ use App\Http\Controllers\Admin\SystemTradeConfigController;
 use App\Http\Controllers\Admin\TagController;
 use App\Http\Controllers\Admin\TestimonialController;
 
+use App\Http\Controllers\Admin\TradeController;
 use App\Http\Controllers\AffiliateController;
 use App\Http\Controllers\KycVerificationController;
-use App\Http\Controllers\OrderController;
+use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\User\PlanPurchaseController;
 use App\Http\Controllers\UserController;
 use App\Http\Middleware\SetLocale;
@@ -70,13 +71,35 @@ use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Session;
+use App\Http\Controllers\Admin\PositionController;
+
+use App\Services\DhanService;
 
 
 
 
 
+Route::get('/test-dhan', function() {
+    $dhan = new DhanService();
 
+    return $dhan->getOrderBook(); // change to anything you want to test
+});
+Route::get('/test-place-order', function () {
+    $dhan = new \App\Services\DhanService();
 
+    $payload = [
+        "transactionType" => "BUY",
+        "exchangeSegment" => "NSE_EQ",
+        "productType"     => "INTRADAY",
+        "securityId"      => "1333",     // Example: INFY
+        "quantity"        => 1,
+        "price"           => 0,
+        "orderType"       => "MARKET",
+        "validity"        => "DAY",
+    ];
+
+    return $dhan->placeOrder($payload);
+});
 
 
 
@@ -305,6 +328,18 @@ Route::group(['prefix' => 'admin', 'middleware' => ['check.session']], function 
 
     Route::group(['middleware' => 'admin-prevent-back-history', SetLocale::class], function () {
 
+
+        // Orders
+        Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+        Route::get('/orders/open', [OrderController::class, 'open'])->name('orders.open');
+        Route::get('/orders/history', [OrderController::class, 'history'])->name('orders.history');
+
+        // Trades
+        Route::get('/trades', [TradeController::class, 'index'])->name('trades.index');
+
+        // Positions
+        Route::get('/positions', [PositionController::class, 'index'])->name('positions.index');
+        Route::get('/positions/history', [PositionController::class, 'history'])->name('positions.history');
 
         Route::get('/kyc', [KycVerificationController::class, 'adminIndex'])->name('kyc.index');
         Route::post('/kyc/{kyc}/approve', [KycVerificationController::class, 'approve'])->name('kyc.approve');

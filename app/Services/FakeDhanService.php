@@ -10,7 +10,7 @@ use GuzzleHttp\Psr7\Response as GuzzleResponse;
 
 class FakeDhanService
 {
-    protected string $clientId = '1100998877'; // fake client ID
+    protected string $clientId = '1100998877';
     protected array $orders = [];
     protected array $trades = [];
     protected array $positions = [];
@@ -23,7 +23,6 @@ class FakeDhanService
 
     private function seedFakeData(): void
     {
-        // Fake Order Book
         $this->orders = [
             [
                 'orderId'         => '412312300001',
@@ -69,7 +68,6 @@ class FakeDhanService
             ],
         ];
 
-        // Fake Positions
         $this->positions = [
             [
                 'tradingSymbol' => 'RELIANCE',
@@ -81,7 +79,6 @@ class FakeDhanService
             ],
         ];
 
-        // Fake Holdings (Delivery)
         $this->holdings = [
             [
                 'tradingSymbol' => 'HDFCBANK',
@@ -92,7 +89,6 @@ class FakeDhanService
             ],
         ];
 
-        // Fake Trades
         $this->trades = [
             [
                 'tradeId'        => 'T123456789',
@@ -106,24 +102,24 @@ class FakeDhanService
         ];
     }
 
-    // ====================================================================
+    // ========================================
     // ORDER METHODS
-    // ====================================================================
+    // ========================================
 
     public function placeOrder(array $payload)
     {
         $fakeOrderId = '4123' . date('dmy') . rand(10000, 99999);
 
         $fakeOrder = [
-            'orderId'        => $fakeOrderId,
-            'orderStatus'    => 'PENDING',
-            'message'        => 'Order accepted',
+            'orderId'     => $fakeOrderId,
+            'orderStatus' => 'PENDING',
+            'message'     => 'Order accepted',
         ];
 
         // Add to fake order book
         $this->orders[] = [
             'orderId'         => $fakeOrderId,
-            => strtoupper($payload['securityId'] === '1333' ? 'RELIANCE' : 'TCS'),
+            'tradingSymbol'   => strtoupper($payload['securityId'] === '1333' ? 'RELIANCE' : ($payload['securityId'] === '11536' ? 'TCS' : 'STOCK')),
             'securityId'      => $payload['securityId'],
             'transactionType' => $payload['transactionType'],
             'orderType'       => $payload['orderType'],
@@ -136,8 +132,8 @@ class FakeDhanService
             'exchangeTime'    => now()->format('Y-m-d H:i:s'),
         ];
 
-        // Simulate instant fill for MARKET orders after 3 seconds
-        if ($payload['orderType'] === 'MARKET') {
+        // Simulate instant fill for MARKET orders
+        if (($payload['orderType'] ?? '') === 'MARKET') {
             foreach ($this->orders as &$order) {
                 if ($order['orderId'] === $fakeOrderId) {
                     $order['tradedQuantity'] = $order['quantity'];
@@ -179,9 +175,9 @@ class FakeDhanService
         return new Response(new GuzzleResponse(400, [], json_encode(['message' => 'Cannot cancel filled/rejected order'])));
     }
 
-    // ====================================================================
+    // ========================================
     // TRADE & POSITION METHODS
-    // ====================================================================
+    // ========================================
 
     public function getTradeBook()
     {
@@ -207,9 +203,9 @@ class FakeDhanService
         ])));
     }
 
-    // ====================================================================
-    // HELPER METHODS (same signature as real service)
-    // ====================================================================
+    // ========================================
+    // HELPER METHODS
+    // ========================================
 
     public function ok($response): bool
     {

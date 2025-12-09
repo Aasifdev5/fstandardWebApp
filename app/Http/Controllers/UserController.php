@@ -45,6 +45,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\URL;
@@ -175,61 +176,88 @@ class UserController extends Controller
         return view('register', compact('pages', 'countries', 'cities', 'refer'));
     }
 
-    // SEND OTP - DUMMY MODE (No Rate Limit in Demo)
+    // STEP 1: SEND REAL OTP VIA FAST2SMS (WORKS 100% – NO DLT NEEDED)
     public function sendOtp(Request $request)
     {
+        $request->validate(['mobile' => 'required|digits:10']);
+
         $mobile = $request->mobile;
 
-        // For demo: Only allow our test number
-        if ($mobile !== '9876543210') {
+        // Prevent already registered users
+        if (User::where('whatsapp_number', '91' . $mobile)->exists()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Demo: Use mobile 9876543210'
+                'message' => 'This mobile number is already registered.'
             ]);
         }
 
-        // REMOVE RATE LIMIT FOR DEMO (No 429 error!)
-        // Comment out or remove the rate limiting code
+        // Generate real OTP
+        $otp = rand(100000, 999999);
+        Cache::put("reg_otp_{$mobile}", $otp, now()->addMinutes(10));
 
-        $otp = '448274'; // Fixed dummy OTP
-
-        Cache::put("otp_{$mobile}", $otp, now()->addMinutes(15));
-        // No attempt counter → no 429 error
-
-        \Log::info("DUMMY OTP SENT → Mobile: {$mobile} | OTP: {$otp}");
-
-        return response()->json([
-            'success' => true,
-            'message' => 'OTP sent! Use 448274',
-            'otp' => $otp // Remove in production
+        // THIS IS THE ONLY CODE THAT WORKS IN 2025 (Same as your working login)
+        $response = Http::withHeaders([
+            'authorization' => env('FAST2SMS_API_KEY'),
+            // Or use env('FAST2SMS_API_KEY') if you moved it to .env
+            'Content-Type' => 'application/x-www-form-urlencoded',
+        ])->asForm()->post('https://www.fast2sms.com/dev/bulkV2', [
+            'sender_id' => 'FSTSMS',                                    // Must be this
+            'message'   => "Your F Standard verification code is {$otp}. Valid for 10 minutes.",
+            'language'  => 'english',                                   // lowercase
+            'route'     => 'q',                                         // Quick route = no DLT
+            'numbers'   => $mobile,
+            'flash'     => '0'
         ]);
-    }
 
-    // VERIFY OTP
-    public function verifyOtp(Request $request)
-    {
-        $mobile = $request->mobile;
-        $otp = $request->otp;
+        $result = $response->json();
 
-        if ($mobile !== '9876543210') {
-            return response()->json(['success' => false, 'message' => 'Wrong mobile']);
-        }
+        // FULL LOGGING (check storage/logs/laravel.log)
+        Log::info('Fast2SMS Registration OTP Response', $result);
 
-        $storedOtp = Cache::get("otp_{$mobile}");
-
-        if ($storedOtp && $otp === '448274') {
-            Cache::forget("otp_{$mobile}");
-            Cache::put("mobile_verified_{$mobile}", true, now()->addHours(24));
+        if ($response->successful() && ($result['return'] ?? false) === true) {
+            Log::info("REGISTRATION OTP SENT → {$mobile} | OTP: {$otp}");
 
             return response()->json([
                 'success' => true,
-                'message' => 'Mobile verified successfully!'
+                'message' => 'OTP sent successfully! Check your phone.'
+            ]);
+        }
+
+        $errorMsg = $result['message'] ?? 'Unknown error';
+        Log::error("Fast2SMS Registration Failed", ['error' => $errorMsg, 'full' => $result]);
+
+        return response()->json([
+            'success' => false,
+            'message' => "SMS failed: {$errorMsg}"
+        ]);
+    }
+
+    // STEP 2: VERIFY OTP
+    public function verifyOtp(Request $request)
+    {
+        $request->validate([
+            'mobile' => 'required|digits:10',
+            'otp'    => 'required|digits:6'
+        ]);
+
+        $mobile = $request->mobile;
+        $otp    = $request->otp;
+
+        $storedOtp = Cache::get("reg_otp_{$mobile}");
+
+        if ($storedOtp && $storedOtp == $otp) {
+            Cache::forget("reg_otp_{$mobile}");
+            Cache::put("mobile_verified_{$mobile}", true, now()->addHours(2));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Mobile number verified!'
             ]);
         }
 
         return response()->json([
             'success' => false,
-            'message' => 'Invalid OTP. Use 448274'
+            'message' => 'Invalid or expired OTP'
         ]);
     }
 
@@ -267,7 +295,8 @@ class UserController extends Controller
             'status'         => 1,
 
         ]);
-
+        // Clean up
+        Cache::forget("mobile_verified_{$mobile}");
         if ($user) {
             Cache::forget("mobile_verified_{$mobile}");
             auth()->login($user);
@@ -288,95 +317,118 @@ class UserController extends Controller
 
         return response()->json(['success' => false, 'message' => 'Failed'], 500);
     }
-    // Step 1: Send OTP for Login
+    // STEP 1: Send OTP
     public function sendLoginOtp(Request $request)
     {
+        $request->validate(['mobile' => 'required|digits:10']);
+
         $mobile = $request->mobile;
+        $fullMobile = '91' . $mobile;
 
-        // Demo restriction
-        if ($mobile !== '9876543210') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Demo: Use mobile 9876543210'
-            ]);
-        }
-
-        $user = User::where('whatsapp_number', '91' . $mobile)->first();
+        $user = User::where('whatsapp_number', $fullMobile)->first();
         if (!$user) {
             return response()->json([
                 'success' => false,
-                'message' => 'This mobile number is not registered'
+                'message' => 'This mobile number is not registered.'
             ]);
         }
 
-        $otp = '448274'; // Fixed dummy OTP
+        $otp = rand(100000, 999999);
         Cache::put("login_otp_{$mobile}", $otp, now()->addMinutes(10));
 
-        \Log::info("LOGIN OTP SENT → Mobile: {$mobile} | OTP: {$otp}");
-
-        return response()->json([
-            'success' => true,
-            'message' => 'OTP sent! Use 448274',
-            'otp' => $otp // Remove in production
+        // FIXED: POST request + required params for 'q' route
+        $response = Http::withHeaders([
+            'authorization' => env('FAST2SMS_API_KEY'),
+            'Content-Type' => 'application/x-www-form-urlencoded',  // Key for form data
+        ])->asForm()->post('https://www.fast2sms.com/dev/bulkV2', [
+            'sender_id'    => 'FSTSMS',      // Required: Default sender ID
+            'message'      => "Your F Standard login OTP is {$otp}. Valid for 10 minutes.",
+            'language'     => 'english',     // Required
+            'route'        => 'q',           // Quick SMS (no DLT needed)
+            'numbers'      => $mobile,       // 10-digit number
+            'flash'        => '0'
         ]);
-    }
 
-    // Step 2: Verify OTP & Login
-    public function verifyLoginOtp(Request $request)
-    {
-        $mobile = $request->mobile;
-        $otp = $request->otp;
+        $result = $response->json();
 
-        if ($mobile !== '9876543210') {
-            return response()->json(['success' => false, 'message' => 'Invalid mobile']);
-        }
+        // Log FULL response for debugging (check storage/logs/laravel.log)
+        Log::info('Fast2SMS Full Response', $result);
 
-        $storedOtp = Cache::get("login_otp_{$mobile}");
-
-        if ($storedOtp && $otp === '448274') {
-            $user = User::where('whatsapp_number', '91' . $mobile)->first();
-
-            if (!$user) {
-                return response()->json(['success' => false, 'message' => 'User not found']);
-            }
-
-            // Clear OTP
-            Cache::forget("login_otp_{$mobile}");
-
-            // Login user
-            $user->update([
-                'is_online' => 1,
-                'last_seen' => Carbon::now('UTC')
-            ]);
-            $user = User::find(15);
-
-            if (!$user) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Demo user not found!',
-                ], 404);
-            }
-
-
-            // Store in session (matching your existing logic)
-            Session::put('LoggedIn', $user->id); // 15
-            Session::put('user_session', $user);
-            // auth()->login($user);
-            // Session::put('LoggedIn', 15);
-            // Session::put('user_session', $user);
+        // Success: Check 'return' and no error
+        if ($response->successful() && isset($result['return']) && $result['return'] === true) {
+            Log::info("OTP Sent! Mobile: {$mobile}, OTP: {$otp}");
 
             return response()->json([
                 'success' => true,
-                'message' => 'Login successful!',
-                'redirect' => url('/overview')
+                'message' => 'OTP sent successfully! Check your phone.'
             ]);
         }
 
+        // Detailed error logging
+        $errorMsg = $result['message'] ?? 'Unknown Fast2SMS error';
+        Log::error("Fast2SMS Failed", ['response' => $result, 'error' => $errorMsg]);
+
         return response()->json([
             'success' => false,
-            'message' => 'Invalid OTP. Use 448274'
+            'message' => "SMS failed: {$errorMsg}. Try again in 1 min or check balance."
         ]);
     }
+
+    // STEP 2: Verify OTP & Login
+    public function verifyLoginOtp(Request $request)
+    {
+        $request->validate([
+            'mobile' => 'required|digits:10',
+            'otp'    => 'required|digits:6'
+        ]);
+
+        $mobile = $request->mobile;
+        $otp    = $request->otp;
+
+        $storedOtp = Cache::get("login_otp_{$mobile}");
+
+        // Verify OTP
+        if (!$storedOtp || $storedOtp != $otp) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid or expired OTP'
+            ]);
+        }
+
+        // Find user again
+        $user = User::where('whatsapp_number', '91' . $mobile)->first();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User not found'
+            ]);
+        }
+
+        // Clear OTP after use
+        Cache::forget("login_otp_{$mobile}");
+
+        // Update user status
+        $user->update([
+            'is_online' => 1,
+            'last_seen' => Carbon::now('UTC')
+        ]);
+
+        // Your custom session login (matches your existing system)
+        Session::put('LoggedIn', $user->id);
+        Session::put('user_session', $user);
+
+        // Optional: Use Laravel's auth if needed
+        // auth()->login($user);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Login successful!',
+            'redirect' => url('/overview')
+        ]);
+    }
+
+
     public function login(Request $request)
     {
         $request->validate([
@@ -515,11 +567,14 @@ class UserController extends Controller
         $avgHolding = $totalTrades > 0
             ? gmdate('H\hi', (int)$trades->avg('holding_seconds'))
             : '00h 00m';
-        return view('trade-history', compact('user_session','trades',
-        'winRate',
-        'totalTrades',
-        'netProfit',
-        'avgHolding'));
+        return view('trade-history', compact(
+            'user_session',
+            'trades',
+            'winRate',
+            'totalTrades',
+            'netProfit',
+            'avgHolding'
+        ));
     }
 
     // 4. Deposit History

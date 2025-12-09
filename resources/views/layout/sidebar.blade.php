@@ -239,25 +239,43 @@
                                 <span class="ms-2 align-middle">Orders</span>
                             </a>
                         </li> --}}
-                        <li class="sidebar-list {{ Request::is('blogs*') ? 'active' : '' }}"><i
-                                class="fa fa-thumb-tack"></i>
+                        <!-- Manage Trades & Positions -->
+                        <li
+                            class="sidebar-list {{ Request::is('admin/trades*') || Request::is('admin/positions*') ? 'active' : '' }}">
                             <a class="sidebar-link sidebar-title" href="javascript:void(0)">
-                                <i class="fa fa-bar-chart-o text-light"></i>&nbsp;&nbsp;
-                                <span>{{ __('Manage Trade') }}</span>
+                                <i class="fa fa-bar-chart text-light"></i>
+                                <span>{{ __('Trading Activity') }}</span>
                             </a>
                             <ul class="sidebar-submenu">
-                                <li><a class="{{ Request::is('blog/blog-category/index') ? 'active' : '' }}"
-                                        href="{{ route('blog.blog-category.index') }}">{{ __('Trade History') }}</a>
+                                <li>
+                                    <a class="{{ Request::is('admin/trades') ? 'active' : '' }}"
+                                        href="{{ route('trades.index') }}">
+                                        <i class="fa fa-history"></i> Trade History
+                                    </a>
                                 </li>
-                                <li><a class="{{ Request::is('blog/create') ? 'active' : '' }}"
-                                        href="{{ route('blog.create') }}">{{ __('Open Order') }}</a></li>
-                                <li><a class="{{ Request::is('blog/index') ? 'active' : '' }}"
-                                        href="{{ route('blog.index') }}">{{ __('Order History') }}</a></li>
-                                <li><a class="{{ Request::is('blog/blog-comment-list') ? 'active' : '' }}"
-                                        href="{{ route('blog.blog-comment-list') }}">{{ __('Open Position') }}</a>
+                                <li>
+                                    <a class="{{ Request::is('admin/orders/open') ? 'active' : '' }}"
+                                        href="{{ route('orders.open') }}">
+                                        <i class="fa fa-clock-o"></i> Open Orders
+                                    </a>
                                 </li>
-                                <li><a class="{{ Request::is('blog/blog-category/index') ? 'active' : '' }}"
-                                        href="{{ route('blog.blog-category.index') }}">{{ __('Position History') }}</a>
+                                <li>
+                                    <a class="{{ Request::is('admin/orders/history') ? 'active' : '' }}"
+                                        href="{{ route('orders.history') }}">
+                                        <i class="fa fa-list-alt"></i> Order History
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="{{ Request::is('admin/positions') ? 'active' : '' }}"
+                                        href="{{ route('positions.index') }}">
+                                        <i class="fa fa-line-chart"></i> Open Positions
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="{{ Request::is('admin/positions/history') ? 'active' : '' }}"
+                                        href="{{ route('positions.history') }}">
+                                        <i class="fa fa-archive"></i> Position History
+                                    </a>
                                 </li>
                             </ul>
                         </li>
@@ -288,10 +306,10 @@
                                 <span>{{ __('Pages') }}</span>
                             </a>
                         </li> --}}
-                        <li class="sidebar-list {{ Request::is('admin/mail-templates') ? 'active' : '' }}"><i
-                                class="fa fa-thumb-tack"></i>
-                            <a class="sidebar-link sidebar-title link-nav" href="{{ url('admin/mail-templates') }}">
-                                <i class="fa fa-gavel text-light"></i>&nbsp;&nbsp;
+                        <!-- Manage Orders -->
+                        <li class="sidebar-list {{ Request::is('admin/orders*') ? 'active' : '' }}">
+                            <a class="sidebar-link sidebar-title link-nav" href="{{ route('orders.index') }}">
+                                <i class="fa fa-gavel text-light"></i>
                                 <span>{{ __('Manage Orders') }}</span>
                             </a>
                         </li>
