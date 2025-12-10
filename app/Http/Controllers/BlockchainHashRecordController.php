@@ -3,28 +3,56 @@
 namespace App\Http\Controllers;
 
 use App\Models\BlockchainHashRecord;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Session;
 
 class BlockchainHashRecordController extends Controller
 {
-    /**
-     * List records
-     */
     public function index(Request $request)
     {
-        return BlockchainHashRecord::with('user')
+        if (!Session::has('LoggedIn')) {
+            return redirect()->route('login');
+        }
+
+        $records = BlockchainHashRecord::with('user')
             ->orderBy('for_date', 'desc')
-            ->paginate(20);
+            ->paginate(50);
+        $user_session = User::where('id', Session::get('LoggedIn'))->first();
+        return view('admin.blockchain-hash-records.index', compact('records','user_session'));
     }
 
-    /**
-     * Show record
-     */
     public function show($id)
     {
-        return BlockchainHashRecord::with('user')->findOrFail($id);
+        if (!Session::has('LoggedIn')) {
+            return redirect()->route('login');
+        }
+        $user_session = User::where('id', Session::get('LoggedIn'))->first();
+        $record = BlockchainHashRecord::with('user')->findOrFail($id);
+        return view('admin.blockchain-hash-records.show', compact('record', 'user_session'));
     }
 
+    public function destroy($id)
+    {
+        if (!Session::has('LoggedIn')) {
+            return response()->json(['success' => false], 401);
+        }
+
+        BlockchainHashRecord::findOrFail($id)->delete();
+        return response()->json(['success' => true]);
+    }
+
+    public function bulkDelete(Request $request)
+    {
+        if (!Session::has('LoggedIn')) {
+            return response()->json(['success' => false], 401);
+        }
+
+        $ids = $request->input('ids', []);
+        BlockchainHashRecord::whereIn('id', $ids)->delete();
+
+        return response()->json(['success' => true]);
+    }
     /**
      * Store new hash record (usually system-generated)
      */

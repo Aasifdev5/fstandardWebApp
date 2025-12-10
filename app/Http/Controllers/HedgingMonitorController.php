@@ -3,20 +3,44 @@
 namespace App\Http\Controllers;
 
 use App\Models\HedgingMonitor;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Session;
 
 class HedgingMonitorController extends Controller
 {
     public function index()
     {
-        return HedgingMonitor::with(['userA', 'userB'])
+        if (!Session::has('LoggedIn')) return redirect()->route('login');
+        $user_session = User::where('id', Session::get('LoggedIn'))->first();
+        $monitors = HedgingMonitor::with(['userA', 'userB'])
             ->orderBy('id', 'desc')
-            ->paginate(20);
+            ->paginate(50);
+
+        return view('admin.hedging-monitor.index', compact('monitors','user_session'));
     }
 
     public function show($id)
     {
-        return HedgingMonitor::with(['userA', 'userB'])->findOrFail($id);
+        if (!Session::has('LoggedIn')) return redirect()->route('login');
+        $monitor = HedgingMonitor::with(['userA', 'userB'])->findOrFail($id);
+        $user_session = User::where('id', Session::get('LoggedIn'))->first();
+        return view('admin.hedging-monitor.show', compact('monitor','user_session'));
+    }
+
+    public function destroy($id)
+    {
+        if (!Session::has('LoggedIn')) return response()->json(['success' => false], 401);
+        HedgingMonitor::findOrFail($id)->delete();
+        return response()->json(['success' => true]);
+    }
+
+    public function bulkDelete(Request $request)
+    {
+        if (!Session::has('LoggedIn')) return response()->json(['success' => false], 401);
+        $ids = $request->input('ids', []);
+        HedgingMonitor::whereIn('id', $ids)->delete();
+        return response()->json(['success' => true]);
     }
 
     public function store(Request $request)

@@ -7,10 +7,6 @@ use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder {
     public function run() {
-        $this->call([
-
-            ProductSeeder::class,
-            QuotationSeeder::class,
-        ]);
+       $this->call(RiskComplianceSeeder::class);
     }
 }

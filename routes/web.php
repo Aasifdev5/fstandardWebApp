@@ -43,43 +43,51 @@ use App\Http\Controllers\Admin\NotificationSettingController;
 
 use App\Http\Controllers\Admin\NotificationTemplateController;
 
+use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\Pages;
 use App\Http\Controllers\Admin\PortfolioController;
+use App\Http\Controllers\Admin\PositionController;
 use App\Http\Controllers\Admin\QRCodeController;
 use App\Http\Controllers\Admin\ReferralSettingController;
+
 use App\Http\Controllers\Admin\ResetPasswordController;
 use App\Http\Controllers\Admin\SettingController;
-
 use App\Http\Controllers\Admin\SubcategoryController;
 use App\Http\Controllers\Admin\SupportTicketController;
 use App\Http\Controllers\Admin\SystemTradeConfigController;
+
 use App\Http\Controllers\Admin\TagController;
 use App\Http\Controllers\Admin\TestimonialController;
-
 use App\Http\Controllers\Admin\TradeController;
 use App\Http\Controllers\AffiliateController;
+use App\Http\Controllers\BlockchainHashRecordController;
+use App\Http\Controllers\DelayedFeedAssignmentController;
+use App\Http\Controllers\HedgingMonitorController;
 use App\Http\Controllers\KycVerificationController;
-use App\Http\Controllers\Admin\OrderController;
+use App\Http\Controllers\SlippageProfileController;
 use App\Http\Controllers\User\PlanPurchaseController;
 use App\Http\Controllers\UserController;
 use App\Http\Middleware\SetLocale;
 use App\Models\Language;
 use App\Models\PlanPurchase;
 use App\Models\User;
+use App\Services\DhanService;
+
 use Carbon\Carbon;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Session;
-use App\Http\Controllers\Admin\PositionController;
-
-use App\Services\DhanService;
 
 
 
 
 
-Route::get('/test-dhan', function() {
+
+
+
+
+Route::get('/test-dhan', function () {
     $dhan = new DhanService();
 
     return $dhan->getOrderBook(); // change to anything you want to test
@@ -328,6 +336,24 @@ Route::group(['prefix' => 'admin', 'middleware' => ['check.session']], function 
 
     Route::group(['middleware' => 'admin-prevent-back-history', SetLocale::class], function () {
 
+
+
+
+        // Blockchain Hash Records
+        Route::resource('blockchain-hash-records', BlockchainHashRecordController::class)->except(['create', 'edit']);
+        Route::delete('blockchain-hash-records/bulk-delete', [BlockchainHashRecordController::class, 'bulkDelete'])->name('blockchain-hash-records.bulk-delete');
+
+        // Delayed Feed Assignments
+        Route::resource('delayed-feed-assignments', DelayedFeedAssignmentController::class)->except(['create', 'edit']);
+        Route::delete('delayed-feed-assignments/bulk-delete', [DelayedFeedAssignmentController::class, 'bulkDelete'])->name('delayed-feed-assignments.bulk-delete');
+
+        // Hedging Monitor
+        Route::resource('hedging-monitor', HedgingMonitorController::class)->except(['create', 'edit']);
+        Route::delete('hedging-monitor/bulk-delete', [HedgingMonitorController::class, 'bulkDelete'])->name('hedging-monitor.bulk-delete');
+
+        // Slippage Profiles
+        Route::resource('slippage-profiles', SlippageProfileController::class)->except(['create', 'edit']);
+        Route::delete('slippage-profiles/bulk-delete', [SlippageProfileController::class, 'bulkDelete'])->name('slippage-profiles.bulk-delete');
 
         // Orders
         Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');

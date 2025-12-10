@@ -4,10 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class SlippageProfile extends Model
 {
-    protected $table = 'slippage_profile';
+    use HasFactory;
+
+    protected $table = 'slippage_profiles';
 
     protected $fillable = [
         'user_id',

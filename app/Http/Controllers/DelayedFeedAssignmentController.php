@@ -3,20 +3,44 @@
 namespace App\Http\Controllers;
 
 use App\Models\DelayedFeedAssignment;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Session;
 
 class DelayedFeedAssignmentController extends Controller
 {
     public function index()
     {
-        return DelayedFeedAssignment::with('user')
+        if (!Session::has('LoggedIn')) return redirect()->route('login');
+
+        $assignments = DelayedFeedAssignment::with('user')
             ->orderBy('id', 'desc')
-            ->paginate(20);
+            ->paginate(50);
+        $user_session = User::where('id', Session::get('LoggedIn'))->first();
+        return view('admin.delayed-feed-assignments.index', compact('assignments','user_session'));
     }
 
     public function show($id)
     {
-        return DelayedFeedAssignment::with('user')->findOrFail($id);
+        if (!Session::has('LoggedIn')) return redirect()->route('login');
+        $assignment = DelayedFeedAssignment::with('user')->findOrFail($id);
+        $user_session = User::where('id', Session::get('LoggedIn'))->first();
+        return view('admin.delayed-feed-assignments.show', compact('assignment','user_session'));
+    }
+
+    public function destroy($id)
+    {
+        if (!Session::has('LoggedIn')) return response()->json(['success' => false], 401);
+        DelayedFeedAssignment::findOrFail($id)->delete();
+        return response()->json(['success' => true]);
+    }
+
+    public function bulkDelete(Request $request)
+    {
+        if (!Session::has('LoggedIn')) return response()->json(['success' => false], 401);
+        $ids = $request->input('ids', []);
+        DelayedFeedAssignment::whereIn('id', $ids)->delete();
+        return response()->json(['success' => true]);
     }
 
     public function store(Request $request)

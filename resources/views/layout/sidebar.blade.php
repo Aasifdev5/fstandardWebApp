@@ -243,7 +243,7 @@
                         <li
                             class="sidebar-list {{ Request::is('admin/trades*') || Request::is('admin/positions*') ? 'active' : '' }}">
                             <a class="sidebar-link sidebar-title" href="javascript:void(0)">
-                                <i class="fa fa-bar-chart text-light"></i>
+                                <i class="fa fa-bar-chart text-light"></i>&nbsp;&nbsp;&nbsp;
                                 <span>{{ __('Trading Activity') }}</span>
                             </a>
                             <ul class="sidebar-submenu">
@@ -277,6 +277,51 @@
                                         <i class="fa fa-archive"></i> Position History
                                     </a>
                                 </li>
+                            </ul>
+                        </li>
+                        <li
+                            class="sidebar-list {{ Request::is('admin/blockchain-hash-records*') ||
+                            Request::is('admin/delayed-feed-assignments*') ||
+                            Request::is('admin/hedging-monitor*') ||
+                            Request::is('admin/slippage-profiles*')
+                                ? 'active'
+                                : '' }}">
+                            <a class="sidebar-link sidebar-title" href="javascript:void(0)">
+                                <i class="fa fa-shield text-light" style="margin-left:3px;"></i>
+
+                                &nbsp;&nbsp;&nbsp;
+                                <span>Risk & Compliance</span>
+                            </a>
+                            <ul class="sidebar-submenu">
+
+                                <li>
+                                    <a class="{{ Request::is('admin/blockchain-hash-records*') ? 'active' : '' }}"
+                                        href="{{ route('blockchain-hash-records.index') }}">
+                                        <i class="fa fa-link"></i> Blockchain Hash Records
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a class="{{ Request::is('admin/delayed-feed-assignments*') ? 'active' : '' }}"
+                                        href="{{ route('delayed-feed-assignments.index') }}">
+                                        <i class="fa fa-clock-o"></i> Delayed Feed Assignments
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a class="{{ Request::is('admin/hedging-monitor*') ? 'active' : '' }}"
+                                        href="{{ route('hedging-monitor.index') }}">
+                                        <i class="fa fa-balance-scale"></i> Hedging Monitor
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a class="{{ Request::is('admin/slippage-profiles*') ? 'active' : '' }}"
+                                        href="{{ route('slippage-profiles.index') }}">
+                                        <i class="fa fa-tachometer"></i> Slippage Profiles
+                                    </a>
+                                </li>
+
                             </ul>
                         </li>
                         <li class="sidebar-list {{ Request::is('blogs*') ? 'active' : '' }}"><i

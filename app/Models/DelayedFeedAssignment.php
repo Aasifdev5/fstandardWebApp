@@ -4,10 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class DelayedFeedAssignment extends Model
 {
-    protected $table = 'delayed_feed_assignment';
+    use HasFactory;
+
+    protected $table = 'delayed_feed_assignments';
 
     protected $fillable = [
         'user_id',
