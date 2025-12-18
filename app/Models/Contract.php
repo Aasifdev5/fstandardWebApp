@@ -2,38 +2,42 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Contract extends Model
 {
     use HasFactory;
+
     protected $fillable = [
-        'service_request_id',
-        'proposal_id',
-        'client_id',
-        'worker_id',
-        'agreed_budget',
-        'status',
+        'instrument_id',
+        'contract_symbol',
+        'contract_type',
+        'option_type',
+        'strike_price',
+        'expiry_date',
+        'multiplier',
+        'is_active',
     ];
 
-    public function serviceRequest()
+    protected $casts = [
+        'strike_price' => 'decimal:2',
+        'expiry_date'  => 'date',
+        'is_active'    => 'boolean',
+    ];
+
+    public function instrument()
     {
-        return $this->belongsTo(ServiceRequest::class);
+        return $this->belongsTo(Instrument::class);
     }
 
-    public function proposal()
+    public function futuresState()
     {
-        return $this->belongsTo(Proposal::class);
+        return $this->hasOne(FuturesState::class);
     }
 
-    public function client()
+    public function optionsState()
     {
-        return $this->belongsTo(User::class, 'client_id');
-    }
-
-    public function worker()
-    {
-        return $this->belongsTo(User::class, 'worker_id');
+        return $this->hasOne(OptionsState::class);
     }
 }

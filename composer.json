@@ -21,6 +21,7 @@
         "laravel/sanctum": "^3.3",
         "laravel/tinker": "^2.8",
         "maatwebsite/excel": "^3.1",
+        "markrogoyski/math-php": "^2.13",
         "phpoffice/phpspreadsheet": "1.30",
         "razorpay/razorpay": "^2.9",
         "spatie/laravel-permission": "^6.21",

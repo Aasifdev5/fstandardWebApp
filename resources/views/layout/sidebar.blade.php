@@ -279,6 +279,13 @@
                                 </li>
                             </ul>
                         </li>
+                        <li class="sidebar-list {{ Request::is('admin/instruments*') ? 'active' : '' }}">
+                            <a class="sidebar-link sidebar-title" href="{{ route('instruments.index') }}">
+                                <i class="fa fa-bar-chart text-light" style="margin-left:3px;"></i>
+                                &nbsp;&nbsp;&nbsp;
+                                <span>Instruments</span>
+                            </a>
+                        </li>
                         <li
                             class="sidebar-list {{ Request::is('admin/blockchain-hash-records*') ||
                             Request::is('admin/delayed-feed-assignments*') ||

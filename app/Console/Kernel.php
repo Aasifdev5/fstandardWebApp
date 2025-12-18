@@ -4,39 +4,59 @@ namespace App\Console;
 
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
-use App\Models\Equipment;
 use Illuminate\Support\Facades\Log;
 
 class Kernel extends ConsoleKernel
 {
+    /**
+     * Define the application's command schedule.
+     */
     protected function schedule(Schedule $schedule)
     {
-        // Daily check for inspection reminders and critical alerts
-        $schedule->call(function () {
-            $equipments = Equipment::with('inspections', 'client')->get();
+        // Run Underlyings every minute
+        $schedule->command('market:run-underlyings')
+                 ->everyMinute()
+                 ->withoutOverlapping()
+                 ->runInBackground()
+                 ->onSuccess(fn() => Log::info('RunUnderlyings executed successfully'))
+                 ->onFailure(fn() => Log::error('RunUnderlyings failed'));
 
-            foreach ($equipments as $equipment) {
-                $lastInspection = $equipment->inspections()->latest()->first();
-                if (!$lastInspection) continue;
+        // Run Options every minute
+        $schedule->command('market:run-options')
+                 ->everyMinute()
+                 ->withoutOverlapping()
+                 ->runInBackground()
+                 ->onSuccess(fn() => Log::info('RunOptions executed successfully'))
+                 ->onFailure(fn() => Log::error('RunOptions failed'));
 
-                $nextInspection = $lastInspection->inspected_at->addMonths(6);
-                $isCritical = $lastInspection->status === 'critical';
+        // Run News every 5 minutes
+        $schedule->command('market:run-news')
+                 ->everyFiveMinutes()
+                 ->withoutOverlapping()
+                 ->runInBackground()
+                 ->onSuccess(fn() => Log::info('RunNews executed successfully'))
+                 ->onFailure(fn() => Log::error('RunNews failed'));
 
-                // Send reminder if next inspection is within 30 days
-                if (!$isCritical && $nextInspection->isFuture() && $nextInspection->diffInDays(now()) <= 30) {
-                    $equipment->notifyClient('reminder');
-                    Log::info("Reminder email sent for equipment {$equipment->code} on {$nextInspection}");
-                }
+        // Run Futures every minute
+        $schedule->command('market:run-futures')
+                 ->everyMinute()
+                 ->withoutOverlapping()
+                 ->runInBackground()
+                 ->onSuccess(fn() => Log::info('RunFutures executed successfully'))
+                 ->onFailure(fn() => Log::error('RunFutures failed'));
 
-                // Send alert if status is critical
-                if ($isCritical) {
-                    $equipment->notifyClient('critical');
-                    Log::info("Critical alert email sent for equipment {$equipment->code}");
-                }
-            }
-        })->dailyAt('08:00'); // Run every day at 8 AM
+        // Generate Contracts every hour
+        $schedule->command('market:generate-contracts')
+                 ->hourly()
+                 ->withoutOverlapping()
+                 ->runInBackground()
+                 ->onSuccess(fn() => Log::info('GenerateContracts executed successfully'))
+                 ->onFailure(fn() => Log::error('GenerateContracts failed'));
     }
 
+    /**
+     * Register the commands for the application.
+     */
     protected function commands()
     {
         $this->load(__DIR__.'/Commands');

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Dec 10, 2025 at 05:48 AM
+-- Generation Time: Dec 18, 2025 at 06:16 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -574,6 +574,26 @@ INSERT INTO `blog_tags` (`id`, `blog_id`, `tag_id`, `created_at`, `updated_at`) 
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `candles`
+--
+
+CREATE TABLE `candles` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `symbol` varchar(255) NOT NULL,
+  `timeframe` varchar(255) NOT NULL,
+  `timestamp` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `open` decimal(15,2) NOT NULL,
+  `high` decimal(15,2) NOT NULL,
+  `low` decimal(15,2) NOT NULL,
+  `close` decimal(15,2) NOT NULL,
+  `volume` bigint(20) NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `categories`
 --
 
@@ -911,71 +931,17 @@ INSERT INTO `contact_us_issues` (`id`, `uuid`, `name`, `status`, `created_at`, `
 
 CREATE TABLE `contracts` (
   `id` bigint(20) UNSIGNED NOT NULL,
-  `service_request_id` bigint(20) UNSIGNED NOT NULL,
-  `proposal_id` bigint(20) UNSIGNED DEFAULT NULL,
-  `client_id` bigint(20) UNSIGNED NOT NULL,
-  `worker_id` bigint(20) UNSIGNED NOT NULL,
-  `agreed_budget` decimal(10,2) NOT NULL,
-  `status` varchar(255) NOT NULL DEFAULT 'pending',
+  `instrument_id` bigint(20) UNSIGNED NOT NULL,
+  `contract_symbol` varchar(255) NOT NULL,
+  `contract_type` enum('FUTURE','OPTION') NOT NULL,
+  `option_type` enum('CALL','PUT') DEFAULT NULL,
+  `strike_price` decimal(15,2) DEFAULT NULL,
+  `expiry_date` date NOT NULL,
+  `multiplier` int(11) NOT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Dumping data for table `contracts`
---
-
-INSERT INTO `contracts` (`id`, `service_request_id`, `proposal_id`, `client_id`, `worker_id`, `agreed_budget`, `status`, `created_at`, `updated_at`) VALUES
-(1, 18, 1, 41, 44, 3.00, 'completed', '2025-07-19 08:03:34', '2025-07-19 08:08:46'),
-(2, 19, 2, 41, 44, 55.00, 'completed', '2025-07-19 08:12:42', '2025-07-19 08:13:31'),
-(3, 20, 3, 41, 44, 45.00, 'completed', '2025-07-19 08:58:07', '2025-07-19 09:00:58'),
-(11, 41, 5, 41, 44, 55.00, 'accepted', '2025-07-28 07:02:39', '2025-07-28 07:02:39'),
-(12, 44, 6, 41, 46, 56.00, 'accepted', '2025-08-01 15:51:41', '2025-08-01 15:51:41'),
-(21, 43, 9, 41, 44, 456.00, 'accepted', '2025-08-07 08:39:07', '2025-08-07 08:39:07'),
-(29, 67, 33, 46, 94, 645.00, 'completed', '2025-09-09 17:13:00', '2025-09-09 17:37:30'),
-(30, 68, 34, 46, 94, 500.00, 'completed', '2025-09-09 17:21:57', '2025-09-09 17:38:46'),
-(31, 69, 35, 46, 94, 500.00, 'accepted', '2025-09-09 17:43:26', '2025-09-09 17:43:26'),
-(32, 71, 37, 46, 84, 500.00, 'accepted', '2025-09-10 16:06:59', '2025-09-10 16:06:59'),
-(33, 72, 38, 46, 84, 500.00, 'accepted', '2025-09-10 16:14:12', '2025-09-10 16:14:12'),
-(34, 73, 39, 46, 84, 500.00, 'accepted', '2025-09-11 18:23:13', '2025-09-11 18:23:13'),
-(35, 64, 24, 84, 70, 800.00, 'accepted', '2025-09-12 19:42:14', '2025-09-12 19:42:14'),
-(36, 74, 41, 46, 84, 2000.00, 'completed', '2025-09-12 20:46:46', '2025-09-13 11:11:44'),
-(37, 75, 43, 84, 49, 150.00, 'completed', '2025-09-14 05:15:24', '2025-09-14 05:17:52'),
-(38, 76, 45, 84, 49, 150.00, 'accepted', '2025-09-14 05:21:13', '2025-09-14 05:21:13'),
-(39, 77, 46, 84, 49, 150.00, 'completed', '2025-09-14 05:21:28', '2025-09-14 05:40:36'),
-(40, 78, 47, 84, 49, 6545.00, 'completed', '2025-09-14 05:44:05', '2025-09-14 05:46:52'),
-(41, 79, 48, 41, 44, 6.00, 'completed', '2025-09-14 06:54:18', '2025-09-14 06:55:59'),
-(42, 80, 49, 41, 104, 6.00, 'accepted', '2025-09-14 07:37:09', '2025-09-14 07:37:09'),
-(43, 81, 50, 41, 42, 6.00, 'accepted', '2025-09-14 07:49:49', '2025-09-14 07:49:49'),
-(44, 82, 51, 84, 49, 256.00, 'accepted', '2025-09-14 08:08:22', '2025-09-14 08:08:22'),
-(45, 83, 52, 41, 132, 59.00, 'accepted', '2025-09-14 08:37:19', '2025-09-14 08:37:19'),
-(46, 84, 53, 84, 49, 25.00, 'accepted', '2025-09-14 08:39:08', '2025-09-14 08:39:08'),
-(47, 85, 54, 41, 133, 2356.00, 'accepted', '2025-09-14 08:50:22', '2025-09-14 08:50:22'),
-(48, 86, 55, 41, 133, 3556.00, 'completed', '2025-09-14 09:48:49', '2025-09-14 09:52:01'),
-(49, 87, 56, 41, 133, 556.00, 'accepted', '2025-09-14 09:55:10', '2025-09-14 09:55:10'),
-(50, 88, 57, 84, 68, 2500.00, 'completed', '2025-09-14 14:37:56', '2025-09-14 14:59:50'),
-(51, 50, 17, 70, 84, 1.00, 'accepted', '2025-09-14 18:02:43', '2025-09-14 18:02:43'),
-(52, 99, 60, 68, 84, 2000.00, 'in progress', '2025-09-15 11:16:56', '2025-09-15 11:18:35'),
-(53, 100, 61, 46, 84, 100.00, 'completed', '2025-09-15 15:26:54', '2025-09-18 18:54:02'),
-(54, 103, 62, 84, 46, 26.00, 'completed', '2025-09-15 17:14:46', '2025-09-18 22:26:38'),
-(55, 104, 63, 46, 84, 250.00, 'completed', '2025-09-16 00:55:20', '2025-09-16 00:57:26'),
-(56, 105, 64, 84, 46, 1.00, 'completed', '2025-09-16 01:11:31', '2025-09-16 01:31:57'),
-(57, 107, 66, 136, 41, 235.00, 'accepted', '2025-09-16 04:04:53', '2025-09-16 04:04:53'),
-(58, 113, 70, 84, 46, 25.00, 'completed', '2025-09-16 12:40:21', '2025-09-17 18:19:06'),
-(59, 116, 71, 46, 84, 250.00, 'completed', '2025-09-17 04:56:43', '2025-09-17 05:05:50'),
-(60, 121, 72, 49, 84, 500.00, 'completed', '2025-09-18 18:49:51', '2025-09-18 18:52:47'),
-(61, 127, 76, 135, 84, 80.00, 'completed', '2025-09-18 23:51:38', '2025-09-23 20:52:02'),
-(62, 47, 10, 57, 57, 100.00, 'completed', '2025-09-21 03:26:58', '2025-09-23 11:46:17'),
-(63, 123, 73, 84, 46, 125.00, 'accepted', '2025-09-23 02:08:16', '2025-09-23 02:08:16'),
-(64, 89, 58, 69, 70, 50.00, 'accepted', '2025-09-23 03:12:15', '2025-09-23 03:12:15'),
-(65, 131, 77, 57, 84, 80.00, 'in progress', '2025-09-23 11:37:57', '2025-09-23 20:51:03'),
-(66, 136, 78, 57, 57, 100.00, 'accepted', '2025-09-23 11:49:00', '2025-09-23 11:49:00'),
-(67, 137, 79, 57, 57, 100.00, 'accepted', '2025-09-23 11:49:49', '2025-09-23 11:49:49'),
-(68, 143, 82, 46, 84, 280.00, 'completed', '2025-09-23 20:38:01', '2025-09-23 20:48:00'),
-(69, 146, 83, 139, 46, 250.00, 'accepted', '2025-09-24 20:49:44', '2025-09-24 20:49:44'),
-(70, 148, 84, 69, 46, 300.00, 'completed', '2025-09-24 21:41:43', '2025-09-24 22:15:43'),
-(71, 151, 87, 144, 84, 150.00, 'completed', '2025-09-25 15:21:30', '2025-09-25 15:33:40'),
-(72, 152, 89, 144, 135, 70.00, 'completed', '2025-09-25 17:17:51', '2025-09-25 17:23:37');
 
 -- --------------------------------------------------------
 
@@ -1367,6 +1333,20 @@ INSERT INTO `funding_plans` (`id`, `title`, `capital`, `fee`, `profit_target`, `
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `futures_states`
+--
+
+CREATE TABLE `futures_states` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `contract_id` bigint(20) UNSIGNED NOT NULL,
+  `last_price` decimal(15,2) NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `hedging_monitors`
 --
 
@@ -1432,6 +1412,55 @@ INSERT INTO `hedging_monitors` (`id`, `user_a`, `user_b`, `triggers`, `hedging_s
 (43, 4, 1, '[\"same_ip_different_broker\",\"opposite_positions_same_script\",\"budget_day_arbitrage\"]', 0.8740, 'alert', '{\"ip_address\":\"27.79.155.59\",\"city\":\"Jammu\",\"brokers\":[\"Alice Blue\",\"Zerodha\"],\"scripts\":[\"TCS\",\"FINNIFTY\",\"BANKNIFTY\"],\"time_difference_sec\":2}', '2025-12-09 22:55:37', '2025-12-09 22:55:37'),
 (44, 4, 1, '[\"same_ip_different_broker\",\"mirror_trades_zerodha_upstox\",\"opposite_positions_same_script\",\"high_frequency_BANKNIFTY\"]', 0.8482, 'none', '{\"ip_address\":\"123.117.4.76\",\"city\":\"Vadodara\",\"brokers\":[\"Angel One\",\"Zerodha\"],\"scripts\":[\"NIFTY\",\"HDFCBANK\",\"FINNIFTY\"],\"time_difference_sec\":24}', '2025-12-09 22:55:37', '2025-12-09 22:55:37'),
 (45, 13, 15, '[\"same_ip_different_broker\",\"opposite_positions_same_script\"]', 0.8726, 'alert', '{\"ip_address\":\"52.29.153.47\",\"city\":\"Thiruvananthapuram\",\"brokers\":[\"Angel One\",\"Upstox\"],\"scripts\":[\"NIFTY\",\"FINNIFTY\",\"RELIANCE\"],\"time_difference_sec\":4}', '2025-12-09 22:55:37', '2025-12-09 22:55:37');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `instruments`
+--
+
+CREATE TABLE `instruments` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `symbol` varchar(255) NOT NULL,
+  `category` varchar(255) NOT NULL,
+  `sector` varchar(255) NOT NULL,
+  `base_price` decimal(15,2) NOT NULL,
+  `volatility_class` varchar(255) NOT NULL,
+  `tick_size` decimal(15,4) NOT NULL,
+  `lot_size` int(11) NOT NULL,
+  `session_start` time NOT NULL,
+  `session_end` time NOT NULL,
+  `news_sensitivity` varchar(255) NOT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `instruments`
+--
+
+INSERT INTO `instruments` (`id`, `symbol`, `category`, `sector`, `base_price`, `volatility_class`, `tick_size`, `lot_size`, `session_start`, `session_end`, `news_sensitivity`, `is_active`, `created_at`, `updated_at`) VALUES
+(1, 'FSI HDFC', 'stock', 'Banking', 10000.00, 'high', 5.0000, 10, '09:45:00', '11:45:00', 'very_high', 1, '2025-12-17 21:44:18', '2025-12-17 23:19:57'),
+(5, 'FSI-NF50', 'index', 'broad_market', 22850.00, 'medium', 0.5000, 25, '00:00:00', '00:00:00', 'high', 1, '2025-12-17 23:20:13', '2025-12-17 23:20:13'),
+(6, 'FSI-BN', 'index', 'banking', 48700.00, 'high', 1.0000, 15, '00:00:00', '00:00:00', 'very_high', 1, '2025-12-17 23:20:13', '2025-12-17 23:20:13'),
+(7, 'FSI-GLD', 'commodity', 'bullion', 66500.00, 'medium', 1.0000, 100, '00:00:00', '00:00:00', 'high', 1, '2025-12-17 23:20:13', '2025-12-17 23:20:13');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `instrument_news_states`
+--
+
+CREATE TABLE `instrument_news_states` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `instrument_id` bigint(20) UNSIGNED NOT NULL,
+  `active` tinyint(1) NOT NULL DEFAULT 0,
+  `direction` enum('up','down') DEFAULT NULL,
+  `ends_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -1718,7 +1747,14 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (69, '2025_12_07_025642_create_orders_table', 45),
 (70, '2025_12_07_025736_create_trades_table', 45),
 (71, '2025_12_07_030207_create_challenges_table', 45),
-(72, '2025_12_07_033521_safe_enhance_orders_table', 46);
+(72, '2025_12_07_033521_safe_enhance_orders_table', 46),
+(73, '2025_12_18_021319_create_instruments_table', 47),
+(74, '2025_12_18_021417_create_contracts_table', 47),
+(75, '2025_12_18_021520_create_underlying_states_table', 48),
+(76, '2025_12_18_021555_create_futures_states_table', 48),
+(77, '2025_12_18_021617_create_options_states_table', 48),
+(78, '2025_12_18_021638_create_candles_table', 48),
+(79, '2025_12_18_021704_create_instrument_news_states_table', 48);
 
 -- --------------------------------------------------------
 
@@ -1869,6 +1905,21 @@ INSERT INTO `notification_templates` (`id`, `act`, `name`, `subject`, `push_titl
 (21, 'REFERRAL_COMMISSION', 'Referral Commission', 'Referral Bonus Credited', NULL, '<div>You received <b>{{amount}} INR</b> as referral commission.<br><br>Level: {{level}}<br>Transaction: {{trx}}<br>Current Balance: <b>{{post_balance}} INR</b></div>', 'You earned {{amount}} INR referral bonus!', NULL, '{\"amount\":\"Bonus amount\",\"level\":\"Referral level\",\"trx\":\"Transaction ID\",\"post_balance\":\"Current balance\"}', 1, NULL, NULL, 1, NULL, 0, '2021-11-03 06:30:00', '2025-11-28 04:30:00'),
 (22, 'RECEIVED_MONEY', 'Money Received', 'You Received Money', NULL, '<div>You received <b>{{amount}} INR</b> from {{from_username}}</div>', 'Received {{amount}} INR from {{from_username}}', NULL, '{\"amount\":\"Amount\",\"from_username\":\"Sender\"}', 1, NULL, NULL, 1, NULL, 0, '2021-11-03 06:30:00', '2025-11-28 04:30:00'),
 (23, 'TRANSFER_MONEY', 'Money Transferred', 'Money Sent Successfully', NULL, '<div>You sent <b>{{amount}} INR</b> to {{to_username}}</div>', 'Sent {{amount}} INR to {{to_username}}', NULL, '{\"amount\":\"Amount\",\"to_username\":\"Receiver\"}', 1, NULL, NULL, 1, NULL, 0, '2021-11-03 06:30:00', '2025-11-28 04:30:00');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `options_states`
+--
+
+CREATE TABLE `options_states` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `contract_id` bigint(20) UNSIGNED NOT NULL,
+  `last_price` decimal(15,2) NOT NULL,
+  `implied_volatility` decimal(15,4) NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -3022,6 +3073,23 @@ CREATE TABLE `transactions` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `underlying_states`
+--
+
+CREATE TABLE `underlying_states` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `instrument_id` bigint(20) UNSIGNED NOT NULL,
+  `last_price` decimal(15,2) NOT NULL,
+  `regime` enum('normal','trend_up','trend_down','high_volatility','crash') NOT NULL,
+  `drift` decimal(15,4) NOT NULL,
+  `volatility` decimal(15,4) NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `users`
 --
 
@@ -3080,7 +3148,7 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `uid`, `fcm_token`, `rating`, `username`, `is_active`, `profile_photo`, `mode`, `account_type`, `balance`, `is_subscribed`, `refer`, `level`, `is_online`, `last_seen`, `birth_date`, `role`, `permissions`, `name`, `email`, `google_id`, `email_verified_at`, `password`, `custom_password`, `whatsapp_number`, `about`, `city`, `facebook`, `instagram`, `linkedin`, `twitter`, `address`, `status`, `remember_token`, `ip_address`, `is_system`, `country`, `created_by`, `deleted_at`, `language`, `is_super_admin`, `created_at`, `updated_at`, `is_affiliate`, `referral_code`, `affiliate_earnings`, `commission_rate`) VALUES
-(1, NULL, NULL, NULL, NULL, 1, '', 'dark', 'admin', NULL, 0, NULL, NULL, 1, '2025-12-09 22:14:52', NULL, '1', NULL, 'SUPER ADMINISTRADOR', 'admin@fstandard.lat', NULL, '2023-03-23 07:45:02', '$2y$10$sgLXLiwlfSqKV7pPTSgco.SLKcpQwOg.L4VrnH.DBVirfour.CGLa', '987654321', '8878326802', NULL, 'bolivia', NULL, NULL, NULL, NULL, 'sdfafa', 1, NULL, '127.0.0.1', 1, '1', NULL, NULL, 'es', 1, '2023-03-23 07:45:02', '2025-12-09 22:14:52', 0, NULL, 0.00, 18.00),
+(1, NULL, NULL, NULL, NULL, 1, '', 'dark', 'admin', NULL, 0, NULL, NULL, 1, '2025-12-17 23:19:33', NULL, '1', NULL, 'SUPER ADMINISTRADOR', 'admin@fstandard.lat', NULL, '2023-03-23 07:45:02', '$2y$10$sgLXLiwlfSqKV7pPTSgco.SLKcpQwOg.L4VrnH.DBVirfour.CGLa', '987654321', '8878326802', NULL, 'bolivia', NULL, NULL, NULL, NULL, 'sdfafa', 1, NULL, '127.0.0.1', 1, '1', NULL, NULL, 'es', 1, '2023-03-23 07:45:02', '2025-12-17 21:10:22', 0, NULL, 0.00, 18.00),
 (4, NULL, NULL, NULL, NULL, 1, NULL, 'dark', 'user', NULL, NULL, NULL, '0', 1, '2025-10-18 18:22:47', NULL, 'Trabajador', NULL, 'Juan Perez', 'arstech2a@gmail.com', NULL, NULL, '$2y$10$DG1ruRDoU1bRb9JA.Y4JZ.aSnnW.9mmA8NRNbC6PrM2Ua0/Rv4z5G', '987654321', '591591594332', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, NULL, NULL, 0, NULL, NULL, NULL, '\'en\'', 0, '2025-10-17 01:19:30', '2025-10-18 18:22:47', 0, NULL, 0.00, 18.00),
 (5, NULL, NULL, NULL, NULL, 1, NULL, 'light', 'user', NULL, NULL, NULL, '0', 0, '2025-12-08 19:05:03', NULL, 'Trabajador', NULL, 'Aasif Ahmed', 'hrnatrajinfotech@gmail.com', NULL, NULL, '$2y$10$4KiwKo1otj1W6hm2aqVSju7bonYEIaa38SAMa6YHaCH0eWUzEMoK6', NULL, '919993605837', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, NULL, '127.0.0.1', 0, NULL, NULL, NULL, '\'en\'', 0, '2025-11-24 05:09:31', '2025-12-08 23:05:03', 0, '9XTD4BQM7P', 0.00, 18.00),
 (13, NULL, NULL, NULL, NULL, 1, NULL, 'light', 'user', NULL, NULL, NULL, '0', 0, '2025-11-24 03:31:57', NULL, 'Trabajador', NULL, 'Tarija', 'aasifdev5@gmail.com', NULL, '2025-11-24 06:38:54', '$2y$10$.wBqoNcObZUM8schU9Mx5eZvNAx61U0Pa1/RmSQTSHajqNAJcSG7C', NULL, '919876543210', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, NULL, '127.0.0.1', 0, NULL, NULL, NULL, '\'en\'', 0, '2025-11-24 06:38:32', '2025-11-24 07:31:57', 0, NULL, 0.00, 18.00),
@@ -3243,6 +3311,13 @@ ALTER TABLE `blog_tags`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indexes for table `candles`
+--
+ALTER TABLE `candles`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `candles_symbol_timeframe_timestamp_unique` (`symbol`,`timeframe`,`timestamp`);
+
+--
 -- Indexes for table `categories`
 --
 ALTER TABLE `categories`
@@ -3309,8 +3384,8 @@ ALTER TABLE `contact_us_issues`
 --
 ALTER TABLE `contracts`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `contracts_service_request_id_foreign` (`service_request_id`),
-  ADD KEY `contracts_proposal_id_foreign` (`proposal_id`);
+  ADD UNIQUE KEY `contracts_contract_symbol_unique` (`contract_symbol`),
+  ADD KEY `contracts_instrument_id_foreign` (`instrument_id`);
 
 --
 -- Indexes for table `countries`
@@ -3392,10 +3467,31 @@ ALTER TABLE `funding_plans`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indexes for table `futures_states`
+--
+ALTER TABLE `futures_states`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `futures_states_contract_id_unique` (`contract_id`);
+
+--
 -- Indexes for table `hedging_monitors`
 --
 ALTER TABLE `hedging_monitors`
   ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `instruments`
+--
+ALTER TABLE `instruments`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `instruments_symbol_unique` (`symbol`);
+
+--
+-- Indexes for table `instrument_news_states`
+--
+ALTER TABLE `instrument_news_states`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `instrument_news_states_instrument_id_unique` (`instrument_id`);
 
 --
 -- Indexes for table `kyc_verifications`
@@ -3455,6 +3551,13 @@ ALTER TABLE `notifications`
 --
 ALTER TABLE `notification_settings`
   ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `options_states`
+--
+ALTER TABLE `options_states`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `options_states_contract_id_unique` (`contract_id`);
 
 --
 -- Indexes for table `orders`
@@ -3627,6 +3730,13 @@ ALTER TABLE `trade_logs`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indexes for table `underlying_states`
+--
+ALTER TABLE `underlying_states`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `underlying_states_instrument_id_unique` (`instrument_id`);
+
+--
 -- Indexes for table `users`
 --
 ALTER TABLE `users`
@@ -3737,6 +3847,12 @@ ALTER TABLE `blog_tags`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
 
 --
+-- AUTO_INCREMENT for table `candles`
+--
+ALTER TABLE `candles`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `categories`
 --
 ALTER TABLE `categories`
@@ -3800,7 +3916,7 @@ ALTER TABLE `contact_us_issues`
 -- AUTO_INCREMENT for table `contracts`
 --
 ALTER TABLE `contracts`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=73;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `countries`
@@ -3875,10 +3991,28 @@ ALTER TABLE `funding_plans`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
+-- AUTO_INCREMENT for table `futures_states`
+--
+ALTER TABLE `futures_states`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `hedging_monitors`
 --
 ALTER TABLE `hedging_monitors`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=46;
+
+--
+-- AUTO_INCREMENT for table `instruments`
+--
+ALTER TABLE `instruments`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+
+--
+-- AUTO_INCREMENT for table `instrument_news_states`
+--
+ALTER TABLE `instrument_news_states`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `kyc_verifications`
@@ -3914,7 +4048,7 @@ ALTER TABLE `metas`
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=73;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=80;
 
 --
 -- AUTO_INCREMENT for table `news`
@@ -3933,6 +4067,12 @@ ALTER TABLE `notifications`
 --
 ALTER TABLE `notification_settings`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT for table `options_states`
+--
+ALTER TABLE `options_states`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `orders`
@@ -4091,6 +4231,12 @@ ALTER TABLE `trade_logs`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
+-- AUTO_INCREMENT for table `underlying_states`
+--
+ALTER TABLE `underlying_states`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
@@ -4107,10 +4253,40 @@ ALTER TABLE `withdrawals`
 --
 
 --
+-- Constraints for table `contracts`
+--
+ALTER TABLE `contracts`
+  ADD CONSTRAINT `contracts_instrument_id_foreign` FOREIGN KEY (`instrument_id`) REFERENCES `instruments` (`id`);
+
+--
+-- Constraints for table `futures_states`
+--
+ALTER TABLE `futures_states`
+  ADD CONSTRAINT `futures_states_contract_id_foreign` FOREIGN KEY (`contract_id`) REFERENCES `contracts` (`id`);
+
+--
+-- Constraints for table `instrument_news_states`
+--
+ALTER TABLE `instrument_news_states`
+  ADD CONSTRAINT `instrument_news_states_instrument_id_foreign` FOREIGN KEY (`instrument_id`) REFERENCES `instruments` (`id`);
+
+--
+-- Constraints for table `options_states`
+--
+ALTER TABLE `options_states`
+  ADD CONSTRAINT `options_states_contract_id_foreign` FOREIGN KEY (`contract_id`) REFERENCES `contracts` (`id`);
+
+--
 -- Constraints for table `orders`
 --
 ALTER TABLE `orders`
   ADD CONSTRAINT `orders_challenge_id_foreign` FOREIGN KEY (`challenge_id`) REFERENCES `challenges` (`id`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `underlying_states`
+--
+ALTER TABLE `underlying_states`
+  ADD CONSTRAINT `underlying_states_instrument_id_foreign` FOREIGN KEY (`instrument_id`) REFERENCES `instruments` (`id`);
 
 --
 -- Constraints for table `user_balances`
