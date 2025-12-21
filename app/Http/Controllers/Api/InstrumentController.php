@@ -5,30 +5,43 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Instrument;
 use App\Models\Contract;
-use Carbon\Carbon;
 use App\Models\Candle;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class InstrumentController extends Controller
 {
     public function index()
     {
-        return Instrument::with('underlyingState')->active()->get();
+        return Instrument::with('underlyingState')
+            ->active()
+            ->get();
     }
 
-    public function show($symbol)
+    public function show(string $symbol)
     {
-        $instrument = Instrument::with(['underlyingState', 'contracts' => function ($q) {
-            $q->with('futuresState', 'optionsState')->active();
-        }])->where('symbol', $symbol)->firstOrFail();
-
-        return $instrument;
+        return Instrument::with(['underlyingState'])
+            ->with(['contracts' => function ($query) {
+                $query->active()
+                      ->with(['futuresState', 'optionsState']);
+            }])
+            ->where('symbol', $symbol)
+            ->firstOrFail();
     }
 
-    public function optionChain(Request $request, $symbol)
+    public function optionChain(Request $request, string $symbol)
     {
         $instrument = Instrument::where('symbol', $symbol)->firstOrFail();
-        $expiry = $request->query('expiry', Carbon::now()->addMonth()->lastOfMonth()->previous(Carbon::THURSDAY)->format('Y-m-d'));
+
+        // ⚠ Vue sends expiry_date, not expiry
+        $expiry = $request->query(
+            'expiry_date',
+            Carbon::now()
+                ->addMonth()
+                ->lastOfMonth()
+                ->previous(Carbon::THURSDAY)
+                ->format('Y-m-d')
+        );
 
         $contracts = Contract::where('instrument_id', $instrument->id)
             ->where('expiry_date', $expiry)
@@ -37,31 +50,28 @@ class InstrumentController extends Controller
             ->get()
             ->groupBy('strike_price')
             ->map(function ($group, $strike) {
-                $call = $group->where('option_type', 'CALL')->first();
-                $put = $group->where('option_type', 'PUT')->first();
                 return [
                     'strike' => $strike,
-                    'call' => $call ? $call->load('optionsState') : null,
-                    'put' => $put ? $put->load('optionsState') : null,
+                    'call' => $group->where('option_type', 'CALL')->first(),
+                    'put'  => $group->where('option_type', 'PUT')->first(),
                 ];
-            });
+            })
+            ->values();
 
         return response()->json($contracts);
     }
 
-    public function candles(Request $request, $symbol)
+    public function candles(Request $request, string $symbol)
     {
         $timeframe = $request->query('timeframe', '1m');
-        $limit = $request->query('limit', 100);
+        $limit = (int) $request->query('limit', 200);
 
-        $candles = Candle::where('symbol', $symbol)
+        return Candle::where('symbol', $symbol)
             ->where('timeframe', $timeframe)
             ->orderBy('timestamp', 'desc')
             ->limit($limit)
             ->get()
             ->reverse()
             ->values();
-
-        return $candles;
     }
 }

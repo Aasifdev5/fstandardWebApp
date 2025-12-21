@@ -8,7 +8,7 @@ class OptionsState extends Model
 {
     public $timestamps = false;
 
-    protected $table = 'options_state';
+    protected $table = 'options_states';
 
     protected $fillable = [
         'contract_id',

@@ -8,7 +8,7 @@ class FuturesState extends Model
 {
     public $timestamps = false;
 
-    protected $table = 'futures_state';
+    protected $table = 'futures_states';
 
     protected $fillable = [
         'contract_id',

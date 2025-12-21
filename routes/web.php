@@ -65,26 +65,33 @@ use App\Http\Controllers\BlockchainHashRecordController;
 use App\Http\Controllers\DelayedFeedAssignmentController;
 use App\Http\Controllers\HedgingMonitorController;
 use App\Http\Controllers\KycVerificationController;
+use App\Http\Controllers\MarketController;
 use App\Http\Controllers\SlippageProfileController;
 use App\Http\Controllers\User\PlanPurchaseController;
 use App\Http\Controllers\UserController;
 use App\Http\Middleware\SetLocale;
 use App\Models\Language;
 use App\Models\PlanPurchase;
-use App\Models\User;
 
+use App\Models\User;
 use App\Services\DhanService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+
+
+
+
+
 use Illuminate\Support\Facades\Session;
 
 
 
-
-
-
+// Real-time market chart page (Inertia + Vue)
+// Instrument list
+Route::get('market', [MarketController::class, 'index'])->name('market.index');
+Route::get('/market/{symbol}', [MarketController::class, 'show'])->name('market.chart');
 
 
 

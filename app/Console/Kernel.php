@@ -13,45 +13,24 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // Run Underlyings every minute
-        $schedule->command('market:run-underlyings')
-                 ->everyMinute()
-                 ->withoutOverlapping()
-                 ->runInBackground()
-                 ->onSuccess(fn() => Log::info('RunUnderlyings executed successfully'))
-                 ->onFailure(fn() => Log::error('RunUnderlyings failed'));
-
-        // Run Options every minute
-        $schedule->command('market:run-options')
-                 ->everyMinute()
-                 ->withoutOverlapping()
-                 ->runInBackground()
-                 ->onSuccess(fn() => Log::info('RunOptions executed successfully'))
-                 ->onFailure(fn() => Log::error('RunOptions failed'));
-
-        // Run News every 5 minutes
+        // News engine – synthetic news events (infrequent, no need for second-level precision)
         $schedule->command('market:run-news')
-                 ->everyFiveMinutes()
+                 ->everyFiveMinutes()  // You can change to ->everyMinute() if you want more frequent news
                  ->withoutOverlapping()
                  ->runInBackground()
                  ->onSuccess(fn() => Log::info('RunNews executed successfully'))
                  ->onFailure(fn() => Log::error('RunNews failed'));
 
-        // Run Futures every minute
-        $schedule->command('market:run-futures')
-                 ->everyMinute()
-                 ->withoutOverlapping()
-                 ->runInBackground()
-                 ->onSuccess(fn() => Log::info('RunFutures executed successfully'))
-                 ->onFailure(fn() => Log::error('RunFutures failed'));
-
-        // Generate Contracts every hour
+        // Contract generator – create new monthly expiries automatically
         $schedule->command('market:generate-contracts')
                  ->hourly()
                  ->withoutOverlapping()
                  ->runInBackground()
                  ->onSuccess(fn() => Log::info('GenerateContracts executed successfully'))
                  ->onFailure(fn() => Log::error('GenerateContracts failed'));
+
+        // Optional: Add your market:init-states command here if you want to run it daily (safety net)
+        // $schedule->command('market:init-states')->daily();
     }
 
     /**
@@ -60,6 +39,7 @@ class Kernel extends ConsoleKernel
     protected function commands()
     {
         $this->load(__DIR__.'/Commands');
+
         require base_path('routes/console.php');
     }
 }

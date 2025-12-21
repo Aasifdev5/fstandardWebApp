@@ -8,7 +8,7 @@ class UnderlyingState extends Model
 {
     public $timestamps = false;
 
-    protected $table = 'underlying_state';
+    protected $table = 'underlying_states';
 
     protected $fillable = [
         'instrument_id',

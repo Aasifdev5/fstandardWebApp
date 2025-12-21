@@ -9,7 +9,7 @@ class InstrumentNewsState extends Model
 {
     use HasFactory;
 
-    protected $table = 'instrument_news_state';
+    protected $table = 'instrument_news_states';
 
     protected $fillable = [
         'instrument_id',

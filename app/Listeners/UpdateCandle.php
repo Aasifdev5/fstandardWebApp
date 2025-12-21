@@ -2,14 +2,22 @@
 
 namespace App\Listeners;
 
-use App\Events\UnderlyingTickUpdated; // And similar for futures/options
+use App\Events\UnderlyingTickUpdated;
 use App\Services\CandleAggregator;
 
 class UpdateCandle
 {
-    public function handle(UnderlyingTickUpdated $event)
+    public function __construct(
+        private CandleAggregator $aggregator
+    ) {}
+
+    public function handle(UnderlyingTickUpdated $event): void
     {
-        $aggregator = app(CandleAggregator::class);
-        $aggregator->onTick($event->symbol, '1m', $event->lastPrice, $event->timestamp);
+        $this->aggregator->onTick(
+            $event->symbol,
+            '1m',
+            $event->price,
+            $event->timestamp
+        );
     }
 }
