@@ -4,6 +4,7 @@ namespace App\Listeners;
 
 use App\Events\UnderlyingTickUpdated;
 use App\Services\CandleAggregator;
+use Carbon\Carbon;
 
 class UpdateCandle
 {
@@ -17,7 +18,7 @@ class UpdateCandle
             $event->symbol,
             '1m',
             $event->price,
-            $event->timestamp
+            Carbon::parse($event->timestamp) // ✅ FIX
         );
     }
 }

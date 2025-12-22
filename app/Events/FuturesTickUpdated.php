@@ -28,4 +28,10 @@ class FuturesTickUpdated implements ShouldBroadcast
     {
         return new Channel('market.futures.' . $this->symbol);
     }
+
+    // ADD THIS METHOD
+    public function broadcastAs()
+    {
+        return 'TickUpdated';
+    }
 }
