@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import axios from 'axios'
 import { createChart, CrosshairMode } from 'lightweight-charts'
 import { init as initEcho } from '@/echo.js'
@@ -9,7 +9,7 @@ const props = defineProps({
     expiry: String,
 })
 
-/* ---------------- STATE ---------------- */
+/* ---------------- STATE: CHART & DATA ---------------- */
 const instrument = ref(null)
 const lastPrice = ref(0)
 const priceChange = ref(0)
@@ -20,17 +20,27 @@ const loading = ref(true)
 const selectedTimeframe = ref('1m')
 const chartInitialized = ref(false)
 
+/* ---------------- STATE: ORDER MODAL ---------------- */
 const showOrderModal = ref(false)
 const isSubmitting = ref(false)
+
+// Angel One style structure
 const orderForm = ref({
     side: 'BUY',
+    product: 'MIS',     // MIS (Intraday) or CNC (Delivery)
+    type: 'LIMIT',      // LIMIT, MARKET, SL-LIMIT, SL-MARKET
     quantity: 1,
     price: 0,
-    type: 'MARKET',
-    product: 'MIS'
+    trigger_price: 0,   // For SL orders
+    symbol_display: '', // To show on modal header (e.g. "NIFTY 24000 CE")
+
+    // Smart Order / Robo Fields
+    is_robo: false,     // Toggle for Target/SL
+    stop_loss: 0,       // Absolute price
+    target: 0,
 })
 
-// Non-reactive variables for performance
+// Non-reactive variables
 let chart = null
 let candleSeries = null
 let volumeSeries = null
@@ -46,6 +56,16 @@ const timeframes = [
     { value: '1h', label: '1h', seconds: 3600 },
     { value: '1D', label: '1D', seconds: 86400 }
 ]
+
+/* ---------------- COMPUTED PROPERTIES ---------------- */
+const showOptionChain = computed(() => ['index', 'stock'].includes(instrument.value?.category))
+const isMarket = computed(() => ['MARKET', 'SL-MARKET'].includes(orderForm.value.type))
+const isSL = computed(() => ['SL-LIMIT', 'SL-MARKET'].includes(orderForm.value.type))
+
+const estimatedMargin = computed(() => {
+    const price = isMarket.value ? (lastPrice.value) : (orderForm.value.price || 0)
+    return (price * (orderForm.value.quantity || 0)).toFixed(2)
+})
 
 /* ---------------- CORE LOGIC ---------------- */
 
@@ -140,16 +160,11 @@ function initChart() {
     if (props.symbol) resetAndLoad(props.symbol)
 }
 
-/**
- * UPDATED SOCKET LOGIC
- * Correctly detects channel type and listens for namespaced event
- */
 function initSocket(symbol) {
     if (echo && channelName) echo.leave(channelName)
 
     echo = initEcho()
 
-    // Determine exact channel name
     if (symbol.includes('-F-')) {
         channelName = `market.futures.${symbol}`
     } else if (symbol.includes('-C-') || symbol.includes('-P-')) {
@@ -158,10 +173,8 @@ function initSocket(symbol) {
         channelName = `market.underlying.${symbol}`
     }
 
-    // listen('.TickUpdated') uses the dot to match the broadcastAs() alias from PHP
     echo.channel(channelName).listen('.TickUpdated', e => {
         const price = Number(e.price)
-        // Convert ISO timestamp from backend to Unix seconds for the chart
         const timestamp = e.timestamp ? Math.floor(new Date(e.timestamp).getTime() / 1000) : Math.floor(Date.now() / 1000)
 
         const tf = timeframes.find(t => t.value === selectedTimeframe.value)
@@ -173,10 +186,8 @@ function initSocket(symbol) {
 
         if (candleSeries && !loading.value) {
             if (candleTime > currentCandle.time) {
-                // Start a new candle
                 currentCandle = { time: candleTime, open: price, high: price, low: price, close: price }
             } else {
-                // Update the current candle
                 currentCandle.close = price
                 if (price > currentCandle.high) currentCandle.high = price
                 if (price < currentCandle.low) currentCandle.low = price
@@ -186,7 +197,7 @@ function initSocket(symbol) {
     })
 }
 
-/* ---------------- WATCHERS ---------------- */
+/* ---------------- WATCHERS & LIFECYCLE ---------------- */
 
 watch(() => props.symbol, (newVal) => {
     resetAndLoad(newVal)
@@ -209,7 +220,7 @@ onUnmounted(() => {
     if (echo && channelName) echo.leave(channelName)
 })
 
-/* ---------------- API ACTIONS ---------------- */
+/* ---------------- API ACTIONS: OPTION CHAIN ---------------- */
 
 async function loadOptionChain() {
     if (!showOptionChain.value) return
@@ -218,39 +229,82 @@ async function loadOptionChain() {
             params: { expiry_date: expiryDate.value }
         })
         optionChain.value = Object.values(data).sort((a, b) => a.strike - b.strike)
+
+        // Scroll to ATM after load
+        scrollToATM()
     } catch (e) { console.error('Option Chain Error:', e) }
 }
 
-const showOptionChain = computed(() => ['index', 'stock'].includes(instrument.value?.category))
+function scrollToATM() {
+    nextTick(() => {
+        const row = document.getElementById('atm-row')
+        if (row) row.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    })
+}
 
-function openOrderEntry(side) {
+// Helpers for Angel One style shading (ITM vs OTM)
+// Call ITM: Strike < Spot (Usually shaded)
+// Put ITM: Strike > Spot (Usually shaded)
+const isCallITM = (strike) => strike < lastPrice.value
+const isPutITM = (strike) => strike > lastPrice.value
+
+/* ---------------- API ACTIONS: ORDER PLACEMENT ---------------- */
+
+// Updated to handle both Main Symbol and Option Chain clicks
+function openOrderEntry(side, type = 'Main', optionData = null) {
     orderForm.value.side = side
-    orderForm.value.price = lastPrice.value
-    orderForm.value.quantity = instrument.value?.lot_size || 1
+
+    if (type === 'Option' && optionData) {
+        // From Option Chain
+        const price = Number(optionData.last_price || 0)
+        orderForm.value.price = price
+        orderForm.value.trigger_price = price
+        orderForm.value.symbol_display = `${props.symbol} ${optionData.strike} ${optionData.type}`
+        orderForm.value.quantity = instrument.value?.lot_size || 1
+    } else {
+        // From Main Header
+        orderForm.value.price = lastPrice.value
+        orderForm.value.trigger_price = lastPrice.value
+        orderForm.value.symbol_display = props.symbol
+        orderForm.value.quantity = instrument.value?.lot_size || 1
+    }
+
+    orderForm.value.type = 'LIMIT'
+    orderForm.value.is_robo = false
+    orderForm.value.product = 'MIS'
     showOrderModal.value = true
 }
 
 async function submitOrder() {
     isSubmitting.value = true
     try {
-        await axios.post('/api/orders/place', {
-            symbol: props.symbol,
+        const payload = {
+            symbol: props.symbol, // Backend should handle symbol mapping based on context or add specific option symbol if needed
             side: orderForm.value.side,
             quantity: orderForm.value.quantity,
-            price: orderForm.value.type === 'MARKET' ? null : orderForm.value.price,
+            product: orderForm.value.product,
             type: orderForm.value.type,
-            product: orderForm.value.product
-        })
+            price: isMarket.value ? 0 : orderForm.value.price,
+            trigger_price: isSL.value ? orderForm.value.trigger_price : null,
+            is_robo: orderForm.value.is_robo,
+            stop_loss: orderForm.value.is_robo ? orderForm.value.stop_loss : null,
+            target: orderForm.value.is_robo ? orderForm.value.target : null,
+        }
+
+        await axios.post('/api/orders/place', payload)
         alert('Order Placed Successfully')
         showOrderModal.value = false
     } catch (e) {
         alert(e.response?.data?.message || 'Order Failed')
-    } finally { isSubmitting.value = false }
+    } finally {
+        isSubmitting.value = false
+    }
 }
 </script>
 
 <template>
   <div class="flex flex-col h-full bg-[#0b0e14] text-[#d1d4dc] overflow-hidden font-sans">
+
     <header class="h-14 border-b border-[#2a2e39] flex items-center justify-between px-6 shrink-0 bg-[#131722]">
       <div class="flex items-center space-x-4">
         <h1 class="text-lg font-bold text-white tracking-tight">{{ symbol }}</h1>
@@ -285,66 +339,166 @@ async function submitOrder() {
         <div ref="chartContainer" class="w-full h-full"></div>
     </div>
 
-    <div v-if="showOptionChain" class="h-1/3 flex flex-col border-t border-[#2a2e39] bg-[#131722]">
-        <div class="px-4 py-2 bg-[#1c202b] flex justify-between items-center shrink-0 border-b border-[#2a2e39]">
-          <span class="text-[10px] font-bold uppercase tracking-widest text-gray-500">Live Option Chain</span>
-          <span class="text-[10px] text-blue-400 font-mono">{{ expiryDate }}</span>
+    <div v-if="showOptionChain" class="h-2/5 flex flex-col border-t border-[#2a2e39] bg-[#1e222d]">
+        <div class="px-4 py-2 bg-[#2a2e39] flex justify-between items-center shrink-0 border-b border-[#363a45]">
+          <div class="flex items-center gap-2">
+              <span class="text-[10px] font-bold uppercase tracking-widest text-white">Option Chain</span>
+              <span class="text-[10px] bg-blue-600/20 text-blue-400 px-1.5 py-0.5 rounded font-mono">{{ expiryDate }}</span>
+          </div>
+          <div class="text-[10px] text-gray-400">Spot: <span class="text-white font-bold">{{ lastPrice.toFixed(2) }}</span></div>
         </div>
-        <div class="flex-1 overflow-auto custom-scrollbar">
-          <table class="w-full text-xs text-center border-collapse">
-            <thead class="sticky top-0 bg-[#131722] z-20">
-              <tr class="text-gray-500 border-b border-[#2a2e39]">
-                <th class="py-2 font-medium">CALLS LTP</th>
-                <th class="py-2 font-medium bg-[#1c202b]/50">STRIKE</th>
-                <th class="py-2 font-medium">PUTS LTP</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="row in optionChain" :key="row.strike" class="border-b border-[#2a2e39]/30 hover:bg-[#2a2e39]/20 transition">
-                <td class="py-2.5 text-[#089981] font-mono">{{ row.call?.optionsState?.last_price || '-' }}</td>
-                <td class="py-2.5 font-bold bg-[#1c202b]/30 text-gray-400">{{ row.strike }}</td>
-                <td class="py-2.5 text-[#f23645] font-mono">{{ row.put?.optionsState?.last_price || '-' }}</td>
-              </tr>
-            </tbody>
-          </table>
+
+        <div class="grid grid-cols-3 bg-[#131722] border-b border-[#2a2e39] text-[10px] text-gray-500 font-bold uppercase tracking-wide">
+            <div class="py-2 text-center border-r border-[#2a2e39]">CALLS (LTP)</div>
+            <div class="py-2 text-center border-r border-[#2a2e39]">STRIKE</div>
+            <div class="py-2 text-center">PUTS (LTP)</div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto custom-scrollbar relative">
+          <div v-for="(row, index) in optionChain" :key="row.strike" class="grid grid-cols-3 text-xs border-b border-[#2a2e39]/50 group h-9">
+
+            <div v-if="index > 0 && row.strike > lastPrice && optionChain[index-1].strike <= lastPrice"
+                 id="atm-row"
+                 class="col-span-3 bg-[#ffb700]/10 border-y border-[#ffb700]/30 flex items-center justify-center h-6 my-0.5">
+                 <span class="text-[10px] text-[#ffb700] font-bold tracking-widest uppercase px-2 bg-[#1e222d] border border-[#ffb700]/30 rounded-full">Spot {{ lastPrice.toFixed(2) }}</span>
+            </div>
+
+            <div :class="isCallITM(row.strike) ? 'bg-[#1e222d] bg-gradient-to-r from-transparent to-[#2a2e39]/20' : 'bg-[#0b0e14]'"
+                 class="flex items-center justify-center border-r border-[#2a2e39] relative cursor-pointer hover:bg-[#2a2e39] transition"
+                 @click="openOrderEntry('BUY', 'Option', { ...row.call, strike: row.strike, type: 'CE' })">
+                <span class="font-mono" :class="row.call?.optionsState?.last_price ? 'text-white' : 'text-gray-600'">
+                    {{ row.call?.optionsState?.last_price || '-' }}
+                </span>
+                <div class="hidden group-hover:flex absolute inset-0 bg-black/60 items-center justify-center gap-1">
+                   <span class="bg-[#089981] text-white text-[8px] px-1.5 py-0.5 rounded">B</span>
+                   <span class="bg-[#f23645] text-white text-[8px] px-1.5 py-0.5 rounded">S</span>
+                </div>
+            </div>
+
+            <div class="bg-[#1e222d] text-gray-300 font-bold flex items-center justify-center border-r border-[#2a2e39] group-hover:text-white transition">
+                {{ row.strike }}
+            </div>
+
+            <div :class="isPutITM(row.strike) ? 'bg-[#1e222d] bg-gradient-to-l from-transparent to-[#2a2e39]/20' : 'bg-[#0b0e14]'"
+                 class="flex items-center justify-center relative cursor-pointer hover:bg-[#2a2e39] transition"
+                 @click="openOrderEntry('BUY', 'Option', { ...row.put, strike: row.strike, type: 'PE' })">
+                <span class="font-mono" :class="row.put?.optionsState?.last_price ? 'text-white' : 'text-gray-600'">
+                    {{ row.put?.optionsState?.last_price || '-' }}
+                </span>
+                 <div class="hidden group-hover:flex absolute inset-0 bg-black/60 items-center justify-center gap-1">
+                   <span class="bg-[#089981] text-white text-[8px] px-1.5 py-0.5 rounded">B</span>
+                   <span class="bg-[#f23645] text-white text-[8px] px-1.5 py-0.5 rounded">S</span>
+                </div>
+            </div>
+
+          </div>
         </div>
     </div>
 
-    <div v-if="showOrderModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div class="bg-[#1e222d] w-full max-w-sm rounded-lg border border-[#363a45] shadow-2xl overflow-hidden">
-        <div :class="orderForm.side === 'BUY' ? 'bg-[#089981]' : 'bg-[#f23645]'" class="p-4 flex justify-between items-center">
-          <span class="font-bold text-white uppercase tracking-tight">{{ orderForm.side }} {{ symbol }}</span>
-          <button @click="showOrderModal = false" class="text-white hover:opacity-50 transition text-lg">✕</button>
-        </div>
-        <div class="p-6 space-y-4">
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-                <label class="text-[10px] text-gray-500 block mb-1 uppercase font-bold">Qty</label>
-                <input v-model="orderForm.quantity" type="number" class="w-full bg-[#131722] border border-[#2a2e39] rounded p-2 text-sm outline-none focus:border-blue-500 transition text-white">
+    <div v-if="showOrderModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 font-sans">
+        <div class="bg-[#1e222d] w-full max-w-md rounded-xl border border-[#363a45] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+
+            <div :class="orderForm.side === 'BUY' ? 'bg-[#089981]' : 'bg-[#f23645]'" class="px-6 py-4 flex justify-between items-center shrink-0">
+                <div>
+                    <h2 class="font-bold text-white text-lg tracking-wide">{{ orderForm.side }} {{ orderForm.symbol_display || symbol }}</h2>
+                    <div class="text-xs text-white/80 mt-0.5 flex items-center gap-2">
+                        <span class="bg-black/20 px-1.5 rounded">LTP: {{ orderForm.price }}</span>
+                    </div>
+                </div>
+                <button @click="showOrderModal = false" class="text-white hover:bg-white/20 rounded-full w-8 h-8 flex items-center justify-center transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
             </div>
-            <div>
-                <label class="text-[10px] text-gray-500 block mb-1 uppercase font-bold">Price</label>
-                <input v-model="orderForm.price" :disabled="orderForm.type === 'MARKET'" type="number" step="0.05" class="w-full bg-[#131722] border border-[#2a2e39] rounded p-2 text-sm outline-none disabled:opacity-30 transition text-white">
+
+            <div class="p-6 overflow-y-auto custom-scrollbar space-y-6">
+
+                <div class="bg-[#131722] p-1 rounded-lg flex text-xs font-bold border border-[#2a2e39]">
+                    <button @click="orderForm.product = 'MIS'"
+                        :class="orderForm.product === 'MIS' ? 'bg-[#2962ff] text-white shadow' : 'text-gray-400 hover:text-gray-200'"
+                        class="flex-1 py-2 rounded transition">
+                        INTRADAY (MIS)
+                    </button>
+                    <button @click="orderForm.product = 'CNC'"
+                        :class="orderForm.product === 'CNC' ? 'bg-[#2962ff] text-white shadow' : 'text-gray-400 hover:text-gray-200'"
+                        class="flex-1 py-2 rounded transition">
+                        DELIVERY (CNC)
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-2 gap-5">
+                    <div class="space-y-1.5">
+                        <label class="text-[11px] text-gray-400 font-bold uppercase tracking-wider">Quantity / Lots</label>
+                        <div class="relative">
+                            <input v-model="orderForm.quantity" type="number" class="w-full bg-[#2a2e39] border border-transparent focus:border-[#2962ff] rounded-md px-3 py-2.5 text-sm font-mono text-white outline-none transition placeholder-gray-600">
+                            <span class="absolute right-3 top-2.5 text-xs text-gray-500">Lot: {{ instrument?.lot_size || 1 }}</span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label class="text-[11px] text-gray-400 font-bold uppercase tracking-wider">Price</label>
+                        <div class="relative">
+                            <input v-model="orderForm.price" :disabled="isMarket" type="number" step="0.05"
+                                class="w-full bg-[#2a2e39] border border-transparent focus:border-[#2962ff] disabled:opacity-50 disabled:cursor-not-allowed rounded-md px-3 py-2.5 text-sm font-mono text-white outline-none transition">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="text-[11px] text-gray-400 font-bold uppercase tracking-wider">Order Type</label>
+                    <div class="grid grid-cols-4 gap-2">
+                        <button v-for="type in ['MARKET', 'LIMIT', 'SL-LIMIT', 'SL-MARKET']" :key="type"
+                            @click="orderForm.type = type"
+                            :class="orderForm.type === type ? 'bg-[#2a2e39] border-[#2962ff] text-[#2962ff]' : 'border-[#2a2e39] text-gray-400 hover:border-gray-500'"
+                            class="border text-[10px] font-bold py-2 rounded transition uppercase">
+                            {{ type.replace('-', ' ') }}
+                        </button>
+                    </div>
+                </div>
+
+                <div v-if="isSL" class="space-y-1.5 animate-fade-in-down">
+                    <label class="text-[11px] text-gray-400 font-bold uppercase tracking-wider">Trigger Price</label>
+                    <input v-model="orderForm.trigger_price" type="number" step="0.05" class="w-full bg-[#2a2e39] border-l-4 border-l-[#f23645] rounded-r-md px-3 py-2.5 text-sm font-mono text-white outline-none focus:bg-[#2a2e39]/80 transition">
+                    <p class="text-[10px] text-gray-500">Order triggers when price hits {{ orderForm.trigger_price }}</p>
+                </div>
+
+                <div class="pt-4 border-t border-[#2a2e39]">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-xs font-bold text-gray-300">Smart Orders (Stop Loss & Target)</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" v-model="orderForm.is_robo" class="sr-only peer">
+                            <div class="w-9 h-5 bg-[#2a2e39] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#2962ff]"></div>
+                        </label>
+                    </div>
+
+                    <div v-if="orderForm.is_robo" class="grid grid-cols-2 gap-4 animate-fade-in-up">
+                        <div class="space-y-1">
+                            <label class="text-[10px] text-[#f23645] font-bold uppercase">Stop Loss Price</label>
+                            <input v-model="orderForm.stop_loss" type="number" step="0.05" class="w-full bg-[#2a2e39] border border-[#f23645]/30 focus:border-[#f23645] rounded px-3 py-2 text-sm text-white outline-none transition">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[10px] text-[#089981] font-bold uppercase">Target Price</label>
+                            <input v-model="orderForm.target" type="number" step="0.05" class="w-full bg-[#2a2e39] border border-[#089981]/30 focus:border-[#089981] rounded px-3 py-2 text-sm text-white outline-none transition">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-[#2962ff]/10 border border-[#2962ff]/20 rounded p-3 flex justify-between items-center">
+                    <span class="text-[10px] text-[#2962ff] font-bold">MARGIN REQUIRED (EST)</span>
+                    <span class="text-sm font-mono font-bold text-white">₹ {{ estimatedMargin }}</span>
+                </div>
             </div>
-          </div>
-          <div class="flex space-x-6 py-2">
-            <label class="flex items-center text-xs space-x-2 cursor-pointer text-gray-300">
-              <input v-model="orderForm.type" type="radio" value="MARKET" class="accent-blue-500">
-              <span>Market</span>
-            </label>
-            <label class="flex items-center text-xs space-x-2 cursor-pointer text-gray-300">
-              <input v-model="orderForm.type" type="radio" value="LIMIT" class="accent-blue-500">
-              <span>Limit</span>
-            </label>
-          </div>
-          <button @click="submitOrder" :disabled="isSubmitting"
-                  :class="orderForm.side === 'BUY' ? 'bg-[#089981] hover:bg-[#067d69]' : 'bg-[#f23645] hover:bg-[#d02e3c]'"
-                  class="w-full py-3 rounded font-bold text-white transition-all transform active:scale-95 disabled:opacity-50">
-            {{ isSubmitting ? 'PROCESSING...' : 'PLACE ORDER' }}
-          </button>
+
+            <div class="p-4 border-t border-[#2a2e39] bg-[#1e222d]">
+                <button @click="submitOrder" :disabled="isSubmitting"
+                    :class="orderForm.side === 'BUY' ? 'bg-[#089981] hover:bg-[#067d69] shadow-[#089981]/20' : 'bg-[#f23645] hover:bg-[#d02e3c] shadow-[#f23645]/20'"
+                    class="w-full py-3.5 rounded-lg font-bold text-white text-sm shadow-lg transition-all transform active:scale-[0.98] disabled:opacity-50 disabled:transform-none flex items-center justify-center gap-2">
+                    <span v-if="isSubmitting" class="animate-spin h-4 w-4 border-2 border-white/30 border-t-white rounded-full"></span>
+                    <span>{{ isSubmitting ? 'PLACING ORDER...' : (orderForm.side + ' ORDER') }}</span>
+                </button>
+            </div>
         </div>
-      </div>
     </div>
+
   </div>
 </template>
 
@@ -352,4 +506,16 @@ async function submitOrder() {
 .custom-scrollbar::-webkit-scrollbar { width: 4px; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background: #363a45; border-radius: 10px; }
 input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+.animate-fade-in-down { animation: fadeInDown 0.2s ease-out; }
+.animate-fade-in-up { animation: fadeInUp 0.2s ease-out; }
+
+@keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
 </style>

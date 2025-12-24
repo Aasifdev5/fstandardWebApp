@@ -35,10 +35,11 @@
 
                         <li class="sidebar-list {{ Request::is('settings*') ? 'active' : '' }}"><i
                                 class="fa fa-thumb-tack"></i>
-                            <a class="sidebar-link sidebar-title" href="javascript:void(0)">
-                                <i data-feather="settings"></i>
+                            <a class="sidebar-link sidebar-title d-flex align-items-center" href="javascript:void(0)">
+                                <i data-feather="settings" class="me-2"></i>&nbsp;&nbsp;&nbsp;
                                 <span>{{ __('Application') }}</span>
                             </a>
+
                             <ul class="sidebar-submenu">
                                 <li>
                                     <a class="{{ Request::is('settings/general_setting') ? 'active' : '' }}"
@@ -375,29 +376,31 @@
                         <li
                             class="sidebar-list {{ Request::is('admin/system-trade-config') || Request::is('admin/system-trade-config/*') ? 'active' : '' }}">
                             <i class="fa fa-thumb-tack"></i>
-                            <a class="sidebar-link sidebar-title link-nav"
+                            <a class="sidebar-link sidebar-title link-nav d-flex align-items-center"
                                 href="{{ route('system-trade-config.edit') }}">
-                                <i data-feather="activity"></i>
-                                <!-- or "dollar-sign", "shuffle", "settings" – choose what fits your theme -->
+                                <i data-feather="activity" class="me-2"></i>
                                 <span>{{ __('Trade Config') }}</span>
                             </a>
                         </li>
+
                         <li class="sidebar-list {{ Request::is('admin/referral-settings') ? 'active' : '' }}">
                             <i class="fa fa-thumb-tack"></i>
-                            <a class="sidebar-link sidebar-title link-nav"
+                            <a class="sidebar-link sidebar-title link-nav d-flex align-items-center"
                                 href="{{ url('admin/referral-settings') }}">
-                                <i data-feather="users"></i>
+                                <i data-feather="users" class="me-2"></i>
                                 <span>{{ __('Manage Referral') }}</span>
                             </a>
                         </li>
 
-                        <li class="sidebar-list {{ Request::is('admin/mail-templates') ? 'active' : '' }}"><i
-                                class="fa fa-thumb-tack"></i>
-                            <a class="sidebar-link sidebar-title link-nav" href="{{ url('admin/mail-templates') }}">
-                                <i data-feather="trending-up"></i>
+                        <li class="sidebar-list {{ Request::is('admin/mail-templates') ? 'active' : '' }}">
+                            <i class="fa fa-thumb-tack"></i>
+                            <a class="sidebar-link sidebar-title link-nav d-flex align-items-center"
+                                href="{{ url('admin/mail-templates') }}">
+                                <i data-feather="trending-up" class="me-2"></i>
                                 <span>{{ __('Withdrawals') }}</span>
                             </a>
                         </li>
+
                         {{-- <li class="sidebar-list {{ Request::is('admin/language') ? 'active' : '' }}"><i
                                 class="fa fa-thumb-tack"></i>
                             <a class="sidebar-link sidebar-title link-nav" href="{{ url('admin/language') }}">
@@ -421,10 +424,11 @@
                         </li>
                         <li class="sidebar-list {{ Request::is('support-ticket*') ? 'active' : '' }}"><i
                                 class="fa fa-thumb-tack"></i>
-                            <a class="sidebar-link sidebar-title" href="javascript:void(0)">
-                                <i data-feather="file-text"></i>
+                            <a class="sidebar-link sidebar-title d-flex align-items-center" href="javascript:void(0)">
+                                <i data-feather="file-text" class="me-2"></i>
                                 <span>{{ __('Report') }}</span>
                             </a>
+
                             <ul class="sidebar-submenu">
                                 <li><a class="{{ Request::is('support-ticket/index') ? 'active' : '' }}"
                                         href="{{ route('support-ticket.index') }}">{{ __('Transaction History') }}</a>
