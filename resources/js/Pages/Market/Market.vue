@@ -1,23 +1,34 @@
 <template>
   <div class="h-screen bg-gray-950 text-gray-100 flex overflow-hidden">
-    <!-- Sidebar - Instrument Selector -->
     <aside class="w-80 border-r border-gray-800 flex flex-col bg-gray-900/50 backdrop-blur-sm">
-      <!-- Sidebar Header -->
       <div class="p-6 border-b border-gray-800">
         <div class="flex items-center justify-between">
           <div>
+            <div class="text-xs text-gray-400 font-bold uppercase tracking-widest mb-1">
+              {{ userState?.name }}
+            </div>
+
             <h1 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
-              Trading Dashboard
+              {{ userState?.plan_title || 'Trading Dashboard' }}
             </h1>
-            <p class="text-sm text-gray-400 mt-1">Real-time Market Data</p>
+
+            <div class="flex items-center justify-between mt-1 w-full gap-4">
+               <span class="text-xs text-gray-400 font-mono bg-gray-800 px-1.5 py-0.5 rounded">
+                 Cap: {{ formatCompact(userState?.capital || 0) }}
+               </span>
+
+               <span class="text-sm font-mono font-bold text-green-400">
+                 ₹ {{ formatPrice(userState?.account_balance || 0) }}
+               </span>
+            </div>
           </div>
-          <div class="relative">
+
+          <div class="relative mb-4">
             <div class="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
             <div class="absolute inset-0 bg-green-400 rounded-full animate-ping opacity-75"></div>
           </div>
         </div>
 
-        <!-- Search -->
         <div class="mt-6">
           <div class="relative">
             <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500"
@@ -36,7 +47,6 @@
           </div>
         </div>
 
-        <!-- Filter Tabs -->
         <div class="mt-4 flex space-x-1">
           <button
             v-for="tab in filterTabs"
@@ -54,10 +64,8 @@
         </div>
       </div>
 
-      <!-- Instruments List -->
       <div class="flex-1 overflow-y-auto">
         <div class="p-4">
-          <!-- Category Headers -->
           <template v-for="category in filteredCategories" :key="category.name">
             <div class="mb-4">
               <div class="flex items-center justify-between mb-2 px-2">
@@ -69,7 +77,6 @@
                 </span>
               </div>
 
-              <!-- Instruments in Category -->
               <div class="space-y-1">
                 <div
                   v-for="inst in category.instruments"
@@ -86,7 +93,6 @@
                 >
                   <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-3">
-                      <!-- Instrument Icon -->
                       <div :class="[
                         'w-10 h-10 rounded-lg flex items-center justify-center',
                         getInstrumentColor(inst.category)
@@ -110,7 +116,6 @@
                       </div>
                     </div>
 
-                    <!-- Price -->
                     <div class="text-right">
                       <div class="font-mono font-bold text-lg">
                         {{ formatPrice(inst.base_price) }}
@@ -121,7 +126,6 @@
                     </div>
                   </div>
 
-                  <!-- Additional Info -->
                   <div class="mt-2 pt-2 border-t border-gray-800/50 flex items-center justify-between text-xs">
                     <div class="flex items-center space-x-4">
                       <div class="flex items-center space-x-1 text-gray-400">
@@ -140,7 +144,6 @@
                       </div>
                     </div>
 
-                    <!-- Active Indicator -->
                     <div v-if="inst.is_active" class="flex items-center">
                       <div class="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
                       <span class="text-green-400 text-xs">Live</span>
@@ -153,7 +156,6 @@
         </div>
       </div>
 
-      <!-- Sidebar Footer -->
       <div class="p-4 border-t border-gray-800 bg-gray-900/50">
         <div class="flex items-center justify-between">
           <div class="text-sm text-gray-400">
@@ -175,12 +177,9 @@
       </div>
     </aside>
 
-    <!-- Main Content - Chart -->
     <main class="flex-1 flex flex-col overflow-hidden">
-      <!-- Top Bar -->
       <div class="border-b border-gray-800 bg-gray-900/50 backdrop-blur-sm">
         <div class="flex items-center justify-between p-6">
-          <!-- Selected Instrument Info -->
           <div class="flex items-center space-x-4">
             <div :class="[
               'w-14 h-14 rounded-xl flex items-center justify-center text-2xl',
@@ -210,7 +209,6 @@
             </div>
           </div>
 
-          <!-- Market Stats -->
           <div v-if="selectedInstrument" class="text-right">
             <div class="flex items-center space-x-6">
               <div class="text-center">
@@ -234,7 +232,6 @@
         </div>
       </div>
 
-      <!-- Chart Container -->
       <div class="flex-1 p-6 overflow-hidden">
         <div v-if="selectedSymbol" class="h-full">
           <Chart
@@ -242,10 +239,10 @@
             :symbol="selectedSymbol"
             :expiry="expiry"
             :instrument="selectedInstrument"
+            :user-state="userState"
           />
         </div>
 
-        <!-- Empty State -->
         <div v-else class="h-full flex flex-col items-center justify-center text-gray-500">
           <div class="w-24 h-24 mb-6 opacity-50">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -265,11 +262,22 @@
 import { ref, computed, onMounted } from 'vue'
 import Chart from './Chart.vue'
 
+// Updated Props
 const props = defineProps({
   instruments: Array,
   instrument: Object,
   symbol: String,
-  expiry: String
+  expiry: String,
+  userState: {
+    type: Object,
+    default: () => ({
+        name: 'Trader', // Default name
+        can_trade_mega: false,
+        plan_title: 'Trading Dashboard',
+        capital: 0,
+        account_balance: 0
+    })
+  }
 })
 
 // Refs
@@ -379,6 +387,16 @@ function formatPrice(price) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   })
+}
+
+// Compact format for Capital (e.g., 5000000 -> 50L)
+function formatCompact(num) {
+    if (!num) return '0'
+    const n = parseFloat(num)
+    if (n >= 10000000) return (n / 10000000).toFixed(1).replace('.0', '') + 'Cr'
+    if (n >= 100000) return (n / 100000).toFixed(0) + 'L'
+    if (n >= 1000) return (n / 1000).toFixed(0) + 'k'
+    return n
 }
 
 function switchInstrument(inst) {

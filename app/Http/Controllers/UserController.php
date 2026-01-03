@@ -502,41 +502,52 @@ class UserController extends Controller
 
     // 1. Dashboard / Overview
     public function overview()
-    {
-        if (!Session::has('LoggedIn')) {
-            return redirect('login')->with('fail', 'Please login first.');
-        }
-
-        $user_session = \App\Models\User::find(Session::get('LoggedIn'));
-        $challenge = $user_session->challenges()->with('plan')->first();
-
-        $openOrders      = Order::where('user_id', $user_session->id)->where('status', 0)->count();
-        $completedTrades = TradeLog::where('user_id', $user_session->id)->whereNotNull('exit_time')->count();
-        $canceledOrders  = Order::where('user_id', $user_session->id)->where('status', 9)->count();
-        $totalPnL        = TradeLog::where('user_id', $user_session->id)->sum('profit_loss');
-
-        $recentOrders = Order::where('user_id', $user_session->id)
-            ->latest()
-            ->limit(5)
-            ->get();
-
-        $recentTrades = TradeLog::where('user_id', $user_session->id)
-            ->whereNotNull('exit_time')
-            ->latest('exit_time')
-            ->limit(5)
-            ->get();
-
-        return view('overview', compact(
-            'user_session',
-            'challenge',
-            'openOrders',
-            'completedTrades',
-            'canceledOrders',
-            'totalPnL',
-            'recentOrders',
-            'recentTrades'
-        ));
+{
+    if (!Session::has('LoggedIn')) {
+        return redirect('login')->with('fail', 'Please login first.');
     }
+
+    $user_session = \App\Models\User::find(Session::get('LoggedIn'));
+
+    // 1. Get the latest active challenge (since you have 3 in the DB)
+    // Using latest() ensures we get the most recent one, not the old one (ID 1).
+    $challenge = $user_session->challenges()
+        ->with('plan')
+        ->where('status', 'active') // Optional: Ensure we only pick active ones
+        ->latest()
+        ->first();
+
+    // Debugging: Uncomment the line below to verify data exists before the view loads
+    // dd($challenge);
+
+    $openOrders      = Order::where('user_id', $user_session->id)->where('status', 0)->count();
+    $completedTrades = TradeLog::where('user_id', $user_session->id)->whereNotNull('exit_time')->count();
+    $canceledOrders  = Order::where('user_id', $user_session->id)->where('status', 9)->count();
+    $totalPnL        = TradeLog::where('user_id', $user_session->id)->sum('profit_loss');
+
+    $recentOrders = Order::where('user_id', $user_session->id)
+        ->latest()
+        ->limit(5)
+        ->get();
+
+    $recentTrades = TradeLog::where('user_id', $user_session->id)
+        ->whereNotNull('exit_time')
+        ->latest('exit_time')
+        ->limit(5)
+        ->get();
+
+    // 2. Pass data explicitly
+    return view('overview', [
+        'user_session'    => $user_session,
+        'challenge'       => $challenge, // Explicit assignment
+        'openOrders'      => $openOrders,
+        'completedTrades' => $completedTrades,
+        'canceledOrders'  => $canceledOrders,
+        'totalPnL'        => $totalPnL,
+        'recentOrders'    => $recentOrders,
+        'recentTrades'    => $recentTrades
+    ]);
+}
 
     // 2. Manage Orders
     public function orders()

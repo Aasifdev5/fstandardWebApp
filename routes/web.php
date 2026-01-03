@@ -60,6 +60,7 @@ use App\Http\Controllers\Admin\SystemTradeConfigController;
 use App\Http\Controllers\Admin\TagController;
 use App\Http\Controllers\Admin\TestimonialController;
 use App\Http\Controllers\Admin\TradeController;
+
 use App\Http\Controllers\AffiliateController;
 use App\Http\Controllers\BlockchainHashRecordController;
 use App\Http\Controllers\DelayedFeedAssignmentController;

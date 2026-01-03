@@ -3,14 +3,20 @@ import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import axios from 'axios'
 import { createChart, CrosshairMode } from 'lightweight-charts'
 import { init as initEcho } from '@/echo.js'
+import Swal from 'sweetalert2' // Import SweetAlert2
 
+// Props receiving data from Market.vue
 const props = defineProps({
     symbol: String,
     expiry: String,
+    instrument: Object,
+    userState: {
+        type: Object,
+        default: () => ({ id: null, can_trade_mega: false })
+    }
 })
 
 /* ---------------- STATE: CHART & DATA ---------------- */
-const instrument = ref(null)
 const lastPrice = ref(0)
 const priceChange = ref(0)
 const optionChain = ref([])
@@ -27,18 +33,27 @@ const isSubmitting = ref(false)
 // Angel One style structure
 const orderForm = ref({
     side: 'BUY',
-    product: 'MIS',     // MIS (Intraday) or CNC (Delivery)
-    type: 'LIMIT',      // LIMIT, MARKET, SL-LIMIT, SL-MARKET
+    product: 'MIS',
+    type: 'LIMIT',
     quantity: 1,
+    lot_type: 'standard',
+    trading_symbol: '',
     price: 0,
-    trigger_price: 0,   // For SL orders
-    symbol_display: '', // To show on modal header (e.g. "NIFTY 24000 CE")
-
-    // Smart Order / Robo Fields
-    is_robo: false,     // Toggle for Target/SL
-    stop_loss: 0,       // Absolute price
+    trigger_price: 0,
+    symbol_display: '',
+    is_robo: false,
+    stop_loss: 0,
     target: 0,
 })
+
+// Lot Definitions
+const lotTypes = computed(() => [
+    { value: 'micro', label: 'Micro (0.6x)', locked: false },
+    { value: 'mini', label: 'Mini (0.75x)', locked: false },
+    { value: 'standard', label: 'Standard (1.0x)', locked: false },
+    { value: 'large', label: 'Large (1.25x)', locked: false },
+    { value: 'mega', label: 'Mega (1.5x)', locked: !props.userState?.can_trade_mega }
+])
 
 // Non-reactive variables
 let chart = null
@@ -58,7 +73,7 @@ const timeframes = [
 ]
 
 /* ---------------- COMPUTED PROPERTIES ---------------- */
-const showOptionChain = computed(() => ['index', 'stock'].includes(instrument.value?.category))
+const showOptionChain = computed(() => ['index', 'stock'].includes(props.instrument?.category))
 const isMarket = computed(() => ['MARKET', 'SL-MARKET'].includes(orderForm.value.type))
 const isSL = computed(() => ['SL-LIMIT', 'SL-MARKET'].includes(orderForm.value.type))
 
@@ -78,9 +93,12 @@ async function resetAndLoad(newSymbol) {
     if (volumeSeries) volumeSeries.setData([])
 
     try {
-        const { data } = await axios.get(`/api/instruments/${newSymbol}`)
-        instrument.value = data
-        lastPrice.value = Number(data.underlying_state?.last_price ?? data.base_price ?? 0)
+        if (props.instrument && props.instrument.symbol === newSymbol) {
+             lastPrice.value = Number(props.instrument.underlying_state?.last_price ?? props.instrument.base_price ?? 0)
+        } else {
+             const { data } = await axios.get(`/api/instruments/${newSymbol}`)
+             lastPrice.value = Number(data.underlying_state?.last_price ?? data.base_price ?? 0)
+        }
 
         await loadCandles(newSymbol)
         await loadOptionChain()
@@ -229,8 +247,6 @@ async function loadOptionChain() {
             params: { expiry_date: expiryDate.value }
         })
         optionChain.value = Object.values(data).sort((a, b) => a.strike - b.strike)
-
-        // Scroll to ATM after load
         scrollToATM()
     } catch (e) { console.error('Option Chain Error:', e) }
 }
@@ -242,31 +258,30 @@ function scrollToATM() {
     })
 }
 
-// Helpers for Angel One style shading (ITM vs OTM)
-// Call ITM: Strike < Spot (Usually shaded)
-// Put ITM: Strike > Spot (Usually shaded)
 const isCallITM = (strike) => strike < lastPrice.value
 const isPutITM = (strike) => strike > lastPrice.value
 
 /* ---------------- API ACTIONS: ORDER PLACEMENT ---------------- */
 
-// Updated to handle both Main Symbol and Option Chain clicks
 function openOrderEntry(side, type = 'Main', optionData = null) {
     orderForm.value.side = side
+    orderForm.value.lot_type = 'standard' // Reset
 
     if (type === 'Option' && optionData) {
-        // From Option Chain
+        // Option Chain Order
         const price = Number(optionData.last_price || 0)
         orderForm.value.price = price
         orderForm.value.trigger_price = price
         orderForm.value.symbol_display = `${props.symbol} ${optionData.strike} ${optionData.type}`
-        orderForm.value.quantity = instrument.value?.lot_size || 1
+        orderForm.value.trading_symbol = optionData.contract_symbol || optionData.symbol
+        orderForm.value.quantity = props.instrument?.lot_size || 1
     } else {
-        // From Main Header
+        // Main Chart Order
         orderForm.value.price = lastPrice.value
         orderForm.value.trigger_price = lastPrice.value
         orderForm.value.symbol_display = props.symbol
-        orderForm.value.quantity = instrument.value?.lot_size || 1
+        orderForm.value.trading_symbol = props.symbol
+        orderForm.value.quantity = props.instrument?.lot_size || 1
     }
 
     orderForm.value.type = 'LIMIT'
@@ -279,9 +294,11 @@ async function submitOrder() {
     isSubmitting.value = true
     try {
         const payload = {
-            symbol: props.symbol, // Backend should handle symbol mapping based on context or add specific option symbol if needed
+            user_id: props.userState?.id,
+            symbol: orderForm.value.trading_symbol,
             side: orderForm.value.side,
             quantity: orderForm.value.quantity,
+            lot_type: orderForm.value.lot_type,
             product: orderForm.value.product,
             type: orderForm.value.type,
             price: isMarket.value ? 0 : orderForm.value.price,
@@ -292,10 +309,39 @@ async function submitOrder() {
         }
 
         await axios.post('/api/orders/place', payload)
-        alert('Order Placed Successfully')
-        showOrderModal.value = false
+
+        showOrderModal.value = false // Close modal immediately
+
+        // ----------------------------------------------------
+        // MODERN SUCCESS TOASTER
+        // ----------------------------------------------------
+        Swal.fire({
+            title: 'Order Placed!',
+            text: `Your ${orderForm.value.side} order for ${orderForm.value.symbol_display} was successful.`,
+            icon: 'success',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            background: '#1e222d',
+            color: '#fff',
+            iconColor: '#089981' // Green
+        })
+
     } catch (e) {
-        alert(e.response?.data?.message || 'Order Failed')
+        // ----------------------------------------------------
+        // MODERN ERROR ALERT
+        // ----------------------------------------------------
+        Swal.fire({
+            title: 'Order Failed',
+            text: e.response?.data?.message || 'Something went wrong.',
+            icon: 'error',
+            background: '#1e222d',
+            color: '#fff',
+            confirmButtonColor: '#2962ff',
+            iconColor: '#f23645' // Red
+        })
     } finally {
         isSubmitting.value = false
     }
@@ -370,8 +416,10 @@ async function submitOrder() {
                     {{ row.call?.optionsState?.last_price || '-' }}
                 </span>
                 <div class="hidden group-hover:flex absolute inset-0 bg-black/60 items-center justify-center gap-1">
-                   <span class="bg-[#089981] text-white text-[8px] px-1.5 py-0.5 rounded">B</span>
-                   <span class="bg-[#f23645] text-white text-[8px] px-1.5 py-0.5 rounded">S</span>
+                   <span @click.stop="openOrderEntry('BUY', 'Option', { ...row.call, strike: row.strike, type: 'CE' })"
+                         class="bg-[#089981] hover:bg-[#067d69] text-white text-[8px] px-1.5 py-0.5 rounded cursor-pointer">B</span>
+                   <span @click.stop="openOrderEntry('SELL', 'Option', { ...row.call, strike: row.strike, type: 'CE' })"
+                         class="bg-[#f23645] hover:bg-[#d02e3c] text-white text-[8px] px-1.5 py-0.5 rounded cursor-pointer">S</span>
                 </div>
             </div>
 
@@ -386,8 +434,10 @@ async function submitOrder() {
                     {{ row.put?.optionsState?.last_price || '-' }}
                 </span>
                  <div class="hidden group-hover:flex absolute inset-0 bg-black/60 items-center justify-center gap-1">
-                   <span class="bg-[#089981] text-white text-[8px] px-1.5 py-0.5 rounded">B</span>
-                   <span class="bg-[#f23645] text-white text-[8px] px-1.5 py-0.5 rounded">S</span>
+                   <span @click.stop="openOrderEntry('BUY', 'Option', { ...row.put, strike: row.strike, type: 'PE' })"
+                         class="bg-[#089981] hover:bg-[#067d69] text-white text-[8px] px-1.5 py-0.5 rounded cursor-pointer">B</span>
+                   <span @click.stop="openOrderEntry('SELL', 'Option', { ...row.put, strike: row.strike, type: 'PE' })"
+                         class="bg-[#f23645] hover:bg-[#d02e3c] text-white text-[8px] px-1.5 py-0.5 rounded cursor-pointer">S</span>
                 </div>
             </div>
 
@@ -423,6 +473,23 @@ async function submitOrder() {
                         class="flex-1 py-2 rounded transition">
                         DELIVERY (CNC)
                     </button>
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="text-[11px] text-gray-400 font-bold uppercase tracking-wider">Lot Power</label>
+                    <div class="grid grid-cols-5 gap-1">
+                        <button v-for="lot in lotTypes" :key="lot.value"
+                            @click="!lot.locked && (orderForm.lot_type = lot.value)"
+                            :disabled="lot.locked"
+                            :class="[
+                                orderForm.lot_type === lot.value ? 'bg-[#2962ff] text-white border-transparent' : 'bg-[#131722] border-[#2a2e39] text-gray-400',
+                                lot.locked ? 'opacity-50 cursor-not-allowed' : 'hover:border-gray-500'
+                            ]"
+                            class="border py-2 rounded flex flex-col items-center justify-center transition">
+                            <span class="text-[9px] font-bold uppercase">{{ lot.value }}</span>
+                            <span v-if="lot.locked" class="text-[8px] mt-0.5">🔒</span>
+                        </button>
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-5">

@@ -1,7 +1,11 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\InstrumentController;
+use App\Http\Controllers\OrderController;
+use App\Http\Controllers\TradeController;
+use Illuminate\Support\Facades\Route;
+
+
 
 Route::prefix('instruments')->group(function () {
 
@@ -17,3 +21,5 @@ Route::prefix('instruments')->group(function () {
     // Option chain
     Route::get('{symbol}/option-chain', [InstrumentController::class, 'optionChain']);
 });
+Route::post('/orders/place', [OrderController::class, 'place']);
+Route::post('/trades/{tradeId}/close', [TradeController::class, 'close']);

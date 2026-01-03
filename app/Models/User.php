@@ -19,6 +19,9 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'is_affiliate',
+        'can_trade_mega',
+        'account_balance',
+        'status',
         'referral_code',
         'affiliate_earnings',
         'commission_rate',

@@ -1,55 +1,36 @@
 <?php
 
 return [
-    'volatility_by_class' => [
-        'low'       => 0.08,
-        'medium'    => 0.16,
-        'high'      => 0.28,
-        'very_high' => 0.45,
+    // Reference: PDF Page 1 & 4 [cite: 22-28, 107-111]
+    'base_rupee_per_point' => 75,
+    'reference_price'      => 24000,
+    'reference_account'    => 1000000,
+
+    // Reference: PDF Page 2 [cite: 36-53]
+    'lot_multipliers' => [
+        'micro'    => 0.60,
+        'mini'     => 0.75,
+        'standard' => 1.00,
+        'large'    => 1.25,
+        'mega'     => 1.50,
     ],
-    'time_of_day_multipliers' => [
-        'morning_open'   => 1.6, // 09:15–09:45
-        'late_morning'   => 1.2, // 09:45–11:30
-        'mid_day'        => 0.8, // 11:30–13:30
-        'afternoon'      => 1.0, // 13:30–14:45
-        'closing_hour'   => 1.5, // 14:45–15:30
-        'evening_commod' => 1.3, // 18:00–23:30 (commodities)
-    ],
-    'regimes' => [
-        'normal' => [
-            'drift'                 => 0.00,
-            'volatility_multiplier' => 1.0,
-        ],
-        'trend_up' => [
-            'drift'                 => 0.06,
-            'volatility_multiplier' => 1.2,
-        ],
-        'trend_down' => [
-            'drift'                 => -0.06,
-            'volatility_multiplier' => 1.2,
-        ],
-        'high_volatility' => [
-            'drift'                 => 0.00,
-            'volatility_multiplier' => 1.8,
-        ],
-        'crash' => [
-            'drift'                 => -0.25,
-            'volatility_multiplier' => 3.0,
-        ],
-    ],
-    'risk_free_rate' => 0.06, // 6% per year for futures
-    'base_option_volatility' => [
-        'index'     => 0.16,
-        'stock'     => 0.22,
-        'commodity' => 0.28,
-    ],
-    'option_smile_strength' => 0.10,
-    'news' => [
-        'impact_by_sensitivity' => [
-            'low'       => ['vol_multiplier' => 1.5, 'drift_boost' => 0.02],
-            'medium'    => ['vol_multiplier' => 2.0, 'drift_boost' => 0.05],
-            'high'      => ['vol_multiplier' => 3.0, 'drift_boost' => 0.10],
-            'very_high' => ['vol_multiplier' => 4.0, 'drift_boost' => 0.15],
-        ],
+
+    // Reference: PDF Page 3 [cite: 57-93]
+    'instrument_multipliers' => [
+        'FSI-NF50-F'     => 1.00,
+        'FSI-BN-F'       => 1.35,
+        'FSI-SENSEX-F'   => 1.15,
+        'FSI-FN-F'       => 0.80,
+        'FSI-MIDCP-F'    => 0.70,
+        'FSI-RIL-F'      => 0.35,
+        'FSI-HDFB-F'     => 0.30,
+        'FSI-ICBK-F'     => 0.28,
+        'FSI-INFY-F'     => 0.26,
+        'FSI-TCS-F'      => 0.24,
+        'FSI-SBIN-F'     => 0.22,
+        'FSI-ADAN-F'     => 0.45,
+        'FSI-TATA-MTR-F' => 0.40,
+        'FSI-JSW-F'      => 0.38,
+        'FSI-LT-F'       => 0.36,
     ],
 ];

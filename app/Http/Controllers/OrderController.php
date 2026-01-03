@@ -2,181 +2,107 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Order;
-use App\Models\Challenge;
-use App\Services\DhanService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
+use App\Models\Order;
+use App\Models\Trade;
+use App\Models\User;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Session;
 
 class OrderController extends Controller
 {
-
-
-    // Show all orders (with challenge context)
-    public function index()
-    {
-        $orders = Order::where('user_id', auth()->id())
-            ->with('challenge')
-            ->latest()
-            ->paginate(30);
-
-        $activeChallenge = auth()->user()->challenges()->active()->first();
-
-        return view('orders.index', compact('orders', 'activeChallenge'));
-    }
-
-    // Place new order
-    public function store(Request $request)
+    public function place(Request $request)
     {
         $request->validate([
-            'challenge_id' => 'required|exists:challenges,id',
-            'symbol'       => 'required|string|min:1|max:20',
-            'side'         => 'required|in:BUY,SELL',
-            'type'         => 'required|in:LIMIT,MARKET,SL,SL-M',
-            'product'      => 'required|in:CNC,INTRADAY,MARGIN,MTF',
-            'quantity'     => 'required|integer|min:1',
-            'price'        => 'required_if:type,LIMIT,SL,SL-M|numeric|min:0.01',
-            'trigger_price' => 'nullable|numeric|min:0.01',
+            'symbol'    => 'required|string',
+            'side'      => 'required|in:BUY,SELL',
+            'quantity'  => 'required|integer|min:1',
+            'lot_type'  => 'required|in:micro,mini,standard,large,mega',
+            'type'      => 'required|in:MARKET,LIMIT,SL-LIMIT,SL-MARKET',
+            'price'     => 'numeric',
+            'user_id'   => 'sometimes|integer',
         ]);
 
-        $challenge = Challenge::where('user_id', auth()->id())
-            ->active()
-            ->findOrFail($request->challenge_id);
-
-        // Map to Dhan payload
-        $payload = [
-            'transactionType'   => $request->side,
-            'exchangeSegment'   => 'NSE_EQ',
-            'productType'       => $request->product,
-            'orderType'         => $request->type === 'SL-M' ? 'SL-M' : str_replace('-', '', $request->type),
-            'validity'          => 'DAY',
-            'securityId'        => $this->getSecurityId($request->symbol),
-            'quantity'          => (int)$request->quantity,
-            'price'            => in_array($request->type, ['MARKET', 'SL-M']) ? 0 : (float)$request->price,
-            'triggerPrice'     => in_array($request->type, ['SL', 'SL-M']) ? (float)($request->trigger_price ?? $request->price) : 0,
-            'disclosedQuantity' => 0,
-            'afterMarketOrder'  => false,
-        ];
-
-        $response = $this->dhan->placeOrder($payload);
-        $result   = $this->dhan->result($response);
-
-        if (!$result['success']) {
-            return back()->with('error', $result['data']['remarks'] ?? 'Order rejected by broker');
+        // 1. Resolve User
+        $user = Auth::user();
+        if (!$user) {
+            if (Session::has('LoggedIn')) {
+                $user = User::find(Session::get('LoggedIn'));
+            } elseif ($request->has('user_id')) {
+                $user = User::find($request->user_id);
+            }
         }
 
-        $data = $result['data'];
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized user.'], 401);
+        }
 
-        Order::create([
-            'user_id'         => auth()->id(),
-            'challenge_id'    => $challenge->id,
-            'stock_symbol'    => strtoupper($request->symbol),
-            'security_id'     => $payload['securityId'],
-            'order_side'      => $request->side === 'BUY' ? Order::SIDE_BUY : Order::SIDE_SELL,
-            'order_type'      => match($request->type) {
-                'LIMIT'  => Order::TYPE_LIMIT,
-                'MARKET' => Order::TYPE_MARKET,
-                'SL'     => Order::TYPE_SL,
-                'SL-M'   => Order::TYPE_SL_M,
-            },
-            'product_type'    => $request->product,
-            'price'           => $payload['price'] ?: null,
-            'trigger_price'   => $payload['triggerPrice'] ?: null,
-            'quantity'        => $request->quantity,
-            'status'          => Order::STATUS_OPEN,
-            'trx'             => $data['orderId'],
-            'correlation_id'  => (string) Str::uuid(),
-            'placed_by'       => 'user',
+        // 2. Check Mega Lot Permission
+        if ($request->lot_type === 'mega' && !$user->can_trade_mega) {
+            return response()->json(['message' => 'Mega lot is locked. You need more profitable trades.'], 403);
+        }
+
+        // 3. Map Request Data to DB Constants
+        // Frontend sends 'BUY', DB needs 1. Frontend sends 'MARKET', DB needs 2.
+        $sideMap = [
+            'BUY'  => Order::SIDE_BUY,  // 1
+            'SELL' => Order::SIDE_SELL, // 2
+        ];
+
+        $typeMap = [
+            'LIMIT'     => Order::TYPE_LIMIT,  // 1
+            'MARKET'    => Order::TYPE_MARKET, // 2
+            'SL-LIMIT'  => Order::TYPE_SL,     // 3
+            'SL-MARKET' => Order::TYPE_SL_M,   // 4
+        ];
+
+        // 4. Create Order (Fixing Column Names)
+        $order = Order::create([
+            'user_id'       => $user->id,
+            'lot_type'      => $request->lot_type,
+
+            // --- FIX: Map 'symbol' to 'stock_symbol' ---
+            'stock_symbol'  => $request->symbol,
+            'security_id'   => '0000', // Default if you don't have this yet
+
+            // --- FIX: Map string side/type to integers ---
+            'order_side'    => $sideMap[$request->side],
+            'order_type'    => $typeMap[$request->type],
+
+            'quantity'      => $request->quantity,
+            'filled_quantity' => 0, // Initialize
+            'price'         => $request->price,
+            'trigger_price' => $request->trigger_price,
+            'product_type'  => $request->product ?? 'MIS',
+            'status'        => Order::STATUS_OPEN, // 0
         ]);
 
-        return back()->with('success', "Order placed! → {$data['orderId']}");
-    }
+        // 5. IMMEDIATE EXECUTION (Simplified for MARKET orders)
+        if ($request->type === 'MARKET') {
+            $trade = Trade::create([
+                'user_id'     => $user->id,
+                'order_id'    => $order->id,
 
-    // Cancel order
-    public function destroy(Order $order)
-    {
-        $this->authorize('delete', $order); // or just check user
+                // Trade model uses 'symbol' and string 'side' (based on your snippet)
+                'symbol'      => $request->symbol,
+                'side'        => $request->side,
+                'lot_type'    => $request->lot_type,
+                'qty'         => $request->quantity,
+                'entry_price' => $request->price,
+                'status'      => 'OPEN',
+                'entry_time'  => now(),
+            ]);
 
-        if ($order->user_id !== auth()->id()) {
-            abort(403);
+            // Update Order to Completed
+            $order->update([
+                'status' => Order::STATUS_COMPLETED,
+                'filled_quantity' => $request->quantity,
+                'average_price' => $request->price
+            ]);
+
+            return response()->json(['message' => 'Order executed', 'trade_id' => $trade->id]);
         }
 
-        $result = $this->dhan->result($this->dhan->cancelOrder($order->trx));
-
-        if ($result['success']) {
-            $order->update(['status' => Order::STATUS_CANCELLED]);
-            return back()->with('success', 'Order cancelled successfully');
-        }
-
-        return back()->with('error', 'Failed to cancel: ' . ($result['data']['remarks'] ?? 'Unknown'));
-    }
-
-    // Sync orders from Dhan (manual or via job)
-    public function sync()
-    {
-        $result = $this->dhan->result($this->dhan->getOrderBook());
-
-        if (!$result['success']) {
-            return back()->with('error', 'Sync failed');
-        }
-
-        foreach ($result['data'] as $apiOrder) {
-            Order::updateOrCreate(
-                ['trx' => $apiOrder['orderId']],
-                [
-                    'user_id'         => auth()->id(),
-                    'challenge_id'    => auth()->user()->challenges()->active()->first()?->id,
-                    'stock_symbol'    => $apiOrder['tradingSymbol'],
-                    'security_id'     => $apiOrder['securityId'],
-                    'order_side'      => $apiOrder['transactionType'] === 'BUY' ? 1 : 2,
-                    'order_type'      => $this->mapOrderType($apiOrder['orderType']),
-                    'product_type'    => $apiOrder['productType'],
-                    'price'           => $apiOrder['price'] == 0 ? null : $apiOrder['price'],
-                    'trigger_price'   => $apiOrder['triggerPrice'] ?? null,
-                    'quantity'        => $apiOrder['quantity'],
-                    'filled_quantity' => $apiOrder['tradedQuantity'] ?? 0,
-                    'average_price'   => $apiOrder['tradedPrice'] ?? null,
-                    'status'          => $this->mapStatus($apiOrder['orderStatus']),
-                ]
-            );
-        }
-
-        return back()->with('success', 'Orders synced from Dhan!');
-    }
-
-    private function mapOrderType(string $type): int
-    {
-        return match($type) {
-            'LIMIT'  => Order::TYPE_LIMIT,
-            'MARKET' => Order::TYPE_MARKET,
-            'SL'     => Order::TYPE_SL,
-            'SL-M'   => Order::TYPE_SL_M,
-            default   => Order::TYPE_LIMIT,
-        };
-    }
-
-    private function mapStatus(string $status): int
-    {
-        return match($status) {
-            'PENDING', 'OPEN'       => Order::STATUS_OPEN,
-            'TRADED', 'COMPLETE'    => Order::STATUS_COMPLETED,
-            'PARTIALLY_FILLED'      => Order::STATUS_PARTIAL,
-            'CANCELLED', 'REJECTED' => Order::STATUS_CANCELLED,
-            default                 => Order::STATUS_OPEN,
-        };
-    }
-
-    private function getSecurityId(string $symbol): string
-    {
-        // Replace with real mapping or Redis cache
-        $map = [
-            'RELIANCE' => '1333',
-            'TCS'      => '11536',
-            'INFY'     => '1594',
-            'HDFCBANK' => '1330',
-            'SBIN'     => '3045',
-        ];
-
-        return $map[strtoupper($symbol)] ?? '1333'; // fallback
+        return response()->json(['message' => 'Order placed', 'order_id' => $order->id]);
     }
 }

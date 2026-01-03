@@ -1,6 +1,5 @@
 <?php
 
-// app/Models/Trade.php
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,15 +12,18 @@ class Trade extends Model
     protected $table = 'trades';
 
     protected $fillable = [
+        'user_id',          // <--- REQUIRED: To link to the User for Mega Unlock
         'challenge_id',
         'symbol',
-        'side',
-        'qty',
+        'side',             // Matches your DB (BUY/SELL)
+        'lot_type',         // <--- REQUIRED: F-Standard (micro, mini, standard...)
+        'qty',              // Matches your DB
         'entry_price',
         'exit_price',
         'pnl',
         'sl_used',
         'tp_used',
+        'status',           // <--- REQUIRED: OPEN/CLOSED
         'entry_time',
         'exit_time',
         'holding_time_seconds',
@@ -39,17 +41,11 @@ class Trade extends Model
         'news_flag' => 'boolean',
         'entry_time' => 'datetime',
         'exit_time' => 'datetime',
+        'user_id' => 'integer',
     ];
 
-    // Relationships
-    public function challenge()
+    public function user()
     {
-        return $this->belongsTo(Challenge::class); // Adjust if needed
+        return $this->belongsTo(User::class);
     }
-
-    // Optional: If linked to order
-    // public function order()
-    // {
-    //     return $this->belongsTo(Order::class);
-    // }
 }

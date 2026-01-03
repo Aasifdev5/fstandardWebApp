@@ -23,6 +23,7 @@
         "vue": "^3.5.26"
     },
     "dependencies": {
-        "lightweight-charts": "^4.0.0"
+        "lightweight-charts": "^4.0.0",
+        "sweetalert2": "^11.26.17"
     }
 }

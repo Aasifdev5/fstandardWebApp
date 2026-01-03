@@ -19,6 +19,7 @@ class Order extends Model
     protected $fillable = [
         'user_id',
         'challenge_id',
+        'lot_type',
         'stock_symbol',           // e.g., RELIANCE, TCS
         'security_id',            // Dhan's internal ID (e.g., 1333)
         'order_side',             // 1 = BUY, 2 = SELL

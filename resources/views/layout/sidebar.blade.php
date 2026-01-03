@@ -362,7 +362,7 @@
                         <!-- Manage Orders -->
                         <li class="sidebar-list {{ Request::is('admin/orders*') ? 'active' : '' }}">
                             <a class="sidebar-link sidebar-title link-nav" href="{{ route('orders.index') }}">
-                                <i class="fa fa-gavel text-light"></i>
+                                <i class="fa fa-gavel text-light"></i>&nbsp;&nbsp;
                                 <span>{{ __('Manage Orders') }}</span>
                             </a>
                         </li>
@@ -378,7 +378,7 @@
                             <i class="fa fa-thumb-tack"></i>
                             <a class="sidebar-link sidebar-title link-nav d-flex align-items-center"
                                 href="{{ route('system-trade-config.edit') }}">
-                                <i data-feather="activity" class="me-2"></i>
+                                <i data-feather="activity" class="me-2"></i>&nbsp;&nbsp;
                                 <span>{{ __('Trade Config') }}</span>
                             </a>
                         </li>
@@ -387,7 +387,7 @@
                             <i class="fa fa-thumb-tack"></i>
                             <a class="sidebar-link sidebar-title link-nav d-flex align-items-center"
                                 href="{{ url('admin/referral-settings') }}">
-                                <i data-feather="users" class="me-2"></i>
+                                <i data-feather="users" class="me-2"></i>&nbsp;&nbsp;
                                 <span>{{ __('Manage Referral') }}</span>
                             </a>
                         </li>
@@ -396,7 +396,7 @@
                             <i class="fa fa-thumb-tack"></i>
                             <a class="sidebar-link sidebar-title link-nav d-flex align-items-center"
                                 href="{{ url('admin/mail-templates') }}">
-                                <i data-feather="trending-up" class="me-2"></i>
+                                <i data-feather="trending-up" class="me-2"></i>&nbsp;&nbsp;
                                 <span>{{ __('Withdrawals') }}</span>
                             </a>
                         </li>
@@ -425,7 +425,7 @@
                         <li class="sidebar-list {{ Request::is('support-ticket*') ? 'active' : '' }}"><i
                                 class="fa fa-thumb-tack"></i>
                             <a class="sidebar-link sidebar-title d-flex align-items-center" href="javascript:void(0)">
-                                <i data-feather="file-text" class="me-2"></i>
+                                <i data-feather="file-text" class="me-2"></i>&nbsp;&nbsp;
                                 <span>{{ __('Report') }}</span>
                             </a>
 
