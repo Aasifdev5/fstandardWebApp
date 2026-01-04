@@ -6,6 +6,7 @@ use Illuminate\Console\Command;
 use App\Models\Instrument;
 use App\Models\UnderlyingState;
 use App\Models\InstrumentNewsState;
+use App\Models\MarketSetting;
 use App\Events\UnderlyingTickUpdated;
 use App\Services\PriceService;
 use Carbon\Carbon;
@@ -13,65 +14,139 @@ use Carbon\Carbon;
 class RunUnderlyings extends Command
 {
     protected $signature = 'market:run-underlyings';
-    protected $description = 'Run underlying price engine with real-time broadcasting';
+    protected $description = 'Run underlying price engine with real-time dynamic configuration';
 
     public function handle(PriceService $priceService)
     {
-        $this->info('Underlying Price Engine Started...');
+        $this->info('✅ Underlying Price Engine STARTED');
 
         while (true) {
+
             $now = Carbon::now();
-            // Fetch only active instruments to save memory
-            $instruments = Instrument::where('is_active', true)->with('underlyingState')->get();
+
+            /**
+             * 1️⃣ FETCH DYNAMIC CONFIG SNAPSHOT
+             */
+            $marketConfig = MarketSetting::getSimulationConfig();
+
+            $volMap       = $marketConfig['volatility_by_class'] ?? [];
+            $regimes      = $marketConfig['regimes'] ?? [];
+            $newsConfig   = $marketConfig['news'] ?? [];
+            $timeOfDayCfg = $marketConfig['time_of_day_multipliers'] ?? [];
+
+            /**
+             * 2️⃣ FETCH ACTIVE INSTRUMENTS
+             */
+            $instruments = Instrument::where('is_active', true)
+                ->with('underlyingState')
+                ->get();
 
             foreach ($instruments as $instrument) {
-                // Session Check
-                $start = Carbon::parse($instrument->session_start);
-                $end = Carbon::parse($instrument->session_end);
-                if (!$now->between($start, $end)) continue;
 
-                $state = $instrument->underlyingState ?? UnderlyingState::firstOrCreate(
-                    ['instrument_id' => $instrument->id],
-                    [
-                        'last_price' => $instrument->base_price,
-                        'regime' => 'normal',
-                        'drift' => 0,
-                        'volatility' => 0,
-                    ]
-                );
+                /**
+                 * 3️⃣ SESSION CHECK (FIXED)
+                 * session_start / session_end must be TIME, not datetime
+                 */
+                $sessionStart = Carbon::parse($now->toDateString() . ' ' . $instrument->session_start);
+                $sessionEnd   = Carbon::parse($now->toDateString() . ' ' . $instrument->session_end);
 
-                // Simulation Logic
-                $baseVol = config('market.volatility_by_class.' . $instrument->volatility_class, 0.2);
-                $timeMult = $priceService->getTimeMultiplier($now, $instrument);
-                $regimeConfig = config('market.regimes.' . $state->regime, ['drift' => 0, 'volatility_multiplier' => 1]);
-
-                $drift = $regimeConfig['drift'];
-                $vol = $baseVol * $timeMult * $regimeConfig['volatility_multiplier'];
-
-                // News Impact
-                $news = InstrumentNewsState::where('instrument_id', $instrument->id)->first();
-                if ($news && $news->active) {
-                    $impact = config('market.news.impact_by_sensitivity.' . $instrument->news_sensitivity, ['vol_multiplier' => 1, 'drift_boost' => 0]);
-                    $vol *= $impact['vol_multiplier'];
-                    $drift += ($news->direction === 'up' ? 1 : -1) * $impact['drift_boost'];
+                if (!$now->between($sessionStart, $sessionEnd)) {
+                    continue;
                 }
 
-                // Geometric Brownian Motion Calculation
-                $newPrice = $priceService->calculateGbmPrice($state->last_price, $drift, $vol);
-                $newPrice = round($newPrice / $instrument->tick_size) * $instrument->tick_size;
+                /**
+                 * 4️⃣ INIT OR LOAD STATE
+                 */
+                $state = $instrument->underlyingState
+                    ?? UnderlyingState::firstOrCreate(
+                        ['instrument_id' => $instrument->id],
+                        [
+                            'last_price' => max(1, $instrument->base_price),
+                            'regime'     => 'normal',
+                            'drift'      => 0,
+                            'volatility' => 0,
+                        ]
+                    );
 
-                // Update Database
+                /**
+                 * 5️⃣ BASE VOLATILITY (SAFE)
+                 */
+                $baseVol = max(
+                    0.0001,
+                    $volMap[$instrument->volatility_class] ?? 0.16
+                );
+
+                /**
+                 * 6️⃣ TIME MULTIPLIER
+                 */
+                $timeMult = max(
+                    0.1,
+                    $priceService->getTimeMultiplier($now, $instrument, $timeOfDayCfg)
+                );
+
+                /**
+                 * 7️⃣ REGIME CONFIG
+                 */
+                $regimeCfg = $regimes[$state->regime]
+                    ?? ['drift' => 0, 'volatility_multiplier' => 1];
+
+                $drift = (float) ($regimeCfg['drift'] ?? 0);
+                $vol   = $baseVol * $timeMult * max(0.1, $regimeCfg['volatility_multiplier'] ?? 1);
+
+                /**
+                 * 8️⃣ NEWS IMPACT (OPTIONAL)
+                 */
+                $news = InstrumentNewsState::where('instrument_id', $instrument->id)->first();
+
+                if ($news && $news->active) {
+                    $impact = $newsConfig['impact_by_sensitivity'][$instrument->news_sensitivity]
+                        ?? ['vol_multiplier' => 1, 'drift_boost' => 0];
+
+                    $vol   *= max(0.1, $impact['vol_multiplier']);
+                    $drift += ($news->direction === 'up' ? 1 : -1)
+                              * ($impact['drift_boost'] ?? 0);
+                }
+
+                /**
+                 * 9️⃣ PRICE CALCULATION (GBM)
+                 */
+                $newPrice = $priceService->calculateGbmPrice(
+                    max(1, $state->last_price),
+                    $drift,
+                    $vol
+                );
+
+                /**
+                 * 🔟 TICK ROUNDING (SAFE)
+                 */
+                $tick = max(0.01, $instrument->tick_size);
+                $newPrice = round($newPrice / $tick) * $tick;
+
+                // Absolute safety floor
+                $newPrice = max($tick, $newPrice);
+
+                /**
+                 * 1️⃣1️⃣ UPDATE STATE
+                 */
                 $state->update([
                     'last_price' => $newPrice,
-                    'drift' => $drift,
-                    'volatility' => $vol
+                    'drift'      => $drift,
+                    'volatility' => $vol,
                 ]);
 
-                // Dispatch Broadcast Event
-                event(new UnderlyingTickUpdated($instrument->symbol, $newPrice, $now));
+                /**
+                 * 1️⃣2️⃣ BROADCAST TICK
+                 */
+                event(new UnderlyingTickUpdated(
+                    $instrument->symbol,
+                    $newPrice,
+                    $now
+                ));
             }
 
-            // High-frequency sleep (800ms) makes the UI feel more responsive than a full second
+            /**
+             * 1️⃣3️⃣ ENGINE TICK RATE (800ms)
+             */
             usleep(800000);
         }
     }

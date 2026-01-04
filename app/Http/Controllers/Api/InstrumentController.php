@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 
 class InstrumentController extends Controller
 {
+    // List all active instruments
     public function index()
     {
         return Instrument::with('underlyingState')
@@ -18,6 +19,7 @@ class InstrumentController extends Controller
             ->get();
     }
 
+    // Show details for a specific instrument
     public function show(string $symbol)
     {
         return Instrument::with(['underlyingState'])
@@ -29,11 +31,12 @@ class InstrumentController extends Controller
             ->firstOrFail();
     }
 
+    // Get Option Chain
     public function optionChain(Request $request, string $symbol)
     {
         $instrument = Instrument::where('symbol', $symbol)->firstOrFail();
 
-        // ⚠ Vue sends expiry_date, not expiry
+        // Default expiry to next month's last Thursday if not provided
         $expiry = $request->query(
             'expiry_date',
             Carbon::now()
@@ -44,7 +47,7 @@ class InstrumentController extends Controller
         );
 
         $contracts = Contract::where('instrument_id', $instrument->id)
-            ->where('expiry_date', $expiry)
+            ->whereDate('expiry_date', $expiry)
             ->where('contract_type', 'OPTION')
             ->with('optionsState')
             ->get()
@@ -56,22 +59,24 @@ class InstrumentController extends Controller
                     'put'  => $group->where('option_type', 'PUT')->first(),
                 ];
             })
-            ->values();
+            ->values(); // Reset keys to array
 
         return response()->json($contracts);
     }
 
+    // Get Candles (Historical Data)
     public function candles(Request $request, string $symbol)
     {
+        // Default to 1m, but accept 3m, 5m, 15m, etc. from frontend
         $timeframe = $request->query('timeframe', '1m');
         $limit = (int) $request->query('limit', 200);
 
         return Candle::where('symbol', $symbol)
             ->where('timeframe', $timeframe)
-            ->orderBy('timestamp', 'desc')
+            ->orderBy('timestamp', 'desc') // Get latest first
             ->limit($limit)
             ->get()
-            ->reverse()
+            ->reverse() // Reverse to chronological order for the chart (Oldest -> Newest)
             ->values();
     }
 }

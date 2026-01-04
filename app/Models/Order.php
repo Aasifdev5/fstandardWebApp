@@ -20,12 +20,15 @@ class Order extends Model
         'user_id',
         'challenge_id',
         'lot_type',
-        'stock_symbol',           // e.g., RELIANCE, TCS
-        'security_id',            // Dhan's internal ID (e.g., 1333)
-        'order_side',             // 1 = BUY, 2 = SELL
-        'order_type',             // 1 = LIMIT, 2 = MARKET, 3 = SL, 4 = SL-M
-        'product_type',           // CNC, INTRADAY, MARGIN, MTF
+        'stock_symbol',
+        'security_id',
+        'order_side',
+        'order_type',
+        'product_type',
         'price',
+        'stop_loss',
+        'target',
+        'close_reason',
         'trigger_price',
         'quantity',
         'disclosed_quantity',
@@ -34,12 +37,12 @@ class Order extends Model
         'average_price',
         'total_amount',
         'brokerage',
-        'status',                 // 0=Open, 1=Completed, 2=Partial, 9=Cancelled
-        'trx',                    // Dhan orderId (e.g., 11234567890)
-        'parent_order_id',        // for SL/TP child orders
-        'correlation_id',         // your own reference
-        'placed_by',              // 'user', 'system', 'webhook'
-        'meta',                   // JSON for extra data
+        'status',
+        'trx',
+        'parent_order_id',
+        'correlation_id',
+        'placed_by',
+        'meta',
     ];
 
     // ====================================================================
@@ -47,6 +50,8 @@ class Order extends Model
     // ====================================================================
     protected $casts = [
         'price'             => 'decimal:2',
+        'stop_loss'         => 'decimal:2',
+        'target'            => 'decimal:2',
         'trigger_price'     => 'decimal:2',
         'quantity'          => 'decimal:4',
         'disclosed_quantity'=> 'decimal:4',
@@ -140,6 +145,19 @@ class Order extends Model
     }
 
     // ====================================================================
+    // New: Accessors for nicely formatted SL & Target
+    // ====================================================================
+    public function getStopLossFormattedAttribute(): ?string
+    {
+        return $this->stop_loss !== null ? number_format($this->stop_loss, 2) : null;
+    }
+
+    public function getTargetFormattedAttribute(): ?string
+    {
+        return $this->target !== null ? number_format($this->target, 2) : null;
+    }
+
+    // ====================================================================
     // Scopes – Easy filtering
     // ====================================================================
     public function scopeBuy($query)
@@ -170,5 +188,33 @@ class Order extends Model
     public function scopeForChallenge($query, $challengeId)
     {
         return $query->where('challenge_id', $challengeId);
+    }
+
+    // ====================================================================
+    // Optional: Helper method to validate SL/Target against entry price
+    // ====================================================================
+    public function validateSLTarget(float $entryPrice): array
+    {
+        $errors = [];
+
+        if ($this->order_side == self::SIDE_BUY) {
+            if ($this->stop_loss !== null && $this->stop_loss >= $entryPrice) {
+                $errors[] = 'Stop Loss for BUY must be BELOW entry price';
+            }
+            if ($this->target !== null && $this->target <= $entryPrice) {
+                $errors[] = 'Target for BUY must be ABOVE entry price';
+            }
+        }
+
+        if ($this->order_side == self::SIDE_SELL) {
+            if ($this->stop_loss !== null && $this->stop_loss <= $entryPrice) {
+                $errors[] = 'Stop Loss for SELL must be ABOVE entry price';
+            }
+            if ($this->target !== null && $this->target >= $entryPrice) {
+                $errors[] = 'Target for SELL must be BELOW entry price';
+            }
+        }
+
+        return $errors;
     }
 }

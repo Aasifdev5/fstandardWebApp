@@ -291,7 +291,7 @@ const showFavoritesOnly = ref(false)
 const filterTabs = [
   { id: 'all', label: 'All' },
   { id: 'index', label: 'Indices' },
-  { id: 'stock', label: 'Stocks' },
+  { id: 'stock', label: 'F & O Stocks' },
   { id: 'commodity', label: 'Commodities' }
 ]
 

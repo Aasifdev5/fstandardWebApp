@@ -36,31 +36,32 @@ use App\Http\Controllers\Admin\LocationController;
 
 
 use App\Http\Controllers\Admin\MailTemplateController;
-use App\Http\Controllers\Admin\MediaController;
+use App\Http\Controllers\Admin\MarketSimulationController;
 
+
+use App\Http\Controllers\Admin\MediaController;
 
 use App\Http\Controllers\Admin\NewsController;
 
 use App\Http\Controllers\Admin\NotificationSettingController;
-
 use App\Http\Controllers\Admin\NotificationTemplateController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\Pages;
 use App\Http\Controllers\Admin\PortfolioController;
 use App\Http\Controllers\Admin\PositionController;
-use App\Http\Controllers\Admin\QRCodeController;
 
+use App\Http\Controllers\Admin\QRCodeController;
 use App\Http\Controllers\Admin\ReferralSettingController;
 use App\Http\Controllers\Admin\ResetPasswordController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\SubcategoryController;
-use App\Http\Controllers\Admin\SupportTicketController;
 
+use App\Http\Controllers\Admin\SupportTicketController;
 use App\Http\Controllers\Admin\SystemTradeConfigController;
 use App\Http\Controllers\Admin\TagController;
 use App\Http\Controllers\Admin\TestimonialController;
-use App\Http\Controllers\Admin\TradeController;
 
+use App\Http\Controllers\Admin\TradeController;
 use App\Http\Controllers\AffiliateController;
 use App\Http\Controllers\BlockchainHashRecordController;
 use App\Http\Controllers\DelayedFeedAssignmentController;
@@ -72,20 +73,21 @@ use App\Http\Controllers\User\PlanPurchaseController;
 use App\Http\Controllers\UserController;
 use App\Http\Middleware\SetLocale;
 use App\Models\Language;
-use App\Models\PlanPurchase;
 
+use App\Models\PlanPurchase;
 use App\Models\User;
 use App\Services\DhanService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Auth;
+
+
+
+
+
 use Illuminate\Support\Facades\Route;
-
-
-
-
-
 use Illuminate\Support\Facades\Session;
+
 
 
 
@@ -346,7 +348,8 @@ Route::group(['prefix' => 'admin', 'middleware' => ['check.session']], function 
 
     Route::group(['middleware' => 'admin-prevent-back-history', SetLocale::class], function () {
 
-
+        Route::get('simulation-config', [MarketSimulationController::class, 'index'])->name('simulation-config.index');
+        Route::post('simulation-config', [MarketSimulationController::class, 'update'])->name('simulation-config.update');
         Route::resource('instruments', InstrumentController::class);
         // Show import form (GET)
         Route::get('admin/instruments/import', [InstrumentController::class, 'showImportForm'])

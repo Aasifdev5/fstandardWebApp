@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Order;
 use App\Models\Trade;
 use App\Models\User;
+use App\Models\Instrument;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 
@@ -13,96 +14,125 @@ class OrderController extends Controller
 {
     public function place(Request $request)
     {
+        // 1️⃣ Validate input
         $request->validate([
-            'symbol'    => 'required|string',
-            'side'      => 'required|in:BUY,SELL',
-            'quantity'  => 'required|integer|min:1',
-            'lot_type'  => 'required|in:micro,mini,standard,large,mega',
-            'type'      => 'required|in:MARKET,LIMIT,SL-LIMIT,SL-MARKET',
-            'price'     => 'numeric',
-            'user_id'   => 'sometimes|integer',
+            'symbol'        => 'required|string',
+            'side'          => 'required|in:BUY,SELL',
+            'quantity'      => 'required|integer|min:1',
+            'lot_type'      => 'required|in:micro,mini,standard,large,mega',
+            'type'          => 'required|in:MARKET,LIMIT,SL-LIMIT,SL-MARKET',
+            'price'         => 'nullable|numeric',
+            'trigger_price' => 'nullable|numeric',
+            'stop_loss'     => 'nullable|numeric',
+            'target'        => 'nullable|numeric',
+            'is_robo'       => 'boolean',
+            'user_id'       => 'sometimes|integer',
         ]);
 
-        // 1. Resolve User
-        $user = Auth::user();
-        if (!$user) {
-            if (Session::has('LoggedIn')) {
-                $user = User::find(Session::get('LoggedIn'));
-            } elseif ($request->has('user_id')) {
-                $user = User::find($request->user_id);
-            }
-        }
-
+        // 2️⃣ Resolve user
+        $user = Auth::user() ?? User::find(Session::get('LoggedIn')) ?? User::find($request->user_id ?? 0);
         if (!$user) {
             return response()->json(['message' => 'Unauthorized user.'], 401);
         }
 
-        // 2. Check Mega Lot Permission
+        // 3️⃣ Mega lot permission
         if ($request->lot_type === 'mega' && !$user->can_trade_mega) {
-            return response()->json(['message' => 'Mega lot is locked. You need more profitable trades.'], 403);
+            return response()->json(['message' => 'Mega lot is locked.'], 403);
         }
 
-        // 3. Map Request Data to DB Constants
-        // Frontend sends 'BUY', DB needs 1. Frontend sends 'MARKET', DB needs 2.
-        $sideMap = [
-            'BUY'  => Order::SIDE_BUY,  // 1
-            'SELL' => Order::SIDE_SELL, // 2
-        ];
-
+        // 4️⃣ Map constants
+        $sideMap = ['BUY' => Order::SIDE_BUY, 'SELL' => Order::SIDE_SELL];
         $typeMap = [
-            'LIMIT'     => Order::TYPE_LIMIT,  // 1
-            'MARKET'    => Order::TYPE_MARKET, // 2
-            'SL-LIMIT'  => Order::TYPE_SL,     // 3
-            'SL-MARKET' => Order::TYPE_SL_M,   // 4
+            'LIMIT'      => Order::TYPE_LIMIT,
+            'MARKET'     => Order::TYPE_MARKET,
+            'SL-LIMIT'   => Order::TYPE_SL,
+            'SL-MARKET'  => Order::TYPE_SL_M
         ];
 
-        // 4. Create Order (Fixing Column Names)
+        // 5️⃣ Fetch instrument
+        $instrument = Instrument::where('symbol', $request->symbol)->first();
+        if (!$instrument) {
+            return response()->json(['message' => 'Invalid symbol'], 404);
+        }
+        $tickSize = $instrument->tick_size;
+
+        // 6️⃣ Determine execution price
+        $executionPrice = $request->price ?? 0;
+        if ($request->type === 'MARKET' || $executionPrice <= 0) {
+            $executionPrice = $instrument->underlyingState?->last_price ?? $instrument->base_price;
+        }
+        $executionPrice = round($executionPrice / $tickSize) * $tickSize;
+
+        // 7️⃣ Prepare Stop Loss & Target
+        $stopLoss = $request->stop_loss !== null ? round($request->stop_loss / $tickSize) * $tickSize : null;
+        $target   = $request->target !== null ? round($request->target / $tickSize) * $tickSize : null;
+
+        // 8️⃣ Validate SL/Target
+        if ($stopLoss !== null || $target !== null) {
+            if ($request->side === 'BUY') {
+                if ($stopLoss !== null && $stopLoss >= $executionPrice) {
+                    return response()->json(['message' => 'Stop Loss for BUY must be BELOW entry price'], 422);
+                }
+                if ($target !== null && $target <= $executionPrice) {
+                    return response()->json(['message' => 'Target for BUY must be ABOVE entry price'], 422);
+                }
+            } elseif ($request->side === 'SELL') {
+                if ($stopLoss !== null && $stopLoss <= $executionPrice) {
+                    return response()->json(['message' => 'Stop Loss for SELL must be ABOVE entry price'], 422);
+                }
+                if ($target !== null && $target >= $executionPrice) {
+                    return response()->json(['message' => 'Target for SELL must be BELOW entry price'], 422);
+                }
+            }
+        }
+
+        // 9️⃣ Create Order
         $order = Order::create([
-            'user_id'       => $user->id,
-            'lot_type'      => $request->lot_type,
-
-            // --- FIX: Map 'symbol' to 'stock_symbol' ---
-            'stock_symbol'  => $request->symbol,
-            'security_id'   => '0000', // Default if you don't have this yet
-
-            // --- FIX: Map string side/type to integers ---
-            'order_side'    => $sideMap[$request->side],
-            'order_type'    => $typeMap[$request->type],
-
-            'quantity'      => $request->quantity,
-            'filled_quantity' => 0, // Initialize
-            'price'         => $request->price,
-            'trigger_price' => $request->trigger_price,
-            'product_type'  => $request->product ?? 'MIS',
-            'status'        => Order::STATUS_OPEN, // 0
+            'user_id'        => $user->id,
+            'lot_type'       => $request->lot_type,
+            'stock_symbol'   => $request->symbol,
+            'security_id'    => '0000',
+            'order_side'     => $sideMap[$request->side],
+            'order_type'     => $typeMap[$request->type],
+            'quantity'       => $request->quantity,
+            'filled_quantity'=> ($request->type === 'MARKET') ? $request->quantity : 0,
+            'price'          => $executionPrice,
+            'trigger_price'  => $request->trigger_price,
+            'product_type'   => $request->product ?? 'MIS',
+            'status'         => Order::STATUS_OPEN,
+            'stop_loss'      => $stopLoss,
+            'target'         => $target,
         ]);
 
-        // 5. IMMEDIATE EXECUTION (Simplified for MARKET orders)
-        if ($request->type === 'MARKET') {
+        // 1️⃣0️⃣ Immediate execution for MARKET orders (non-robo)
+        if ($request->type === 'MARKET' && !$request->is_robo) {
             $trade = Trade::create([
                 'user_id'     => $user->id,
                 'order_id'    => $order->id,
-
-                // Trade model uses 'symbol' and string 'side' (based on your snippet)
                 'symbol'      => $request->symbol,
                 'side'        => $request->side,
                 'lot_type'    => $request->lot_type,
                 'qty'         => $request->quantity,
-                'entry_price' => $request->price,
+                'entry_price' => $executionPrice,
                 'status'      => 'OPEN',
                 'entry_time'  => now(),
             ]);
 
-            // Update Order to Completed
             $order->update([
-                'status' => Order::STATUS_COMPLETED,
-                'filled_quantity' => $request->quantity,
-                'average_price' => $request->price
+                'status'        => Order::STATUS_COMPLETED,
+                'average_price' => $executionPrice
             ]);
 
-            return response()->json(['message' => 'Order executed', 'trade_id' => $trade->id]);
+            return response()->json([
+                'message'  => 'Market order executed',
+                'trade_id' => $trade->id
+            ]);
         }
 
-        return response()->json(['message' => 'Order placed', 'order_id' => $order->id]);
+        // 1️⃣1️⃣ Return response for SL/TP or Limit orders
+        return response()->json([
+            'message'  => $request->is_robo ? 'Smart order placed & monitoring SL/Target' : 'Order placed successfully',
+            'order_id' => $order->id
+        ]);
     }
 }

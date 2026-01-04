@@ -382,7 +382,15 @@
                                 <span>{{ __('Trade Config') }}</span>
                             </a>
                         </li>
-
+                        <li class="sidebar-list {{ Request::is('admin/simulation-config*') ? 'active' : '' }}">
+                            <i class="fa fa-thumb-tack"></i>
+                            <a class="sidebar-link sidebar-title link-nav d-flex align-items-center"
+                                href="{{ route('simulation-config.index') }}">
+                                {{-- "activity" or "cpu" are good icons for a simulation engine --}}
+                                <i data-feather="activity" class="me-2"></i>&nbsp;&nbsp;
+                                <span>{{ __('Market Simulation') }}</span>
+                            </a>
+                        </li>
                         <li class="sidebar-list {{ Request::is('admin/referral-settings') ? 'active' : '' }}">
                             <i class="fa fa-thumb-tack"></i>
                             <a class="sidebar-link sidebar-title link-nav d-flex align-items-center"

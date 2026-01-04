@@ -1,11 +1,13 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
-import axios from 'axios'
-import { createChart, CrosshairMode } from 'lightweight-charts'
-import { init as initEcho } from '@/echo.js'
-import Swal from 'sweetalert2' // Import SweetAlert2
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
+import axios from 'axios';
+import { createChart, CrosshairMode } from 'lightweight-charts';
+import { init as initEcho } from '@/echo.js';
+import Swal from 'sweetalert2';
 
-// Props receiving data from Market.vue
+// --------------------------------------------------------------------------
+// PROPS & STATE
+// --------------------------------------------------------------------------
 const props = defineProps({
     symbol: String,
     expiry: String,
@@ -14,23 +16,23 @@ const props = defineProps({
         type: Object,
         default: () => ({ id: null, can_trade_mega: false })
     }
-})
+});
 
-/* ---------------- STATE: CHART & DATA ---------------- */
-const lastPrice = ref(0)
-const priceChange = ref(0)
-const optionChain = ref([])
-const expiryDate = ref(props.expiry)
-const chartContainer = ref(null)
-const loading = ref(true)
-const selectedTimeframe = ref('1m')
-const chartInitialized = ref(false)
+// Chart & Data State
+const lastPrice = ref(0);
+const priceChange = ref(0);
+const optionChain = ref([]);
+const expiryDate = ref(props.expiry);
+const chartContainer = ref(null);
+const loading = ref(true);
+const selectedTimeframe = ref('1m'); // Default
+const chartInitialized = ref(false);
 
-/* ---------------- STATE: ORDER MODAL ---------------- */
-const showOrderModal = ref(false)
-const isSubmitting = ref(false)
+// Order Modal State
+const showOrderModal = ref(false);
+const isSubmitting = ref(false);
 
-// Angel One style structure
+// Order Form
 const orderForm = ref({
     side: 'BUY',
     product: 'MIS',
@@ -44,7 +46,7 @@ const orderForm = ref({
     is_robo: false,
     stop_loss: 0,
     target: 0,
-})
+});
 
 // Lot Definitions
 const lotTypes = computed(() => [
@@ -53,69 +55,79 @@ const lotTypes = computed(() => [
     { value: 'standard', label: 'Standard (1.0x)', locked: false },
     { value: 'large', label: 'Large (1.25x)', locked: false },
     { value: 'mega', label: 'Mega (1.5x)', locked: !props.userState?.can_trade_mega }
-])
+]);
 
-// Non-reactive variables
-let chart = null
-let candleSeries = null
-let volumeSeries = null
-let echo = null
-let channelName = null
-let resizeObserver = null
-let currentCandle = { time: 0, open: 0, high: 0, low: 0, close: 0 }
-
+// Angel One / TradingView Standard Intervals
 const timeframes = [
     { value: '1m', label: '1m', seconds: 60 },
+    { value: '3m', label: '3m', seconds: 180 },
     { value: '5m', label: '5m', seconds: 300 },
     { value: '15m', label: '15m', seconds: 900 },
+    { value: '30m', label: '30m', seconds: 1800 },
     { value: '1h', label: '1h', seconds: 3600 },
+    { value: '4h', label: '4h', seconds: 14400 },
     { value: '1D', label: '1D', seconds: 86400 }
-]
+];
 
-/* ---------------- COMPUTED PROPERTIES ---------------- */
-const showOptionChain = computed(() => ['index', 'stock'].includes(props.instrument?.category))
-const isMarket = computed(() => ['MARKET', 'SL-MARKET'].includes(orderForm.value.type))
-const isSL = computed(() => ['SL-LIMIT', 'SL-MARKET'].includes(orderForm.value.type))
+// Non-reactive Chart Variables
+let chart = null;
+let candleSeries = null;
+let volumeSeries = null;
+let echo = null;
+let channelName = null;
+let resizeObserver = null;
+let currentCandle = { time: 0, open: 0, high: 0, low: 0, close: 0 };
+
+// --------------------------------------------------------------------------
+// COMPUTED PROPERTIES
+// --------------------------------------------------------------------------
+const showOptionChain = computed(() => ['index', 'stock'].includes(props.instrument?.category));
+const isMarket = computed(() => ['MARKET', 'SL-MARKET'].includes(orderForm.value.type));
+const isSL = computed(() => ['SL-LIMIT', 'SL-MARKET'].includes(orderForm.value.type));
 
 const estimatedMargin = computed(() => {
-    const price = isMarket.value ? (lastPrice.value) : (orderForm.value.price || 0)
-    return (price * (orderForm.value.quantity || 0)).toFixed(2)
-})
+    const price = isMarket.value ? lastPrice.value : (orderForm.value.price || 0);
+    return (price * (orderForm.value.quantity || 0)).toFixed(2);
+});
 
-/* ---------------- CORE LOGIC ---------------- */
+// --------------------------------------------------------------------------
+// CHART & DATA LOGIC
+// --------------------------------------------------------------------------
 
 async function resetAndLoad(newSymbol) {
-    if (!newSymbol) return
-    loading.value = true
+    if (!newSymbol) return;
+    loading.value = true;
 
-    if (echo && channelName) echo.leave(channelName)
-    if (candleSeries) candleSeries.setData([])
-    if (volumeSeries) volumeSeries.setData([])
+    if (echo && channelName) echo.leave(channelName);
+    if (candleSeries) candleSeries.setData([]);
+    if (volumeSeries) volumeSeries.setData([]);
 
     try {
+        // Initial Price Set
         if (props.instrument && props.instrument.symbol === newSymbol) {
-             lastPrice.value = Number(props.instrument.underlying_state?.last_price ?? props.instrument.base_price ?? 0)
+             lastPrice.value = Number(props.instrument.underlying_state?.last_price ?? props.instrument.base_price ?? 0);
         } else {
-             const { data } = await axios.get(`/api/instruments/${newSymbol}`)
-             lastPrice.value = Number(data.underlying_state?.last_price ?? data.base_price ?? 0)
+             const { data } = await axios.get(`/api/instruments/${newSymbol}`);
+             lastPrice.value = Number(data.underlying_state?.last_price ?? data.base_price ?? 0);
         }
 
-        await loadCandles(newSymbol)
-        await loadOptionChain()
-        loading.value = false
+        await loadCandles(newSymbol);
+        await loadOptionChain();
+        loading.value = false;
     } catch (e) {
-        console.error('Switch Instrument Error:', e)
-        loading.value = false
+        console.error('Switch Instrument Error:', e);
+        loading.value = false;
     }
 }
 
 async function loadCandles(symbol) {
-    if (!candleSeries) return
+    if (!candleSeries) return;
     try {
         const { data } = await axios.get(`/api/instruments/${symbol}/candles`, {
             params: { timeframe: selectedTimeframe.value, limit: 500 }
-        })
+        });
 
+        // Map and sort data
         const formatted = data.map(c => ({
             time: Math.floor(new Date(c.timestamp).getTime() / 1000),
             open: parseFloat(c.open),
@@ -123,30 +135,32 @@ async function loadCandles(symbol) {
             low: parseFloat(c.low),
             close: parseFloat(c.close),
             volume: parseFloat(c.volume || 0)
-        })).sort((a, b) => a.time - b.time)
+        })).sort((a, b) => a.time - b.time);
 
-        const unique = formatted.filter((v, i, a) => i === a.findIndex(t => t.time === v.time))
+        // Deduplicate
+        const unique = formatted.filter((v, i, a) => i === a.findIndex(t => t.time === v.time));
 
-        candleSeries.setData(unique)
+        candleSeries.setData(unique);
         volumeSeries.setData(unique.map(c => ({
             time: c.time,
             value: c.volume,
             color: c.close >= c.open ? 'rgba(8, 153, 129, 0.3)' : 'rgba(242, 54, 69, 0.3)'
-        })))
+        })));
 
+        // Sync Current Candle for Socket Updates
         if (unique.length > 0) {
-            currentCandle = { ...unique[unique.length - 1] }
+            currentCandle = { ...unique[unique.length - 1] };
         }
 
-        chart.timeScale().fitContent()
-        initSocket(symbol)
+        chart.timeScale().fitContent();
+        initSocket(symbol);
     } catch (e) {
-        console.error('Candle Load Error:', e)
+        console.error('Candle Load Error:', e);
     }
 }
 
 function initChart() {
-    if (chart) return
+    if (chart) return;
 
     chart = createChart(chartContainer.value, {
         layout: { background: { color: '#131722' }, textColor: '#d1d4dc' },
@@ -154,144 +168,220 @@ function initChart() {
         crosshair: { mode: CrosshairMode.Normal },
         timeScale: { borderColor: '#2a2e39', timeVisible: true, secondsVisible: false },
         rightPriceScale: { borderColor: '#2a2e39', autoScale: true }
-    })
+    });
 
     candleSeries = chart.addCandlestickSeries({
         upColor: '#089981', downColor: '#f23645',
         borderVisible: false, wickUpColor: '#089981', wickDownColor: '#f23645'
-    })
+    });
 
     volumeSeries = chart.addHistogramSeries({
         color: '#26a69a', priceFormat: { type: 'volume' }, priceScaleId: ''
-    })
+    });
 
-    chart.priceScale('').applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } })
+    chart.priceScale('').applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
 
     resizeObserver = new ResizeObserver(() => {
         if (chart && chartContainer.value) {
-            chart.applyOptions({ width: chartContainer.value.clientWidth, height: chartContainer.value.clientHeight })
+            chart.applyOptions({ width: chartContainer.value.clientWidth, height: chartContainer.value.clientHeight });
         }
-    })
-    resizeObserver.observe(chartContainer.value)
-    chartInitialized.value = true
+    });
+    resizeObserver.observe(chartContainer.value);
+    chartInitialized.value = true;
 
-    if (props.symbol) resetAndLoad(props.symbol)
+    if (props.symbol) resetAndLoad(props.symbol);
 }
 
 function initSocket(symbol) {
-    if (echo && channelName) echo.leave(channelName)
+    if (echo && channelName) echo.leave(channelName);
 
-    echo = initEcho()
+    echo = initEcho();
 
+    // 1. Determine Channel Name for Market Data
     if (symbol.includes('-F-')) {
-        channelName = `market.futures.${symbol}`
+        channelName = `market.futures.${symbol}`;
     } else if (symbol.includes('-C-') || symbol.includes('-P-')) {
-        channelName = `market.options.${symbol}`
+        channelName = `market.options.${symbol}`;
     } else {
-        channelName = `market.underlying.${symbol}`
+        channelName = `market.underlying.${symbol}`;
     }
 
+    // 2. Listen for Tick Updates (Angel One Logic)
     echo.channel(channelName).listen('.TickUpdated', e => {
-        const price = Number(e.price)
-        const timestamp = e.timestamp ? Math.floor(new Date(e.timestamp).getTime() / 1000) : Math.floor(Date.now() / 1000)
+        const price = Number(e.price);
+        const now = e.timestamp ? new Date(e.timestamp).getTime() : Date.now();
+        const timestamp = Math.floor(now / 1000);
 
-        const tf = timeframes.find(t => t.value === selectedTimeframe.value)
-        const bucketSize = tf ? tf.seconds : 60
-        const candleTime = Math.floor(timestamp / bucketSize) * bucketSize
+        // --- ANGEL ONE STYLE AGGREGATION LOGIC ---
+        // Calculate the candle start time based on selected timeframe bucket
+        const tf = timeframes.find(t => t.value === selectedTimeframe.value);
+        const bucketSize = tf ? tf.seconds : 60;
+        const candleTime = Math.floor(timestamp / bucketSize) * bucketSize;
 
-        priceChange.value = price - lastPrice.value
-        lastPrice.value = price
+        priceChange.value = price - lastPrice.value;
+        lastPrice.value = price;
 
         if (candleSeries && !loading.value) {
-            if (candleTime > currentCandle.time) {
-                currentCandle = { time: candleTime, open: price, high: price, low: price, close: price }
-            } else {
-                currentCandle.close = price
-                if (price > currentCandle.high) currentCandle.high = price
-                if (price < currentCandle.low) currentCandle.low = price
+            // Case A: Update current candle
+            if (currentCandle.time === candleTime) {
+                currentCandle.close = price;
+                if (price > currentCandle.high) currentCandle.high = price;
+                if (price < currentCandle.low) currentCandle.low = price;
             }
-            candleSeries.update(currentCandle)
+            // Case B: Create new candle (Timeframe boundary crossed)
+            else if (candleTime > currentCandle.time) {
+                currentCandle = {
+                    time: candleTime,
+                    open: price,
+                    high: price,
+                    low: price,
+                    close: price,
+                    volume: 0
+                };
+            }
+            candleSeries.update(currentCandle);
         }
-    })
+    });
+
+    // 3. Listen for User Orders (SL/Target Hits)
+    if (props.userState?.id) {
+        echo.private(`orders.${props.userState.id}`)
+            .listen('.OrderUpdated', (e) => {
+                // Check if trade was closed automatically
+                if (e.status === 'CLOSED' && (e.close_reason === 'SL_HIT' || e.close_reason === 'TARGET_HIT')) {
+                    const isProfit = e.pnl >= 0;
+                    Swal.fire({
+                        title: e.close_reason === 'TARGET_HIT' ? 'Target Achieved! 🎯' : 'Stop Loss Hit 🛑',
+                        text: `Order Closed at ${e.exit_price}. P&L: ${e.pnl}`,
+                        icon: isProfit ? 'success' : 'warning',
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 5000,
+                        timerProgressBar: true,
+                        background: '#1e222d',
+                        color: '#fff',
+                        iconColor: isProfit ? '#089981' : '#f23645'
+                    });
+                }
+            });
+    }
 }
 
-/* ---------------- WATCHERS & LIFECYCLE ---------------- */
+// --------------------------------------------------------------------------
+// WATCHERS & LIFECYCLE
+// --------------------------------------------------------------------------
 
 watch(() => props.symbol, (newVal) => {
-    resetAndLoad(newVal)
-})
+    resetAndLoad(newVal);
+});
 
 watch(selectedTimeframe, () => {
-    if (props.symbol) loadCandles(props.symbol)
-})
+    if (props.symbol) loadCandles(props.symbol);
+});
 
 onMounted(() => {
-    initChart()
-})
+    initChart();
+});
 
 onUnmounted(() => {
     if (chart) {
-        chart.remove()
-        chart = null
+        chart.remove();
+        chart = null;
     }
-    if (resizeObserver) resizeObserver.disconnect()
-    if (echo && channelName) echo.leave(channelName)
-})
+    if (resizeObserver) resizeObserver.disconnect();
+    if (echo) echo.disconnect();
+});
 
-/* ---------------- API ACTIONS: OPTION CHAIN ---------------- */
+// --------------------------------------------------------------------------
+// OPTION CHAIN ACTIONS
+// --------------------------------------------------------------------------
 
 async function loadOptionChain() {
-    if (!showOptionChain.value) return
+    if (!showOptionChain.value) return;
     try {
         const { data } = await axios.get(`/api/instruments/${props.symbol}/option-chain`, {
             params: { expiry_date: expiryDate.value }
-        })
-        optionChain.value = Object.values(data).sort((a, b) => a.strike - b.strike)
-        scrollToATM()
-    } catch (e) { console.error('Option Chain Error:', e) }
+        });
+        optionChain.value = Object.values(data).sort((a, b) => a.strike - b.strike);
+        scrollToATM();
+    } catch (e) { console.error('Option Chain Error:', e); }
 }
 
 function scrollToATM() {
     nextTick(() => {
-        const row = document.getElementById('atm-row')
-        if (row) row.scrollIntoView({ block: 'center', behavior: 'smooth' })
-    })
+        const row = document.getElementById('atm-row');
+        if (row) row.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    });
 }
 
-const isCallITM = (strike) => strike < lastPrice.value
-const isPutITM = (strike) => strike > lastPrice.value
+const isCallITM = (strike) => strike < lastPrice.value;
+const isPutITM = (strike) => strike > lastPrice.value;
 
-/* ---------------- API ACTIONS: ORDER PLACEMENT ---------------- */
+// --------------------------------------------------------------------------
+// ORDER ENTRY ACTIONS
+// --------------------------------------------------------------------------
 
 function openOrderEntry(side, type = 'Main', optionData = null) {
-    orderForm.value.side = side
-    orderForm.value.lot_type = 'standard' // Reset
+    orderForm.value.side = side;
+    orderForm.value.lot_type = 'standard';
 
     if (type === 'Option' && optionData) {
         // Option Chain Order
-        const price = Number(optionData.last_price || 0)
-        orderForm.value.price = price
-        orderForm.value.trigger_price = price
-        orderForm.value.symbol_display = `${props.symbol} ${optionData.strike} ${optionData.type}`
-        orderForm.value.trading_symbol = optionData.contract_symbol || optionData.symbol
-        orderForm.value.quantity = props.instrument?.lot_size || 1
+        const price = Number(optionData.last_price || 0);
+        orderForm.value.price = price;
+        orderForm.value.trigger_price = price;
+        orderForm.value.symbol_display = `${props.symbol} ${optionData.strike} ${optionData.type}`;
+        orderForm.value.trading_symbol = optionData.contract_symbol || optionData.symbol;
+        orderForm.value.quantity = props.instrument?.lot_size || 1;
     } else {
         // Main Chart Order
-        orderForm.value.price = lastPrice.value
-        orderForm.value.trigger_price = lastPrice.value
-        orderForm.value.symbol_display = props.symbol
-        orderForm.value.trading_symbol = props.symbol
-        orderForm.value.quantity = props.instrument?.lot_size || 1
+        orderForm.value.price = lastPrice.value;
+        orderForm.value.trigger_price = lastPrice.value;
+        orderForm.value.symbol_display = props.symbol;
+        orderForm.value.trading_symbol = props.symbol;
+        orderForm.value.quantity = props.instrument?.lot_size || 1;
     }
 
-    orderForm.value.type = 'LIMIT'
-    orderForm.value.is_robo = false
-    orderForm.value.product = 'MIS'
-    showOrderModal.value = true
+    orderForm.value.type = 'LIMIT';
+    orderForm.value.is_robo = false;
+    orderForm.value.product = 'MIS';
+    showOrderModal.value = true;
 }
 
 async function submitOrder() {
-    isSubmitting.value = true
+    // 1. Validation for Robo Orders
+    if (orderForm.value.is_robo) {
+        const sl = parseFloat(orderForm.value.stop_loss);
+        const tgt = parseFloat(orderForm.value.target);
+        // Use Last Price for validation on Market orders, or Input Price for Limit
+        const entry = isMarket.value ? lastPrice.value : parseFloat(orderForm.value.price);
+
+        // Required check
+        if (!sl || !tgt) {
+            return Swal.fire({
+                title: 'Invalid Input',
+                text: 'Please enter both Stop Loss and Target prices',
+                icon: 'warning',
+                background: '#1e222d',
+                color: '#fff',
+                confirmButtonColor: '#2962ff'
+            });
+        }
+
+        // Logic check
+        if (orderForm.value.side === 'BUY') {
+            if (sl >= entry) return Swal.fire({ title: 'Logic Error', text: 'Stop Loss must be BELOW Entry Price for BUY', icon: 'error', background: '#1e222d', color: '#fff' });
+            if (tgt <= entry) return Swal.fire({ title: 'Logic Error', text: 'Target must be ABOVE Entry Price for BUY', icon: 'error', background: '#1e222d', color: '#fff' });
+        } else {
+            // SELL
+            if (sl <= entry) return Swal.fire({ title: 'Logic Error', text: 'Stop Loss must be ABOVE Entry Price for SELL', icon: 'error', background: '#1e222d', color: '#fff' });
+            if (tgt >= entry) return Swal.fire({ title: 'Logic Error', text: 'Target must be BELOW Entry Price for SELL', icon: 'error', background: '#1e222d', color: '#fff' });
+        }
+    }
+
+    isSubmitting.value = true;
+
     try {
         const payload = {
             user_id: props.userState?.id,
@@ -301,20 +391,17 @@ async function submitOrder() {
             lot_type: orderForm.value.lot_type,
             product: orderForm.value.product,
             type: orderForm.value.type,
-            price: isMarket.value ? 0 : orderForm.value.price,
+            price: isMarket.value ? lastPrice.value : orderForm.value.price,
             trigger_price: isSL.value ? orderForm.value.trigger_price : null,
             is_robo: orderForm.value.is_robo,
             stop_loss: orderForm.value.is_robo ? orderForm.value.stop_loss : null,
             target: orderForm.value.is_robo ? orderForm.value.target : null,
-        }
+        };
 
-        await axios.post('/api/orders/place', payload)
+        await axios.post('/api/orders/place', payload);
 
-        showOrderModal.value = false // Close modal immediately
+        showOrderModal.value = false;
 
-        // ----------------------------------------------------
-        // MODERN SUCCESS TOASTER
-        // ----------------------------------------------------
         Swal.fire({
             title: 'Order Placed!',
             text: `Your ${orderForm.value.side} order for ${orderForm.value.symbol_display} was successful.`,
@@ -326,13 +413,10 @@ async function submitOrder() {
             timerProgressBar: true,
             background: '#1e222d',
             color: '#fff',
-            iconColor: '#089981' // Green
-        })
+            iconColor: '#089981'
+        });
 
     } catch (e) {
-        // ----------------------------------------------------
-        // MODERN ERROR ALERT
-        // ----------------------------------------------------
         Swal.fire({
             title: 'Order Failed',
             text: e.response?.data?.message || 'Something went wrong.',
@@ -340,10 +424,10 @@ async function submitOrder() {
             background: '#1e222d',
             color: '#fff',
             confirmButtonColor: '#2962ff',
-            iconColor: '#f23645' // Red
-        })
+            iconColor: '#f23645'
+        });
     } finally {
-        isSubmitting.value = false
+        isSubmitting.value = false;
     }
 }
 </script>
@@ -351,27 +435,33 @@ async function submitOrder() {
 <template>
   <div class="flex flex-col h-full bg-[#0b0e14] text-[#d1d4dc] overflow-hidden font-sans">
 
-    <header class="h-14 border-b border-[#2a2e39] flex items-center justify-between px-6 shrink-0 bg-[#131722]">
-      <div class="flex items-center space-x-4">
-        <h1 class="text-lg font-bold text-white tracking-tight">{{ symbol }}</h1>
-        <div class="h-6 w-[1px] bg-[#2a2e39]"></div>
-        <div class="flex space-x-1">
-          <button v-for="tf in timeframes" :key="tf.value" @click="selectedTimeframe = tf.value"
-            :class="selectedTimeframe === tf.value ? 'bg-[#2962ff] text-white font-bold' : 'hover:bg-[#2a2e39] text-gray-400'"
-            class="px-2.5 py-1 text-[11px] rounded transition uppercase">
+    <header class="h-14 border-b border-[#2a2e39] flex items-center justify-between px-4 shrink-0 bg-[#131722] overflow-hidden">
+      <div class="flex items-center gap-4 flex-1 overflow-x-auto no-scrollbar mask-gradient">
+        <h1 class="text-lg font-bold text-white tracking-tight whitespace-nowrap">{{ symbol }}</h1>
+        <div class="h-5 w-[1px] bg-[#2a2e39] shrink-0"></div>
+
+        <div class="flex items-center gap-1">
+          <button v-for="tf in timeframes" :key="tf.value"
+            @click="selectedTimeframe = tf.value"
+            :class="[
+                selectedTimeframe === tf.value
+                ? 'text-[#2962ff] bg-[#2962ff]/10 font-bold'
+                : 'text-[#d1d4dc] hover:text-[#2962ff] hover:bg-[#2a2e39]'
+            ]"
+            class="px-2.5 py-1.5 rounded text-[13px] transition-all duration-200 ease-in-out whitespace-nowrap">
             {{ tf.label }}
           </button>
         </div>
       </div>
 
-      <div class="flex items-center space-x-6">
+      <div class="flex items-center gap-6 pl-4 bg-[#131722] shadow-[-10px_0_10px_-5px_rgba(19,23,34,1)] z-10 shrink-0">
         <div class="text-right">
             <div :class="priceChange >= 0 ? 'text-[#089981]' : 'text-[#f23645]'"
                  class="text-xl font-mono font-bold leading-none transition-colors duration-200">
                 {{ lastPrice.toFixed(2) }}
             </div>
         </div>
-        <div class="flex space-x-2">
+        <div class="flex gap-2">
             <button @click="openOrderEntry('BUY')" class="bg-[#089981] hover:bg-[#067d69] text-white px-5 py-1.5 rounded text-xs font-bold transition shadow-lg active:scale-95">BUY</button>
             <button @click="openOrderEntry('SELL')" class="bg-[#f23645] hover:bg-[#d02e3c] text-white px-5 py-1.5 rounded text-xs font-bold transition shadow-lg active:scale-95">SELL</button>
         </div>
@@ -393,13 +483,11 @@ async function submitOrder() {
           </div>
           <div class="text-[10px] text-gray-400">Spot: <span class="text-white font-bold">{{ lastPrice.toFixed(2) }}</span></div>
         </div>
-
         <div class="grid grid-cols-3 bg-[#131722] border-b border-[#2a2e39] text-[10px] text-gray-500 font-bold uppercase tracking-wide">
             <div class="py-2 text-center border-r border-[#2a2e39]">CALLS (LTP)</div>
             <div class="py-2 text-center border-r border-[#2a2e39]">STRIKE</div>
             <div class="py-2 text-center">PUTS (LTP)</div>
         </div>
-
         <div class="flex-1 overflow-y-auto custom-scrollbar relative">
           <div v-for="(row, index) in optionChain" :key="row.strike" class="grid grid-cols-3 text-xs border-b border-[#2a2e39]/50 group h-9">
 
@@ -440,14 +528,12 @@ async function submitOrder() {
                          class="bg-[#f23645] hover:bg-[#d02e3c] text-white text-[8px] px-1.5 py-0.5 rounded cursor-pointer">S</span>
                 </div>
             </div>
-
           </div>
         </div>
     </div>
 
     <div v-if="showOrderModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 font-sans">
         <div class="bg-[#1e222d] w-full max-w-md rounded-xl border border-[#363a45] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-
             <div :class="orderForm.side === 'BUY' ? 'bg-[#089981]' : 'bg-[#f23645]'" class="px-6 py-4 flex justify-between items-center shrink-0">
                 <div>
                     <h2 class="font-bold text-white text-lg tracking-wide">{{ orderForm.side }} {{ orderForm.symbol_display || symbol }}</h2>
@@ -461,31 +547,15 @@ async function submitOrder() {
             </div>
 
             <div class="p-6 overflow-y-auto custom-scrollbar space-y-6">
-
                 <div class="bg-[#131722] p-1 rounded-lg flex text-xs font-bold border border-[#2a2e39]">
-                    <button @click="orderForm.product = 'MIS'"
-                        :class="orderForm.product === 'MIS' ? 'bg-[#2962ff] text-white shadow' : 'text-gray-400 hover:text-gray-200'"
-                        class="flex-1 py-2 rounded transition">
-                        INTRADAY (MIS)
-                    </button>
-                    <button @click="orderForm.product = 'CNC'"
-                        :class="orderForm.product === 'CNC' ? 'bg-[#2962ff] text-white shadow' : 'text-gray-400 hover:text-gray-200'"
-                        class="flex-1 py-2 rounded transition">
-                        DELIVERY (CNC)
-                    </button>
+                    <button @click="orderForm.product = 'MIS'" :class="orderForm.product === 'MIS' ? 'bg-[#2962ff] text-white shadow' : 'text-gray-400 hover:text-gray-200'" class="flex-1 py-2 rounded transition">INTRADAY (MIS)</button>
+                    <button @click="orderForm.product = 'CNC'" :class="orderForm.product === 'CNC' ? 'bg-[#2962ff] text-white shadow' : 'text-gray-400 hover:text-gray-200'" class="flex-1 py-2 rounded transition">DELIVERY (CNC)</button>
                 </div>
 
                 <div class="space-y-1.5">
                     <label class="text-[11px] text-gray-400 font-bold uppercase tracking-wider">Lot Power</label>
                     <div class="grid grid-cols-5 gap-1">
-                        <button v-for="lot in lotTypes" :key="lot.value"
-                            @click="!lot.locked && (orderForm.lot_type = lot.value)"
-                            :disabled="lot.locked"
-                            :class="[
-                                orderForm.lot_type === lot.value ? 'bg-[#2962ff] text-white border-transparent' : 'bg-[#131722] border-[#2a2e39] text-gray-400',
-                                lot.locked ? 'opacity-50 cursor-not-allowed' : 'hover:border-gray-500'
-                            ]"
-                            class="border py-2 rounded flex flex-col items-center justify-center transition">
+                        <button v-for="lot in lotTypes" :key="lot.value" @click="!lot.locked && (orderForm.lot_type = lot.value)" :disabled="lot.locked" :class="[orderForm.lot_type === lot.value ? 'bg-[#2962ff] text-white border-transparent' : 'bg-[#131722] border-[#2a2e39] text-gray-400', lot.locked ? 'opacity-50 cursor-not-allowed' : 'hover:border-gray-500']" class="border py-2 rounded flex flex-col items-center justify-center transition">
                             <span class="text-[9px] font-bold uppercase">{{ lot.value }}</span>
                             <span v-if="lot.locked" class="text-[8px] mt-0.5">🔒</span>
                         </button>
@@ -500,12 +570,10 @@ async function submitOrder() {
                             <span class="absolute right-3 top-2.5 text-xs text-gray-500">Lot: {{ instrument?.lot_size || 1 }}</span>
                         </div>
                     </div>
-
                     <div class="space-y-1.5">
                         <label class="text-[11px] text-gray-400 font-bold uppercase tracking-wider">Price</label>
                         <div class="relative">
-                            <input v-model="orderForm.price" :disabled="isMarket" type="number" step="0.05"
-                                class="w-full bg-[#2a2e39] border border-transparent focus:border-[#2962ff] disabled:opacity-50 disabled:cursor-not-allowed rounded-md px-3 py-2.5 text-sm font-mono text-white outline-none transition">
+                            <input v-model="orderForm.price" :disabled="isMarket" type="number" step="0.05" class="w-full bg-[#2a2e39] border border-transparent focus:border-[#2962ff] disabled:opacity-50 disabled:cursor-not-allowed rounded-md px-3 py-2.5 text-sm font-mono text-white outline-none transition">
                         </div>
                     </div>
                 </div>
@@ -513,10 +581,7 @@ async function submitOrder() {
                 <div class="space-y-1.5">
                     <label class="text-[11px] text-gray-400 font-bold uppercase tracking-wider">Order Type</label>
                     <div class="grid grid-cols-4 gap-2">
-                        <button v-for="type in ['MARKET', 'LIMIT', 'SL-LIMIT', 'SL-MARKET']" :key="type"
-                            @click="orderForm.type = type"
-                            :class="orderForm.type === type ? 'bg-[#2a2e39] border-[#2962ff] text-[#2962ff]' : 'border-[#2a2e39] text-gray-400 hover:border-gray-500'"
-                            class="border text-[10px] font-bold py-2 rounded transition uppercase">
+                        <button v-for="type in ['MARKET', 'LIMIT', 'SL-LIMIT', 'SL-MARKET']" :key="type" @click="orderForm.type = type" :class="orderForm.type === type ? 'bg-[#2a2e39] border-[#2962ff] text-[#2962ff]' : 'border-[#2a2e39] text-gray-400 hover:border-gray-500'" class="border text-[10px] font-bold py-2 rounded transition uppercase">
                             {{ type.replace('-', ' ') }}
                         </button>
                     </div>
@@ -536,7 +601,6 @@ async function submitOrder() {
                             <div class="w-9 h-5 bg-[#2a2e39] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#2962ff]"></div>
                         </label>
                     </div>
-
                     <div v-if="orderForm.is_robo" class="grid grid-cols-2 gap-4 animate-fade-in-up">
                         <div class="space-y-1">
                             <label class="text-[10px] text-[#f23645] font-bold uppercase">Stop Loss Price</label>
@@ -556,9 +620,7 @@ async function submitOrder() {
             </div>
 
             <div class="p-4 border-t border-[#2a2e39] bg-[#1e222d]">
-                <button @click="submitOrder" :disabled="isSubmitting"
-                    :class="orderForm.side === 'BUY' ? 'bg-[#089981] hover:bg-[#067d69] shadow-[#089981]/20' : 'bg-[#f23645] hover:bg-[#d02e3c] shadow-[#f23645]/20'"
-                    class="w-full py-3.5 rounded-lg font-bold text-white text-sm shadow-lg transition-all transform active:scale-[0.98] disabled:opacity-50 disabled:transform-none flex items-center justify-center gap-2">
+                <button @click="submitOrder" :disabled="isSubmitting" :class="orderForm.side === 'BUY' ? 'bg-[#089981] hover:bg-[#067d69] shadow-[#089981]/20' : 'bg-[#f23645] hover:bg-[#d02e3c] shadow-[#f23645]/20'" class="w-full py-3.5 rounded-lg font-bold text-white text-sm shadow-lg transition-all transform active:scale-[0.98] disabled:opacity-50 disabled:transform-none flex items-center justify-center gap-2">
                     <span v-if="isSubmitting" class="animate-spin h-4 w-4 border-2 border-white/30 border-t-white rounded-full"></span>
                     <span>{{ isSubmitting ? 'PLACING ORDER...' : (orderForm.side + ' ORDER') }}</span>
                 </button>
@@ -577,12 +639,16 @@ input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-app
 .animate-fade-in-down { animation: fadeInDown 0.2s ease-out; }
 .animate-fade-in-up { animation: fadeInUp 0.2s ease-out; }
 
-@keyframes fadeInDown {
-    from { opacity: 0; transform: translateY(-5px); }
-    to { opacity: 1; transform: translateY(0); }
+/* Horizontal Scrollbar Hide */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Subtle fade on right side of timeframe bar */
+.mask-gradient {
+    -webkit-mask-image: linear-gradient(to right, black 90%, transparent 100%);
+    mask-image: linear-gradient(to right, black 90%, transparent 100%);
 }
-@keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(5px); }
-    to { opacity: 1; transform: translateY(0); }
-}
+
+@keyframes fadeInDown { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 </style>

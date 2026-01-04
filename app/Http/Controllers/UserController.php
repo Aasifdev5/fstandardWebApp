@@ -556,8 +556,7 @@ class UserController extends Controller
         if ($user_session instanceof \Illuminate\Http\RedirectResponse) return $user_session;
         $orders = Order::where('user_id', $user_session->id)
             ->with('challenge')
-            ->latest()
-            ->paginate(15);
+            ->orderby('created_at','desc')->get();
         return view('orders', compact('user_session', 'orders'));
     }
 
