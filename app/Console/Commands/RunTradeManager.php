@@ -18,6 +18,9 @@ class RunTradeManager extends Command
     // Sleep time between loops in microseconds (1 sec = 1_000_000)
     private int $sleepTime = 1_000_000;
 
+    // Track dry-run closed orders to prevent repeated logs
+    private array $dryClosedOrders = [];
+
     public function handle()
     {
         $dryRun = $this->option('dry');
@@ -29,15 +32,13 @@ class RunTradeManager extends Command
             $orders = Order::where('status', Order::STATUS_OPEN)
                 ->where(function ($q) {
                     $q->whereNotNull('stop_loss')
-                      ->orWhereNotNull('target');
+                        ->orWhereNotNull('target');
                 })
                 ->get();
 
             foreach ($orders as $order) {
 
                 $currentPrice = $this->getCurrentPrice($order->stock_symbol);
-
-                $this->line("Order {$order->id} | {$order->stock_symbol} | Price: {$currentPrice}");
 
                 if ($currentPrice <= 0) {
                     continue; // skip invalid price
@@ -73,11 +74,19 @@ class RunTradeManager extends Command
                     }
                 }
 
+                // Handle triggered orders
                 if ($triggered) {
                     if ($dryRun) {
-                        $this->info("💡 [DRY] Order {$order->id} would close | Reason: {$reason} | PNL: {$pnl}");
+                        if (!in_array($order->id, $this->dryClosedOrders)) {
+                            $this->info("💡 [DRY] Order {$order->id} would close | Reason: {$reason} | Trigger Price: {$currentPrice} | PNL: {$pnl}");
+                            $this->dryClosedOrders[] = $order->id;
+                        }
                     } else {
-                        $this->closeOrder($order, $currentPrice, $reason, $pnl);
+                        try {
+                            $this->closeOrder($order, $currentPrice, $reason, $pnl);
+                        } catch (\Exception $e) {
+                            $this->error("❌ Failed to close Order {$order->id}: " . $e->getMessage());
+                        }
                     }
                 }
             }
@@ -120,27 +129,31 @@ class RunTradeManager extends Command
     private function closeOrder(Order $order, float $exitPrice, string $reason, float $pnl): void
     {
         DB::transaction(function () use ($order, $exitPrice, $reason, $pnl) {
+            try {
+                // Update order
+                $order->update([
+                    'status'        => Order::STATUS_COMPLETED,
+                    'exit_price'    => $exitPrice,
+                    'trigger_price' => $exitPrice,
+                    'close_reason'  => $reason,
+                    'pnl'           => $pnl,
+                    'closed_at'     => now(),
+                ]);
 
-            // Update order
-            $order->update([
-                'status'       => Order::STATUS_COMPLETED,
-                'exit_price'   => $exitPrice,
-                'close_reason' => $reason,
-                'pnl'          => $pnl,
-                'closed_at'    => now(),
-            ]);
+                // Update user balance
+                $user = User::where('id', $order->user_id)->lockForUpdate()->first();
+                if ($user) {
+                    $user->account_balance += $pnl;
+                    $user->save();
+                }
 
-            // Update user balance
-            $user = User::where('id', $order->user_id)->lockForUpdate()->first();
-            if ($user) {
-                $user->account_balance += $pnl;
-                $user->save();
+                $this->info("✅ Order {$order->id} CLOSED | {$reason} | Trigger Price: {$exitPrice} | PNL: {$pnl}");
+
+                // Broadcast event
+                event(new OrderUpdated($order));
+            } catch (\Exception $e) {
+                $this->error("❌ Failed to update Order {$order->id}: " . $e->getMessage());
             }
-
-            $this->info("✅ Order {$order->id} CLOSED | {$reason} | PNL: {$pnl}");
-
-            // Broadcast event
-            event(new OrderUpdated($order));
         });
     }
 }

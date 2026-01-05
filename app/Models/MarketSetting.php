@@ -7,37 +7,44 @@ use Illuminate\Support\Facades\Cache;
 
 class MarketSetting extends Model
 {
-    protected $fillable = ['key', 'value'];
+    protected $table = 'market_settings';
 
-    // 1. Ensure the JSON from DB is converted to a PHP Array automatically
+    protected $fillable = [
+        'key',
+        'value',
+    ];
+
+    /**
+     * CRITICAL:
+     * This ensures JSON becomes a PHP array
+     */
     protected $casts = [
         'value' => 'array',
     ];
 
     /**
-     * Retrieve config with caching.
-     * Updated to use first() so casting is applied correctly.
+     * Fetch simulation config with permanent cache
+     * Uses first() so casts are applied correctly
      */
-    public static function getSimulationConfig()
+    public static function getSimulationConfig(): array
     {
         return Cache::rememberForever('market_simulation_config', function () {
-            // WE USE 'first()' INSTEAD OF 'value()' HERE
-            // 'value()' returns the raw JSON string (ignoring casts).
-            // 'first()' hydrates the model and converts it to an array.
             $setting = self::where('key', 'simulation_config')->first();
-
-            return $setting ? $setting->value : [];
+            return $setting?->value ?? [];
         });
     }
 
     /**
-     * Clear cache automatically when the model is updated
+     * Auto-clear cache when config changes
      */
     protected static function booted()
     {
         static::saved(function ($setting) {
-            // This matches the key used in the Controller: 'market_simulation_config'
-            Cache::forget('market_' . $setting->key);
+            Cache::forget('market_simulation_config');
+        });
+
+        static::deleted(function ($setting) {
+            Cache::forget('market_simulation_config');
         });
     }
 }

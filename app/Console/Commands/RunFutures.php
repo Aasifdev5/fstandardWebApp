@@ -9,6 +9,7 @@ use App\Events\FuturesTickUpdated;
 use App\Services\PriceService;
 use App\Models\MarketSetting;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 
 class RunFutures extends Command
 {
@@ -22,8 +23,13 @@ class RunFutures extends Command
         while (true) {
             $now = Carbon::now('Asia/Kolkata');
 
-            /** 🔥 Load MarketSetting ONCE per tick */
+            // 1. Fetch Config (Consider adding Cache::remember inside MarketSetting::getSimulationConfig for 2 seconds)
             $marketConfig = MarketSetting::getSimulationConfig();
+
+            // 2. Read Real-time Control Values
+            $tickSpeed = (int) ($marketConfig['update_speed_ms'] ?? 1000); // Default 1 second
+            $stressMult = (float) ($marketConfig['global_stress_multiplier'] ?? 1.0); // 1.0 = normal
+
             $riskFreeRate = (float) ($marketConfig['risk_free_rate'] ?? 0.06);
             $instrumentMultipliers = $marketConfig['instrument_multipliers'] ?? [];
 
@@ -51,11 +57,20 @@ class RunFutures extends Command
                     $contract->expiry_date->diffInSeconds($now) / (365 * 24 * 60 * 60)
                 );
 
-                /** 🔥 Instrument multiplier */
                 $symbolKey = "{$instrument->symbol}-F";
                 $multiplier = (float) ($instrumentMultipliers[$symbolKey] ?? 1.0);
 
-                $basePrice = $instrument->underlyingState->last_price * $multiplier;
+                // 3. APPLY STRESS/NOISE
+                // If Stress Multiplier > 1.2, add random noise to underlying price
+                $jitter = 0;
+                if ($stressMult > 1.2) {
+                    // Random fluctuation +/- 0.05% scaled by stress
+                    $randomFactor = (rand(-50, 50) / 100000);
+                    $jitter = $randomFactor * $stressMult * $instrument->underlyingState->last_price;
+                }
+
+                // Base Price calculation with Jitter
+                $basePrice = ($instrument->underlyingState->last_price + $jitter) * $multiplier;
 
                 $newPrice = $priceService->calculateFuturesPrice(
                     $basePrice,
@@ -74,7 +89,9 @@ class RunFutures extends Command
                 ));
             }
 
-            sleep(1);
+            // 4. DYNAMIC SLEEP
+            // Convert milliseconds to microseconds
+            usleep($tickSpeed * 1000);
         }
     }
 }

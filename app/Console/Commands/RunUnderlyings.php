@@ -29,6 +29,10 @@ class RunUnderlyings extends Command
              */
             $marketConfig = MarketSetting::getSimulationConfig();
 
+            // 🔥 NEW: Real-Time Controls
+            $tickSpeed  = (int) ($marketConfig['update_speed_ms'] ?? 800); // Default 800ms
+            $stressMult = (float) ($marketConfig['global_stress_multiplier'] ?? 1.0);
+
             $volMap       = $marketConfig['volatility_by_class'] ?? [];
             $regimes      = $marketConfig['regimes'] ?? [];
             $newsConfig   = $marketConfig['news'] ?? [];
@@ -44,8 +48,7 @@ class RunUnderlyings extends Command
             foreach ($instruments as $instrument) {
 
                 /**
-                 * 3️⃣ SESSION CHECK (FIXED)
-                 * session_start / session_end must be TIME, not datetime
+                 * 3️⃣ SESSION CHECK
                  */
                 $sessionStart = Carbon::parse($now->toDateString() . ' ' . $instrument->session_start);
                 $sessionEnd   = Carbon::parse($now->toDateString() . ' ' . $instrument->session_end);
@@ -69,7 +72,7 @@ class RunUnderlyings extends Command
                     );
 
                 /**
-                 * 5️⃣ BASE VOLATILITY (SAFE)
+                 * 5️⃣ BASE VOLATILITY
                  */
                 $baseVol = max(
                     0.0001,
@@ -93,8 +96,16 @@ class RunUnderlyings extends Command
                 $drift = (float) ($regimeCfg['drift'] ?? 0);
                 $vol   = $baseVol * $timeMult * max(0.1, $regimeCfg['volatility_multiplier'] ?? 1);
 
+                // 🔥 APPLY STRESS MULTIPLIER (Make market wilder)
+                $vol *= $stressMult;
+
+                // 🔥 APPLY PANIC DRIFT (If stress > 2.0, market tends to slide down)
+                if ($stressMult > 2.0) {
+                    $drift -= 0.1 * ($stressMult - 1);
+                }
+
                 /**
-                 * 8️⃣ NEWS IMPACT (OPTIONAL)
+                 * 8️⃣ NEWS IMPACT
                  */
                 $news = InstrumentNewsState::where('instrument_id', $instrument->id)->first();
 
@@ -113,16 +124,15 @@ class RunUnderlyings extends Command
                 $newPrice = $priceService->calculateGbmPrice(
                     max(1, $state->last_price),
                     $drift,
-                    $vol
+                    $vol,
+                    $tickSpeed / 1000 // Convert ms to seconds for the math
                 );
 
                 /**
-                 * 🔟 TICK ROUNDING (SAFE)
+                 * 🔟 TICK ROUNDING
                  */
                 $tick = max(0.01, $instrument->tick_size);
                 $newPrice = round($newPrice / $tick) * $tick;
-
-                // Absolute safety floor
                 $newPrice = max($tick, $newPrice);
 
                 /**
@@ -145,9 +155,10 @@ class RunUnderlyings extends Command
             }
 
             /**
-             * 1️⃣3️⃣ ENGINE TICK RATE (800ms)
+             * 1️⃣3️⃣ DYNAMIC ENGINE TICK RATE
+             * Use the value from config (e.g. 200ms vs 1000ms)
              */
-            usleep(800000);
+            usleep($tickSpeed * 1000);
         }
     }
 }

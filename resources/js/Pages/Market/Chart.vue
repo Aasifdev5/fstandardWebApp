@@ -4,18 +4,14 @@ import axios from 'axios';
 import { createChart, CrosshairMode } from 'lightweight-charts';
 import { init as initEcho } from '@/echo.js';
 import Swal from 'sweetalert2';
+import { router } from '@inertiajs/vue3'; // 🔥 IMPORT ROUTER FOR RELOAD
 
-// --------------------------------------------------------------------------
-// PROPS & STATE
-// --------------------------------------------------------------------------
 const props = defineProps({
     symbol: String,
     expiry: String,
     instrument: Object,
-    userState: {
-        type: Object,
-        default: () => ({ id: null, can_trade_mega: false })
-    }
+    userState: { type: Object, default: () => ({ id: null, challenge_id: null, can_trade_mega: false }) },
+    lotConfig: { type: Object, default: () => ({ micro: 0.25, mini: 0.5, standard: 1.0, large: 2.0, mega: 5.0 }) }
 });
 
 // Chart & Data State
@@ -25,14 +21,13 @@ const optionChain = ref([]);
 const expiryDate = ref(props.expiry);
 const chartContainer = ref(null);
 const loading = ref(true);
-const selectedTimeframe = ref('1m'); // Default
+const selectedTimeframe = ref('1m');
 const chartInitialized = ref(false);
 
-// Order Modal State
+// Order Modal
 const showOrderModal = ref(false);
 const isSubmitting = ref(false);
 
-// Order Form
 const orderForm = ref({
     side: 'BUY',
     product: 'MIS',
@@ -48,16 +43,15 @@ const orderForm = ref({
     target: 0,
 });
 
-// Lot Definitions
+// Dynamic Lot Multipliers
 const lotTypes = computed(() => [
-    { value: 'micro', label: 'Micro (0.6x)', locked: false },
-    { value: 'mini', label: 'Mini (0.75x)', locked: false },
-    { value: 'standard', label: 'Standard (1.0x)', locked: false },
-    { value: 'large', label: 'Large (1.25x)', locked: false },
-    { value: 'mega', label: 'Mega (1.5x)', locked: !props.userState?.can_trade_mega }
+    { value: 'micro', label: `Micro (${props.lotConfig.micro}x)`, locked: false },
+    { value: 'mini', label: `Mini (${props.lotConfig.mini}x)`, locked: false },
+    { value: 'standard', label: `Standard (${props.lotConfig.standard}x)`, locked: false },
+    { value: 'large', label: `Large (${props.lotConfig.large}x)`, locked: false },
+    { value: 'mega', label: `Mega (${props.lotConfig.mega}x)`, locked: !props.userState?.can_trade_mega }
 ]);
 
-// Angel One / TradingView Standard Intervals
 const timeframes = [
     { value: '1m', label: '1m', seconds: 60 },
     { value: '3m', label: '3m', seconds: 180 },
@@ -69,18 +63,15 @@ const timeframes = [
     { value: '1D', label: '1D', seconds: 86400 }
 ];
 
-// Non-reactive Chart Variables
 let chart = null;
 let candleSeries = null;
 let volumeSeries = null;
 let echo = null;
 let channelName = null;
 let resizeObserver = null;
+let optionChainInterval = null;
 let currentCandle = { time: 0, open: 0, high: 0, low: 0, close: 0 };
 
-// --------------------------------------------------------------------------
-// COMPUTED PROPERTIES
-// --------------------------------------------------------------------------
 const showOptionChain = computed(() => ['index', 'stock'].includes(props.instrument?.category));
 const isMarket = computed(() => ['MARKET', 'SL-MARKET'].includes(orderForm.value.type));
 const isSL = computed(() => ['SL-LIMIT', 'SL-MARKET'].includes(orderForm.value.type));
@@ -90,9 +81,7 @@ const estimatedMargin = computed(() => {
     return (price * (orderForm.value.quantity || 0)).toFixed(2);
 });
 
-// --------------------------------------------------------------------------
-// CHART & DATA LOGIC
-// --------------------------------------------------------------------------
+// --- CHART & DATA LOGIC ---
 
 async function resetAndLoad(newSymbol) {
     if (!newSymbol) return;
@@ -103,7 +92,6 @@ async function resetAndLoad(newSymbol) {
     if (volumeSeries) volumeSeries.setData([]);
 
     try {
-        // Initial Price Set
         if (props.instrument && props.instrument.symbol === newSymbol) {
              lastPrice.value = Number(props.instrument.underlying_state?.last_price ?? props.instrument.base_price ?? 0);
         } else {
@@ -127,7 +115,6 @@ async function loadCandles(symbol) {
             params: { timeframe: selectedTimeframe.value, limit: 500 }
         });
 
-        // Map and sort data
         const formatted = data.map(c => ({
             time: Math.floor(new Date(c.timestamp).getTime() / 1000),
             open: parseFloat(c.open),
@@ -137,7 +124,6 @@ async function loadCandles(symbol) {
             volume: parseFloat(c.volume || 0)
         })).sort((a, b) => a.time - b.time);
 
-        // Deduplicate
         const unique = formatted.filter((v, i, a) => i === a.findIndex(t => t.time === v.time));
 
         candleSeries.setData(unique);
@@ -147,7 +133,6 @@ async function loadCandles(symbol) {
             color: c.close >= c.open ? 'rgba(8, 153, 129, 0.3)' : 'rgba(242, 54, 69, 0.3)'
         })));
 
-        // Sync Current Candle for Socket Updates
         if (unique.length > 0) {
             currentCandle = { ...unique[unique.length - 1] };
         }
@@ -197,7 +182,6 @@ function initSocket(symbol) {
 
     echo = initEcho();
 
-    // 1. Determine Channel Name for Market Data
     if (symbol.includes('-F-')) {
         channelName = `market.futures.${symbol}`;
     } else if (symbol.includes('-C-') || symbol.includes('-P-')) {
@@ -206,14 +190,11 @@ function initSocket(symbol) {
         channelName = `market.underlying.${symbol}`;
     }
 
-    // 2. Listen for Tick Updates (Angel One Logic)
     echo.channel(channelName).listen('.TickUpdated', e => {
         const price = Number(e.price);
         const now = e.timestamp ? new Date(e.timestamp).getTime() : Date.now();
         const timestamp = Math.floor(now / 1000);
 
-        // --- ANGEL ONE STYLE AGGREGATION LOGIC ---
-        // Calculate the candle start time based on selected timeframe bucket
         const tf = timeframes.find(t => t.value === selectedTimeframe.value);
         const bucketSize = tf ? tf.seconds : 60;
         const candleTime = Math.floor(timestamp / bucketSize) * bucketSize;
@@ -222,13 +203,12 @@ function initSocket(symbol) {
         lastPrice.value = price;
 
         if (candleSeries && !loading.value) {
-            // Case A: Update current candle
             if (currentCandle.time === candleTime) {
                 currentCandle.close = price;
                 if (price > currentCandle.high) currentCandle.high = price;
                 if (price < currentCandle.low) currentCandle.low = price;
+                candleSeries.update(currentCandle);
             }
-            // Case B: Create new candle (Timeframe boundary crossed)
             else if (candleTime > currentCandle.time) {
                 currentCandle = {
                     time: candleTime,
@@ -238,16 +218,14 @@ function initSocket(symbol) {
                     close: price,
                     volume: 0
                 };
+                candleSeries.update(currentCandle);
             }
-            candleSeries.update(currentCandle);
         }
     });
 
-    // 3. Listen for User Orders (SL/Target Hits)
     if (props.userState?.id) {
         echo.private(`orders.${props.userState.id}`)
             .listen('.OrderUpdated', (e) => {
-                // Check if trade was closed automatically
                 if (e.status === 'CLOSED' && (e.close_reason === 'SL_HIT' || e.close_reason === 'TARGET_HIT')) {
                     const isProfit = e.pnl >= 0;
                     Swal.fire({
@@ -263,14 +241,13 @@ function initSocket(symbol) {
                         color: '#fff',
                         iconColor: isProfit ? '#089981' : '#f23645'
                     });
+
+                    // 🔥 ALSO RELOAD DATA ON ORDER CLOSE
+                    router.reload({ only: ['orders', 'positions', 'holdings', 'userState'] });
                 }
             });
     }
 }
-
-// --------------------------------------------------------------------------
-// WATCHERS & LIFECYCLE
-// --------------------------------------------------------------------------
 
 watch(() => props.symbol, (newVal) => {
     resetAndLoad(newVal);
@@ -282,6 +259,11 @@ watch(selectedTimeframe, () => {
 
 onMounted(() => {
     initChart();
+    optionChainInterval = setInterval(() => {
+        if (showOptionChain.value && !showOrderModal.value) {
+            loadOptionChain(false);
+        }
+    }, 3000);
 });
 
 onUnmounted(() => {
@@ -291,21 +273,22 @@ onUnmounted(() => {
     }
     if (resizeObserver) resizeObserver.disconnect();
     if (echo) echo.disconnect();
+    if (optionChainInterval) clearInterval(optionChainInterval);
 });
 
-// --------------------------------------------------------------------------
-// OPTION CHAIN ACTIONS
-// --------------------------------------------------------------------------
-
-async function loadOptionChain() {
+async function loadOptionChain(shouldScroll = true) {
     if (!showOptionChain.value) return;
     try {
         const { data } = await axios.get(`/api/instruments/${props.symbol}/option-chain`, {
             params: { expiry_date: expiryDate.value }
         });
         optionChain.value = Object.values(data).sort((a, b) => a.strike - b.strike);
-        scrollToATM();
-    } catch (e) { console.error('Option Chain Error:', e); }
+        if (shouldScroll) {
+            scrollToATM();
+        }
+    } catch (e) {
+        if (shouldScroll) console.error('Option Chain Error:', e);
+    }
 }
 
 function scrollToATM() {
@@ -318,16 +301,11 @@ function scrollToATM() {
 const isCallITM = (strike) => strike < lastPrice.value;
 const isPutITM = (strike) => strike > lastPrice.value;
 
-// --------------------------------------------------------------------------
-// ORDER ENTRY ACTIONS
-// --------------------------------------------------------------------------
-
 function openOrderEntry(side, type = 'Main', optionData = null) {
     orderForm.value.side = side;
     orderForm.value.lot_type = 'standard';
 
     if (type === 'Option' && optionData) {
-        // Option Chain Order
         const price = Number(optionData.last_price || 0);
         orderForm.value.price = price;
         orderForm.value.trigger_price = price;
@@ -335,7 +313,6 @@ function openOrderEntry(side, type = 'Main', optionData = null) {
         orderForm.value.trading_symbol = optionData.contract_symbol || optionData.symbol;
         orderForm.value.quantity = props.instrument?.lot_size || 1;
     } else {
-        // Main Chart Order
         orderForm.value.price = lastPrice.value;
         orderForm.value.trigger_price = lastPrice.value;
         orderForm.value.symbol_display = props.symbol;
@@ -350,31 +327,19 @@ function openOrderEntry(side, type = 'Main', optionData = null) {
 }
 
 async function submitOrder() {
-    // 1. Validation for Robo Orders
     if (orderForm.value.is_robo) {
         const sl = parseFloat(orderForm.value.stop_loss);
         const tgt = parseFloat(orderForm.value.target);
-        // Use Last Price for validation on Market orders, or Input Price for Limit
         const entry = isMarket.value ? lastPrice.value : parseFloat(orderForm.value.price);
 
-        // Required check
         if (!sl || !tgt) {
-            return Swal.fire({
-                title: 'Invalid Input',
-                text: 'Please enter both Stop Loss and Target prices',
-                icon: 'warning',
-                background: '#1e222d',
-                color: '#fff',
-                confirmButtonColor: '#2962ff'
-            });
+            return Swal.fire({ title: 'Invalid Input', text: 'Please enter both Stop Loss and Target prices', icon: 'warning', background: '#1e222d', color: '#fff', confirmButtonColor: '#2962ff' });
         }
 
-        // Logic check
         if (orderForm.value.side === 'BUY') {
             if (sl >= entry) return Swal.fire({ title: 'Logic Error', text: 'Stop Loss must be BELOW Entry Price for BUY', icon: 'error', background: '#1e222d', color: '#fff' });
             if (tgt <= entry) return Swal.fire({ title: 'Logic Error', text: 'Target must be ABOVE Entry Price for BUY', icon: 'error', background: '#1e222d', color: '#fff' });
         } else {
-            // SELL
             if (sl <= entry) return Swal.fire({ title: 'Logic Error', text: 'Stop Loss must be ABOVE Entry Price for SELL', icon: 'error', background: '#1e222d', color: '#fff' });
             if (tgt >= entry) return Swal.fire({ title: 'Logic Error', text: 'Target must be BELOW Entry Price for SELL', icon: 'error', background: '#1e222d', color: '#fff' });
         }
@@ -385,6 +350,7 @@ async function submitOrder() {
     try {
         const payload = {
             user_id: props.userState?.id,
+            challenge_id: props.userState?.challenge_id,
             symbol: orderForm.value.trading_symbol,
             side: orderForm.value.side,
             quantity: orderForm.value.quantity,
@@ -398,7 +364,7 @@ async function submitOrder() {
             target: orderForm.value.is_robo ? orderForm.value.target : null,
         };
 
-        await axios.post('/api/orders/place', payload);
+        const response = await axios.post('/api/orders/place', payload);
 
         showOrderModal.value = false;
 
@@ -415,6 +381,13 @@ async function submitOrder() {
             color: '#fff',
             iconColor: '#089981'
         });
+
+        // 🔥 CRITICAL FIX: Reload props from backend (Orders, Positions, Holdings)
+        router.reload({ only: ['orders', 'positions', 'holdings', 'userState'] });
+
+        if (response.data.diagram_trigger) {
+            console.log(response.data.diagram_trigger);
+        }
 
     } catch (e) {
         Swal.fire({

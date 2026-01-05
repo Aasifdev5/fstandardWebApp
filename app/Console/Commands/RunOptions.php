@@ -22,10 +22,17 @@ class RunOptions extends Command
         while (true) {
             $now = Carbon::now('Asia/Kolkata');
 
-            /** 🔥 Load MarketSetting ONCE */
+            // 1. Fetch Config
             $marketConfig = MarketSetting::getSimulationConfig();
+
+            // 2. Read Real-time Control Values
+            $tickSpeed = (int) ($marketConfig['update_speed_ms'] ?? 1000);
+            $stressMult = (float) ($marketConfig['global_stress_multiplier'] ?? 1.0);
+
             $volClasses   = $marketConfig['volatility_by_class'] ?? [];
-            $smileStrength = (float) ($marketConfig['option_smile_strength'] ?? 0.10);
+
+            // Increase Smile Strength (Curvature) during high stress
+            $smileStrength = (float) ($marketConfig['option_smile_strength'] ?? 0.10) * $stressMult;
 
             $contracts = Contract::where('contract_type', 'OPTION')
                 ->where('is_active', true)
@@ -41,15 +48,17 @@ class RunOptions extends Command
 
                 if (!$now->between($sessionStart, $sessionEnd)) continue;
 
-                /** 🔥 Determine base volatility class */
                 $volClass = $instrument->volatility_class ?? 'medium';
                 $baseVol  = (float) ($volClasses[$volClass] ?? 0.20);
+
+                // 3. SCALE VOLATILITY BY STRESS MULTIPLIER
+                $effectiveVol = $baseVol * $stressMult;
 
                 $state = OptionsState::firstOrCreate(
                     ['contract_id' => $contract->id],
                     [
                         'last_price' => 0,
-                        'implied_volatility' => $baseVol,
+                        'implied_volatility' => $effectiveVol,
                     ]
                 );
 
@@ -60,10 +69,11 @@ class RunOptions extends Command
                     $contract->expiry_date->diffInSeconds($now) / (365 * 24 * 60 * 60)
                 );
 
+                // Use the SCALED volatility for smile adjustment
                 $adjustedVol = $priceService->adjustImpliedVolForSmile(
                     $contract->strike_price,
                     $futuresPrice,
-                    $state->implied_volatility,
+                    $effectiveVol,
                     $smileStrength
                 );
 
@@ -89,7 +99,8 @@ class RunOptions extends Command
                 ));
             }
 
-            sleep(1);
+            // 4. DYNAMIC SLEEP
+            usleep($tickSpeed * 1000);
         }
     }
 }

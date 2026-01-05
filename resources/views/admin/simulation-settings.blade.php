@@ -20,6 +20,41 @@
     <form action="{{ route('simulation-config.update') }}" method="POST">
         @csrf
 
+        <div class="card shadow-sm mt-4 border-danger">
+            <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0"><i class="fa fa-tachometer"></i> {{ __('Live Engine Control (Real-Time)') }}</h4>
+                <span class="badge text-danger">Changes apply instantly</span>
+            </div>
+            <div class="card-body ">
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">{{ __('Engine Tick Speed (ms)') }}</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fa fa-clock-o"></i></span>
+                            <input type="number" step="50" min="100" max="2000"
+                                   name="update_speed_ms"
+                                   class="form-control form-control-lg fw-bold text-primary"
+                                   value="{{ old('update_speed_ms', $config['update_speed_ms'] ?? 1000) }}">
+                            <span class="input-group-text">milliseconds</span>
+                        </div>
+                        <small class="text-muted">Lower value = Faster updates. (e.g., 200ms for High Speed)</small>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">{{ __('Global Volatility/Stress Multiplier') }}</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fa fa-bolt"></i></span>
+                            <input type="number" step="0.1" min="0.5" max="10.0"
+                                   name="global_stress_multiplier"
+                                   class="form-control form-control-lg fw-bold text-danger"
+                                   value="{{ old('global_stress_multiplier', $config['global_stress_multiplier'] ?? 1.0) }}">
+                            <span class="input-group-text">x</span>
+                        </div>
+                        <small class="text-muted">1.0 = Normal. 2.0+ = High Volatility & Noise.</small>
+                    </div>
+                </div>
+            </div>
+        </div>
         <div class="card shadow-sm mt-4 border-primary">
             <div class="card-header bg-primary text-white">
                 <h4 class="mb-0"><i class="fa fa-money"></i> {{ __('Global Pricing Constants') }}</h4>
@@ -103,7 +138,6 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {{-- Loop through the known list passed from controller --}}
                                     @foreach($knownInstruments as $symbol)
                                     <tr>
                                         <td class="fw-bold">{{ $symbol }}</td>

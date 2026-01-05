@@ -14,6 +14,7 @@ class Trade extends Model
     protected $fillable = [
         'user_id',          // <--- REQUIRED: To link to the User for Mega Unlock
         'challenge_id',
+        'order_id',
         'symbol',
         'side',             // Matches your DB (BUY/SELL)
         'lot_type',         // <--- REQUIRED: F-Standard (micro, mini, standard...)

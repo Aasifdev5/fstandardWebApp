@@ -31,6 +31,8 @@ class Order extends Model
         'close_reason',
         'trigger_price',
         'quantity',
+        'closed_at',
+        'pnl',
         'disclosed_quantity',
         'filled_quantity',
         'filled_percentage',

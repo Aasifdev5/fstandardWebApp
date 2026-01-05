@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\Trade;
 use App\Models\User;
 use App\Models\Instrument;
+use App\Models\Challenge; // ✅ Import Challenge
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 
@@ -27,6 +28,7 @@ class OrderController extends Controller
             'target'        => 'nullable|numeric',
             'is_robo'       => 'boolean',
             'user_id'       => 'sometimes|integer',
+            'challenge_id'  => 'nullable|integer',
         ]);
 
         // 2️⃣ Resolve user
@@ -34,6 +36,24 @@ class OrderController extends Controller
         if (!$user) {
             return response()->json(['message' => 'Unauthorized user.'], 401);
         }
+
+        // 🔥 FIX: robust logic to find the Challenge ID
+        $challengeId = $request->challenge_id; // Try getting from Frontend first
+
+        if (!$challengeId) {
+            // Fallback: Find the latest active challenge for this user in DB
+            $challenge = Challenge::where('user_id', $user->id)
+                ->where('status', 'active')
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            $challengeId = $challenge ? $challenge->id : null;
+        }
+
+        // ⚠️ Final Safety Net: If your DB *requires* an ID and user has no challenge,
+        // you must decide whether to block the trade or use a dummy ID.
+        // Uncomment the line below to BLOCK trades without a challenge:
+        // if (!$challengeId) return response()->json(['message' => 'No active challenge found.'], 422);
 
         // 3️⃣ Mega lot permission
         if ($request->lot_type === 'mega' && !$user->can_trade_mega) {
@@ -89,6 +109,7 @@ class OrderController extends Controller
         // 9️⃣ Create Order
         $order = Order::create([
             'user_id'        => $user->id,
+            'challenge_id'   => $challengeId, // ✅ Pass ID
             'lot_type'       => $request->lot_type,
             'stock_symbol'   => $request->symbol,
             'security_id'    => '0000',
@@ -107,15 +128,16 @@ class OrderController extends Controller
         // 1️⃣0️⃣ Immediate execution for MARKET orders (non-robo)
         if ($request->type === 'MARKET' && !$request->is_robo) {
             $trade = Trade::create([
-                'user_id'     => $user->id,
-                'order_id'    => $order->id,
-                'symbol'      => $request->symbol,
-                'side'        => $request->side,
-                'lot_type'    => $request->lot_type,
-                'qty'         => $request->quantity,
-                'entry_price' => $executionPrice,
-                'status'      => 'OPEN',
-                'entry_time'  => now(),
+                'user_id'      => $user->id,
+                'challenge_id' => $challengeId, // ✅ Pass ID
+                'order_id'     => $order->id,   // ✅ Ensure this column exists in Trades table
+                'symbol'       => $request->symbol,
+                'side'         => $request->side,
+                'lot_type'     => $request->lot_type,
+                'qty'          => $request->quantity,
+                'entry_price'  => $executionPrice,
+                'status'       => 'OPEN',
+                'entry_time'   => now(),
             ]);
 
             $order->update([
@@ -129,9 +151,21 @@ class OrderController extends Controller
             ]);
         }
 
-        // 1️⃣1️⃣ Return response for SL/TP or Limit orders
+        // 1️⃣1️⃣ Response
+        if ($request->is_robo || ($stopLoss !== null || $target !== null)) {
+             $diagramDescription = $request->side === 'BUY'
+                ? ''
+                : '';
+
+             return response()->json([
+                'message'         => 'Smart order placed & monitoring SL/Target',
+                'order_id'        => $order->id,
+                'diagram_trigger' => $diagramDescription
+            ]);
+        }
+
         return response()->json([
-            'message'  => $request->is_robo ? 'Smart order placed & monitoring SL/Target' : 'Order placed successfully',
+            'message'  => 'Order placed successfully',
             'order_id' => $order->id
         ]);
     }

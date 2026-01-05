@@ -36,6 +36,7 @@
                                     <th>Filled</th>
                                     <th>Status</th>
                                     <th>PL</th>
+                                    <th>PNL</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -71,6 +72,7 @@
                                         </td>
                                         <td>{!! $order->status_badge !!}</td>
                                         <td>{{ $order->close_reason }}</td>
+                                        <td>₹{{ number_format($order->pnl, 2) }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>

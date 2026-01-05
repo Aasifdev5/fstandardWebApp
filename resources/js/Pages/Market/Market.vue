@@ -1,344 +1,141 @@
-<template>
-  <div class="h-screen bg-gray-950 text-gray-100 flex overflow-hidden">
-    <aside class="w-80 border-r border-gray-800 flex flex-col bg-gray-900/50 backdrop-blur-sm">
-      <div class="p-6 border-b border-gray-800">
-        <div class="flex items-center justify-between">
-          <div>
-            <div class="text-xs text-gray-400 font-bold uppercase tracking-widest mb-1">
-              {{ userState?.name }}
-            </div>
-
-            <h1 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
-              {{ userState?.plan_title || 'Trading Dashboard' }}
-            </h1>
-
-            <div class="flex items-center justify-between mt-1 w-full gap-4">
-               <span class="text-xs text-gray-400 font-mono bg-gray-800 px-1.5 py-0.5 rounded">
-                 Cap: {{ formatCompact(userState?.capital || 0) }}
-               </span>
-
-               <span class="text-sm font-mono font-bold text-green-400">
-                 ₹ {{ formatPrice(userState?.account_balance || 0) }}
-               </span>
-            </div>
-          </div>
-
-          <div class="relative mb-4">
-            <div class="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-            <div class="absolute inset-0 bg-green-400 rounded-full animate-ping opacity-75"></div>
-          </div>
-        </div>
-
-        <div class="mt-6">
-          <div class="relative">
-            <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500"
-                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-            </svg>
-            <input
-              v-model="searchQuery"
-              type="text"
-              placeholder="Search instruments..."
-              class="w-full pl-10 pr-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg
-                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                     placeholder-gray-500 text-sm"
-            />
-          </div>
-        </div>
-
-        <div class="mt-4 flex space-x-1">
-          <button
-            v-for="tab in filterTabs"
-            :key="tab.id"
-            @click="activeFilter = tab.id"
-            :class="[
-              'px-3 py-1.5 text-sm rounded-lg transition-all duration-200',
-              activeFilter === tab.id
-                ? 'bg-blue-600 text-white'
-                : 'text-gray-400 hover:text-white hover:bg-gray-800'
-            ]"
-          >
-            {{ tab.label }}
-          </button>
-        </div>
-      </div>
-
-      <div class="flex-1 overflow-y-auto">
-        <div class="p-4">
-          <template v-for="category in filteredCategories" :key="category.name">
-            <div class="mb-4">
-              <div class="flex items-center justify-between mb-2 px-2">
-                <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                  {{ category.name }}
-                </h3>
-                <span class="text-xs text-gray-600 bg-gray-800 px-2 py-0.5 rounded">
-                  {{ category.instruments.length }}
-                </span>
-              </div>
-
-              <div class="space-y-1">
-                <div
-                  v-for="inst in category.instruments"
-                  :key="inst.id"
-                  @click="switchInstrument(inst)"
-                  :class="[
-                    'group p-3 rounded-xl cursor-pointer transition-all duration-200',
-                    'hover:bg-gray-800/50 hover:shadow-lg',
-                    'border border-transparent hover:border-gray-700',
-                    inst.symbol === selectedSymbol ?
-                      'bg-gradient-to-r from-blue-900/30 to-cyan-900/20 border-blue-500/30 shadow-lg' :
-                      'bg-gray-800/30'
-                  ]"
-                >
-                  <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-3">
-                      <div :class="[
-                        'w-10 h-10 rounded-lg flex items-center justify-center',
-                        getInstrumentColor(inst.category)
-                      ]">
-                        <span class="text-lg font-bold">
-                          {{ getInstrumentIcon(inst.category) }}
-                        </span>
-                      </div>
-
-                      <div>
-                        <div class="flex items-center space-x-2">
-                          <span class="font-semibold text-white">{{ inst.symbol }}</span>
-                          <span :class="[
-                            'px-2 py-0.5 text-xs rounded-full',
-                            getVolatilityClass(inst.volatility_class)
-                          ]">
-                            {{ inst.volatility_class }}
-                          </span>
-                        </div>
-                        <p class="text-sm text-gray-400 mt-0.5">{{ inst.sector.replace('_', ' ') }}</p>
-                      </div>
-                    </div>
-
-                    <div class="text-right">
-                      <div class="font-mono font-bold text-lg">
-                        {{ formatPrice(inst.base_price) }}
-                      </div>
-                      <div class="text-xs text-gray-400">
-                        Lot: {{ inst.lot_size }}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="mt-2 pt-2 border-t border-gray-800/50 flex items-center justify-between text-xs">
-                    <div class="flex items-center space-x-4">
-                      <div class="flex items-center space-x-1 text-gray-400">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
-                        <span>{{ inst.session_start.slice(0, 5) }} - {{ inst.session_end.slice(0, 5) }}</span>
-                      </div>
-                      <div class="flex items-center space-x-1" :class="getNewsSensitivityClass(inst.news_sensitivity)">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/>
-                        </svg>
-                        <span>{{ inst.news_sensitivity }}</span>
-                      </div>
-                    </div>
-
-                    <div v-if="inst.is_active" class="flex items-center">
-                      <div class="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
-                      <span class="text-green-400 text-xs">Live</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </template>
-        </div>
-      </div>
-
-      <div class="p-4 border-t border-gray-800 bg-gray-900/50">
-        <div class="flex items-center justify-between">
-          <div class="text-sm text-gray-400">
-            {{ filteredInstruments.length }} instruments
-          </div>
-          <button
-            @click="toggleFavoriteView"
-            class="p-2 hover:bg-gray-800 rounded-lg transition-colors"
-          >
-            <svg :class="[
-              'w-5 h-5 transition-colors',
-              showFavoritesOnly ? 'text-yellow-400' : 'text-gray-400 hover:text-yellow-400'
-            ]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
-            </svg>
-          </button>
-        </div>
-      </div>
-    </aside>
-
-    <main class="flex-1 flex flex-col overflow-hidden">
-      <div class="border-b border-gray-800 bg-gray-900/50 backdrop-blur-sm">
-        <div class="flex items-center justify-between p-6">
-          <div class="flex items-center space-x-4">
-            <div :class="[
-              'w-14 h-14 rounded-xl flex items-center justify-center text-2xl',
-              selectedInstrument ? getInstrumentColor(selectedInstrument.category) : 'bg-gray-800'
-            ]">
-              {{ selectedInstrument ? getInstrumentIcon(selectedInstrument.category) : '📊' }}
-            </div>
-
-            <div>
-              <div class="flex items-center space-x-3">
-                <h2 class="text-3xl font-bold">{{ selectedSymbol || 'Select Instrument' }}</h2>
-                <div class="flex items-center space-x-2">
-                  <span :class="[
-                    'px-3 py-1 rounded-full text-sm font-semibold',
-                    selectedInstrument ? getVolatilityClass(selectedInstrument.volatility_class) : 'bg-gray-700'
-                  ]">
-                    {{ selectedInstrument?.volatility_class || '-' }}
-                  </span>
-                  <span class="px-3 py-1 bg-gray-800 rounded-full text-sm">
-                    {{ selectedInstrument?.category?.toUpperCase() || '-' }}
-                  </span>
-                </div>
-              </div>
-              <p class="text-gray-400 mt-1">
-                {{ selectedInstrument?.sector?.replace('_', ' ') || 'Select an instrument to view chart' }}
-              </p>
-            </div>
-          </div>
-
-          <div v-if="selectedInstrument" class="text-right">
-            <div class="flex items-center space-x-6">
-              <div class="text-center">
-                <div class="text-2xl font-mono font-bold text-green-400">
-                  {{ formatPrice(selectedInstrument.base_price) }}
-                </div>
-                <div class="text-xs text-gray-400">Base Price</div>
-              </div>
-              <div class="h-8 w-px bg-gray-700"></div>
-              <div class="text-center">
-                <div class="text-lg font-mono font-bold">{{ selectedInstrument.lot_size }}</div>
-                <div class="text-xs text-gray-400">Lot Size</div>
-              </div>
-              <div class="h-8 w-px bg-gray-700"></div>
-              <div class="text-center">
-                <div class="text-lg font-mono font-bold">{{ selectedInstrument.tick_size }}</div>
-                <div class="text-xs text-gray-400">Tick Size</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="flex-1 p-6 overflow-hidden">
-        <div v-if="selectedSymbol" class="h-full">
-          <Chart
-            :key="selectedSymbol + expiry"
-            :symbol="selectedSymbol"
-            :expiry="expiry"
-            :instrument="selectedInstrument"
-            :user-state="userState"
-          />
-        </div>
-
-        <div v-else class="h-full flex flex-col items-center justify-center text-gray-500">
-          <div class="w-24 h-24 mb-6 opacity-50">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-            </svg>
-          </div>
-          <h3 class="text-2xl font-semibold mb-2">No Instrument Selected</h3>
-          <p class="text-gray-400">Select an instrument from the sidebar to view its chart</p>
-        </div>
-      </div>
-    </main>
-  </div>
-</template>
-
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import Chart from './Chart.vue'
+import { init as initEcho } from '@/echo.js'
 
-// Updated Props
 const props = defineProps({
   instruments: Array,
   instrument: Object,
   symbol: String,
   expiry: String,
-  userState: {
-    type: Object,
-    default: () => ({
-        name: 'Trader', // Default name
-        can_trade_mega: false,
-        plan_title: 'Trading Dashboard',
-        capital: 0,
-        account_balance: 0
-    })
-  }
+  lotConfig: Object,
+  orders: { type: Array, default: () => [] },
+  positions: { type: Array, default: () => [] },
+  holdings: { type: Array, default: () => [] },
+  userState: { type: Object, default: () => ({}) }
 })
 
-// Refs
 const searchQuery = ref('')
 const activeFilter = ref('all')
 const selectedSymbol = ref(props.symbol || props.instrument?.symbol)
 const selectedInstrument = ref(props.instrument)
 const showFavoritesOnly = ref(false)
 
-// Filter Tabs
+// Live Data State
+const livePositions = ref([...props.positions]);
+const liveHoldings = ref([...props.holdings]);
+const echo = ref(null);
+
+const isPanelExpanded = ref(true)
+const activeBottomTab = ref('positions')
+
+// --- 🔥 INSTRUMENT NAME MAPPING ---
+const instrumentNames = {
+    'FSI-NF50': 'NIFTY 50', 'FSI-BN': 'BANK NIFTY', 'FSI-SENSEX': 'SENSEX',
+    'FSI-FN': 'FIN NIFTY', 'FSI-SX': 'SENSEX', 'FSI-MIDCP': 'MIDCAP SELECT',
+    'FSI-GLD': 'GOLD PETAL', 'FSI-GLDM': 'GOLD MINI', 'FSI-SLV': 'SILVER',
+    'FSI-CRD': 'CRUDE OIL', 'FSI-NGS': 'NATURAL GAS', 'FSI-RLI': 'RELIANCE IND',
+    'FSI-HDFC': 'HDFC BANK', 'FSI-ICBK': 'ICICI BANK', 'FSI-SBN': 'SBI',
+    'FSI-INFY': 'INFOSYS', 'FSI-TCS': 'TCS', 'FSI-ADAN': 'ADANI ENT',
+    'FSI-ITC': 'ITC LTD', 'FSI-LT': 'L&T', 'FSI-AXS': 'AXIS BANK',
+    'FSI-KOT': 'KOTAK BANK'
+};
+
+function getInstrumentName(symbol) {
+    if (instrumentNames[symbol]) return instrumentNames[symbol];
+    return symbol.replace('FSI-', '').replace(/-/g, ' ');
+}
+
+// --- COMPUTED PROPERTIES ---
+
+const bottomTabs = computed(() => [
+    { id: 'positions', label: 'Positions', count: livePositions.value.length },
+    { id: 'orders', label: 'Orders', count: props.orders.length },
+    { id: 'holdings', label: 'Holdings', count: liveHoldings.value.length },
+])
+
 const filterTabs = [
   { id: 'all', label: 'All' },
   { id: 'index', label: 'Indices' },
-  { id: 'stock', label: 'F & O Stocks' },
+  { id: 'stock', label: 'Stocks' },
   { id: 'commodity', label: 'Commodities' }
 ]
 
-// Computed: Filtered instruments
 const filteredInstruments = computed(() => {
   let filtered = props.instruments || []
-
-  // Apply search filter
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
-    filtered = filtered.filter(inst =>
-      inst.symbol.toLowerCase().includes(query) ||
-      inst.sector.toLowerCase().includes(query)
-    )
+    filtered = filtered.filter(inst => {
+      const name = getInstrumentName(inst.symbol).toLowerCase();
+      return (
+        inst.symbol.toLowerCase().includes(query) ||
+        inst.sector.toLowerCase().includes(query) ||
+        name.includes(query)
+      );
+    })
   }
-
-  // Apply category filter
   if (activeFilter.value !== 'all') {
     filtered = filtered.filter(inst => inst.category === activeFilter.value)
   }
-
-  // Apply favorites filter (if enabled)
-  if (showFavoritesOnly.value) {
-    filtered = filtered.filter(inst => inst.is_favorite)
-  }
-
   return filtered
 })
 
-// Computed: Group by category
 const filteredCategories = computed(() => {
   const categories = {}
-
   filteredInstruments.value.forEach(inst => {
-    if (!categories[inst.category]) {
-      categories[inst.category] = []
-    }
+    if (!categories[inst.category]) categories[inst.category] = []
     categories[inst.category].push(inst)
   })
-
   return Object.entries(categories).map(([name, instruments]) => ({
     name: name.charAt(0).toUpperCase() + name.slice(1),
     instruments: instruments.sort((a, b) => a.symbol.localeCompare(b.symbol))
   }))
 })
 
-// Helper functions
+// --- REAL-TIME SOCKETS ---
+
+function setupSockets() {
+    if (echo.value) echo.value.disconnect();
+    echo.value = initEcho();
+
+    const symbolsToWatch = new Set([
+        ...liveHoldings.value.map(h => h.symbol),
+        ...livePositions.value.map(p => p.symbol)
+    ]);
+
+    symbolsToWatch.forEach(symbol => {
+        let channelName = `market.underlying.${symbol}`;
+        if (symbol.includes('-F-')) channelName = `market.futures.${symbol}`;
+        else if (symbol.includes('-C-') || symbol.includes('-P-')) channelName = `market.options.${symbol}`;
+
+        echo.value.channel(channelName)
+            .listen('.TickUpdated', (e) => updatePnl(symbol, Number(e.price)));
+    });
+}
+
+function updatePnl(symbol, price) {
+    liveHoldings.value.forEach(hold => {
+        if (hold.symbol === symbol) {
+            hold.ltp = price;
+            hold.pnl = (price - hold.average_price) * hold.quantity;
+        }
+    });
+    livePositions.value.forEach(pos => {
+        if (pos.symbol === symbol && pos.is_open) {
+            pos.ltp = price;
+            pos.pnl = (price - pos.average_price) * pos.quantity;
+        }
+    });
+}
+
+watch(() => [props.holdings, props.positions], () => {
+    liveHoldings.value = [...props.holdings];
+    livePositions.value = [...props.positions];
+    setupSockets();
+}, { deep: true });
+
+// --- HELPER FUNCTIONS ---
+
 function getInstrumentColor(category) {
   const colors = {
     index: 'bg-gradient-to-br from-blue-500/20 to-blue-600/20 text-blue-300',
@@ -350,34 +147,32 @@ function getInstrumentColor(category) {
 }
 
 function getInstrumentIcon(category) {
-  const icons = {
-    index: '📈',
-    stock: '💹',
-    commodity: '⚖️',
-    default: '📊'
-  }
+  const icons = { index: '📈', stock: '💹', commodity: '⚖️', default: '📊' }
   return icons[category] || icons.default
 }
 
 function getVolatilityClass(volatility) {
   const classes = {
-    low: 'bg-green-900/30 text-green-400 border border-green-500/20',
-    medium: 'bg-yellow-900/30 text-yellow-400 border border-yellow-500/20',
-    high: 'bg-red-900/30 text-red-400 border border-red-500/20',
-    very_high: 'bg-purple-900/30 text-purple-400 border border-purple-500/20',
-    default: 'bg-gray-900/30 text-gray-400 border border-gray-500/20'
+    low:       'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+    medium:    'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
+    high:      'bg-orange-500/10 text-orange-400 border-orange-500/20',
+    very_high: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
+    default:   'bg-gray-800 text-gray-400 border-gray-700'
   }
   return classes[volatility] || classes.default
 }
 
-function getNewsSensitivityClass(sensitivity) {
-  const classes = {
-    low: 'text-gray-400',
-    medium: 'text-yellow-400',
-    high: 'text-orange-400',
-    very_high: 'text-red-400'
-  }
-  return classes[sensitivity] || classes.low
+function formatVolatility(volatility) {
+    if(!volatility) return '-';
+    return volatility.replace('_', ' ');
+}
+
+function getStatusClass(status) {
+    const s = status ? status.toUpperCase() : '';
+    if(s === 'EXECUTED' || s === 'COMPLETE') return 'bg-green-500/20 text-green-400 border border-green-500/30';
+    if(s === 'REJECTED' || s === 'CANCELLED') return 'bg-red-500/20 text-red-400 border border-red-500/30';
+    if(s === 'OPEN' || s === 'PENDING') return 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30';
+    return 'bg-gray-700 text-gray-300';
 }
 
 function formatPrice(price) {
@@ -389,7 +184,6 @@ function formatPrice(price) {
   })
 }
 
-// Compact format for Capital (e.g., 5000000 -> 50L)
 function formatCompact(num) {
     if (!num) return '0'
     const n = parseFloat(num)
@@ -404,53 +198,302 @@ function switchInstrument(inst) {
   selectedInstrument.value = inst
 }
 
-function toggleFavoriteView() {
-  showFavoritesOnly.value = !showFavoritesOnly.value
-}
-
-// Lifecycle
 onMounted(() => {
+  setupSockets();
   if (!selectedInstrument.value && filteredInstruments.value.length > 0) {
     selectedInstrument.value = filteredInstruments.value[0]
     selectedSymbol.value = selectedInstrument.value.symbol
   }
 })
+
+onUnmounted(() => {
+    if (echo.value) echo.value.disconnect();
+})
 </script>
 
+<template>
+  <div class="h-screen bg-gray-950 text-gray-100 flex overflow-hidden font-sans">
+
+    <aside class="w-80 border-r border-gray-800 flex flex-col bg-gray-900/50 backdrop-blur-sm">
+      <div class="p-6 border-b border-gray-800">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-xs text-gray-400 font-bold uppercase tracking-widest mb-1">{{ userState?.name }}</div>
+            <h1 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">{{ userState?.plan_title || 'Trading Dashboard' }}</h1>
+            <div class="flex items-center justify-between mt-1 w-full gap-4">
+               <span class="text-xs text-gray-400 font-mono bg-gray-800 px-1.5 py-0.5 rounded">Cap: {{ formatCompact(userState?.capital || 0) }}</span>
+               <span class="text-sm font-mono font-bold text-green-400">₹ {{ formatPrice(userState?.account_balance || 0) }}</span>
+            </div>
+          </div>
+          <div class="relative mb-4">
+            <div class="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+            <div class="absolute inset-0 bg-green-400 rounded-full animate-ping opacity-75"></div>
+          </div>
+        </div>
+
+        <div class="mt-6">
+          <div class="relative">
+            <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            <input v-model="searchQuery" type="text" placeholder="Search instruments..." class="w-full pl-10 pr-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-500 text-sm"/>
+          </div>
+        </div>
+
+        <div class="mt-4 flex space-x-1">
+          <button v-for="tab in filterTabs" :key="tab.id" @click="activeFilter = tab.id" :class="['px-3 py-1.5 text-sm rounded-lg transition-all duration-200', activeFilter === tab.id ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-800']">{{ tab.label }}</button>
+        </div>
+      </div>
+
+      <div class="flex-1 overflow-y-auto custom-scrollbar">
+        <div class="p-4">
+          <template v-for="category in filteredCategories" :key="category.name">
+            <div class="mb-4">
+              <div class="flex items-center justify-between mb-2 px-2">
+                <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">{{ category.name }}</h3>
+                <span class="text-xs text-gray-600 bg-gray-800 px-2 py-0.5 rounded">{{ category.instruments.length }}</span>
+              </div>
+              <div class="space-y-1">
+                <div v-for="inst in category.instruments" :key="inst.id" @click="switchInstrument(inst)" :class="['group p-3 rounded-xl cursor-pointer transition-all duration-200', 'hover:bg-gray-800/50 hover:shadow-lg', 'border border-transparent hover:border-gray-700', inst.symbol === selectedSymbol ? 'bg-gradient-to-r from-blue-900/30 to-cyan-900/20 border-blue-500/30 shadow-lg' : 'bg-gray-800/30']">
+
+                  <div class="flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-3 flex-1 min-w-0">
+                      <div :class="['w-10 h-10 rounded-lg flex items-center justify-center shrink-0', getInstrumentColor(inst.category)]">
+                        <span class="text-lg font-bold">{{ getInstrumentIcon(inst.category) }}</span>
+                      </div>
+                      <div class="min-w-0">
+                        <div class="flex items-center gap-2 flex-wrap">
+                          <span class="font-semibold text-white truncate">{{ inst.symbol }}</span>
+                          <div :class="['px-1.5 py-[1px] rounded text-[9px] font-bold uppercase tracking-wide border flex items-center gap-1 whitespace-nowrap', getVolatilityClass(inst.volatility_class)]">
+                            <span v-if="inst.volatility_class === 'low'">🛡️</span>
+                            <span v-else-if="inst.volatility_class === 'medium'">📊</span>
+                            <span v-else-if="inst.volatility_class === 'high'">⚡</span>
+                            <span v-else-if="inst.volatility_class === 'very_high'">🔥</span>
+                            {{ formatVolatility(inst.volatility_class) }}
+                          </div>
+                        </div>
+                        <p class="text-sm text-gray-300 font-medium mt-0.5 truncate">{{ getInstrumentName(inst.symbol) }}</p>
+                      </div>
+                    </div>
+                    <div class="text-right shrink-0">
+                      <div class="font-mono font-bold text-lg leading-tight">{{ formatPrice(inst.base_price) }}</div>
+                      <div class="text-xs text-gray-400 mt-0.5">Lot: {{ inst.lot_size }}</div>
+                    </div>
+                  </div>
+
+                  <div class="mt-2 pt-2 border-t border-gray-800/50 flex items-center justify-between text-xs">
+                    <div class="flex items-center space-x-4">
+                      <div class="flex items-center space-x-1 text-gray-400">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <span>{{ inst.session_start?.slice(0, 5) }} - {{ inst.session_end?.slice(0, 5) }}</span>
+                      </div>
+                      <div class="flex items-center space-x-1 text-gray-500">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                        <span class="capitalize">{{ inst.news_sensitivity?.replace('_', ' ') }}</span>
+                      </div>
+                    </div>
+                    <div v-if="inst.is_active" class="flex items-center">
+                      <div class="w-1.5 h-1.5 bg-green-500 rounded-full mr-1.5 animate-pulse"></div>
+                      <span class="text-green-500 font-bold text-[10px] uppercase tracking-wide">Live</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col overflow-hidden relative">
+
+      <div class="border-b border-gray-800 bg-gray-900/50 backdrop-blur-sm shrink-0">
+        <div class="flex items-center justify-between p-4">
+          <div class="flex items-center space-x-4">
+            <div :class="['w-10 h-10 rounded-xl flex items-center justify-center text-2xl', selectedInstrument ? getInstrumentColor(selectedInstrument.category) : 'bg-gray-800']">
+              {{ selectedInstrument ? getInstrumentIcon(selectedInstrument.category) : '📊' }}
+            </div>
+            <div>
+              <div class="flex items-center space-x-3">
+                <h2 class="text-2xl font-bold">{{ selectedSymbol || 'Select Instrument' }}</h2>
+                <div class="flex items-center space-x-2">
+                  <div v-if="selectedInstrument" :class="['px-3 py-0.5 rounded-md text-xs font-bold uppercase border flex items-center gap-1.5', getVolatilityClass(selectedInstrument.volatility_class)]">
+                     <span v-if="selectedInstrument.volatility_class === 'low'">🛡️</span>
+                     <span v-else-if="selectedInstrument.volatility_class === 'medium'">📊</span>
+                     <span v-else-if="selectedInstrument.volatility_class === 'high'">⚡</span>
+                     <span v-else-if="selectedInstrument.volatility_class === 'very_high'">🔥</span>
+                     {{ formatVolatility(selectedInstrument.volatility_class) }}
+                  </div>
+                </div>
+              </div>
+              <p class="text-sm text-gray-400" v-if="selectedInstrument">{{ getInstrumentName(selectedInstrument.symbol) }}</p>
+            </div>
+          </div>
+          <div v-if="selectedInstrument" class="text-right flex gap-6">
+             <div><span class="block text-xl font-mono font-bold text-green-400">{{ formatPrice(selectedInstrument.base_price) }}</span><span class="text-[10px] text-gray-400 uppercase">Base Price</span></div>
+             <div><span class="block text-lg font-mono font-bold">{{ selectedInstrument.lot_size }}</span><span class="text-[10px] text-gray-400 uppercase">Lot Size</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex-1 overflow-hidden relative bg-[#131722]">
+        <div v-if="selectedSymbol" class="h-full">
+          <Chart
+            :key="selectedSymbol + expiry"
+            :symbol="selectedSymbol"
+            :expiry="expiry"
+            :instrument="selectedInstrument"
+            :user-state="userState"
+            :lot-config="lotConfig"
+          />
+        </div>
+        <div v-else class="h-full flex flex-col items-center justify-center text-gray-500">
+          <h3 class="text-2xl font-semibold mb-2">Select an Instrument</h3>
+        </div>
+      </div>
+
+      <div :class="['border-t border-gray-800 bg-[#1e222d] flex flex-col transition-all duration-300 ease-in-out', isPanelExpanded ? 'h-80' : 'h-10']">
+
+        <div class="flex items-center justify-between bg-[#2a2e39] px-2 h-10 shrink-0">
+          <div class="flex space-x-1 h-full pt-1">
+            <button
+              v-for="tab in bottomTabs"
+              :key="tab.id"
+              @click="activeBottomTab = tab.id; isPanelExpanded = true"
+              :class="['px-4 text-xs font-bold uppercase tracking-wider flex items-center h-full rounded-t-md transition-colors',
+                activeBottomTab === tab.id
+                ? 'bg-[#1e222d] text-blue-400 border-t-2 border-blue-500'
+                : 'text-gray-400 hover:text-gray-200 hover:bg-[#363a45]'
+              ]"
+            >
+              {{ tab.label }}
+              <span v-if="tab.count > 0" class="ml-2 bg-gray-700 text-white px-1.5 rounded-full text-[10px]">{{ tab.count }}</span>
+            </button>
+          </div>
+
+          <button @click="isPanelExpanded = !isPanelExpanded" class="text-gray-400 hover:text-white p-1">
+            <svg v-if="isPanelExpanded" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+            <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" /></svg>
+          </button>
+        </div>
+
+        <div v-if="isPanelExpanded" class="flex-1 overflow-auto custom-scrollbar p-0">
+
+          <div v-if="activeBottomTab === 'positions'">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-[#131722] text-gray-400 sticky top-0 z-10 font-bold">
+                <tr>
+                  <th class="p-3">Instrument</th>
+                  <th class="p-3 text-right">Qty</th>
+                  <th class="p-3 text-right">Avg. Price</th>
+                  <th class="p-3 text-right">LTP / Exit</th>
+                  <th class="p-3 text-center">Reason</th>
+                  <th class="p-3 text-right">P&L</th>
+                  <th class="p-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-800">
+                <tr v-for="pos in livePositions" :key="pos.id" class="hover:bg-[#2a2e39]/50 transition">
+                  <td class="p-3 font-bold text-white">
+                    {{ pos.symbol }}
+                    <span :class="pos.product === 'MIS' ? 'text-orange-400' : 'text-blue-400'" class="text-[9px] border border-gray-700 px-1 rounded ml-2">{{ pos.product }}</span>
+                  </td>
+                  <td class="p-3 text-right" :class="pos.quantity > 0 ? 'text-green-400' : 'text-red-400'">{{ pos.quantity }}</td>
+                  <td class="p-3 text-right text-gray-300">{{ formatPrice(pos.average_price) }}</td>
+                  <td class="p-3 text-right text-white">{{ formatPrice(pos.ltp || 0) }}</td>
+                  <td class="p-3 text-center">
+                    <span v-if="pos.close_reason" :class="['px-1.5 py-0.5 rounded text-[9px] font-bold uppercase', pos.close_reason === 'TARGET_HIT' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400']">{{ pos.close_reason.replace('_', ' ') }}</span>
+                    <span v-else class="text-gray-600">-</span>
+                  </td>
+                  <td class="p-3 text-right font-bold" :class="(pos.pnl || 0) >= 0 ? 'text-green-400' : 'text-red-400'">
+                    {{ (pos.pnl || 0) >= 0 ? '+' : '' }}₹ {{ formatPrice(pos.pnl || 0) }}
+                  </td>
+                  <td class="p-3 text-right">
+                    <button v-if="pos.is_open" class="bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white px-2 py-1 rounded text-[10px] transition">Exit</button>
+                    <span v-else class="text-gray-600 text-[10px]">Closed</span>
+                  </td>
+                </tr>
+                <tr v-if="livePositions.length === 0">
+                    <td colspan="7" class="p-8 text-center text-gray-500 italic">No positions found</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div v-if="activeBottomTab === 'orders'">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-[#131722] text-gray-400 sticky top-0 z-10 font-bold">
+                <tr>
+                  <th class="p-3">Time</th>
+                  <th class="p-3">Type</th>
+                  <th class="p-3">Instrument</th>
+                  <th class="p-3">Product</th>
+                  <th class="p-3 text-right">Qty</th>
+                  <th class="p-3 text-right">Price</th>
+                  <th class="p-3 text-center">Status</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-800">
+                <tr v-for="order in orders" :key="order.id" class="hover:bg-[#2a2e39]/50 transition">
+                  <td class="p-3 text-gray-400">{{ order.time }}</td>
+                  <td class="p-3">
+                    <span :class="order.side === 'BUY' ? 'bg-blue-500/10 text-blue-400 border-blue-500/30' : 'bg-red-500/10 text-red-400 border-red-500/30'" class="px-1.5 py-0.5 border rounded text-[10px] font-bold">{{ order.side }}</span>
+                    <span class="ml-1 text-[9px] text-gray-500">{{ order.type }}</span>
+                  </td>
+                  <td class="p-3 font-bold text-white">{{ order.symbol }}</td>
+                  <td class="p-3 text-gray-300">{{ order.product }}</td>
+                  <td class="p-3 text-right text-white">{{ order.qty }}</td>
+                  <td class="p-3 text-right text-gray-300">{{ formatPrice(order.price) }}</td>
+                  <td class="p-3 text-center">
+                    <span :class="getStatusClass(order.status)" class="px-2 py-0.5 rounded text-[10px] font-bold">{{ order.status }}</span>
+                  </td>
+                </tr>
+                 <tr v-if="orders.length === 0">
+                    <td colspan="7" class="p-8 text-center text-gray-500 italic">No recent orders</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div v-if="activeBottomTab === 'holdings'">
+             <table class="w-full text-left text-xs">
+              <thead class="bg-[#131722] text-gray-400 sticky top-0 z-10 font-bold">
+                <tr>
+                  <th class="p-3">Instrument</th>
+                  <th class="p-3 text-right">Qty</th>
+                  <th class="p-3 text-right">Avg. Cost</th>
+                  <th class="p-3 text-right">LTP</th>
+                  <th class="p-3 text-right">Cur. Value</th>
+                  <th class="p-3 text-right">P&L</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-800">
+                <tr v-for="hold in liveHoldings" :key="hold.id" class="hover:bg-[#2a2e39]/50 transition">
+                  <td class="p-3 font-bold text-white">{{ hold.symbol }}</td>
+                  <td class="p-3 text-right text-white">{{ hold.quantity }}</td>
+                  <td class="p-3 text-right text-gray-400">{{ formatPrice(hold.average_price) }}</td>
+                  <td class="p-3 text-right text-white">{{ formatPrice(hold.ltp) }}</td>
+                  <td class="p-3 text-right text-white">{{ formatPrice(hold.quantity * (hold.ltp || 0)) }}</td>
+                  <td class="p-3 text-right font-bold" :class="(hold.pnl || 0) >= 0 ? 'text-green-400' : 'text-red-400'">
+                    {{ (hold.pnl || 0) >= 0 ? '+' : '' }}{{ formatPrice(hold.pnl || 0) }}
+                  </td>
+                </tr>
+                 <tr v-if="liveHoldings.length === 0">
+                    <td colspan="6" class="p-8 text-center text-gray-500 italic">No holdings found</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </div>
+
+    </main>
+  </div>
+</template>
+
 <style scoped>
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-/* Smooth transitions */
-.group {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Gradient borders */
-.hover\:border-gradient {
-  border-image: linear-gradient(45deg, #3b82f6, #06b6d4) 1;
-}
-
-/* Glass effect */
-.glass {
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-}
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+.group { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
 </style>
