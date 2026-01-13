@@ -8,7 +8,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Http\Request;
 
-class TradeController extends Controller
+class TradeControllers extends Controller
 {
     public function index()
     {

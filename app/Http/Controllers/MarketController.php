@@ -7,19 +7,37 @@ use Illuminate\Http\Request;
 use App\Models\Instrument;
 use App\Models\User;
 use App\Models\Order;
+use App\Models\Trade;     // Active Positions table
+use App\Models\TradeLog;  // Closed/History table
 use App\Models\Challenge;
 use App\Models\MarketSetting;
 use Illuminate\Support\Facades\Session;
-use Illuminate\Support\Facades\DB;
 
 class MarketController extends Controller
 {
+    private function getSimulationState()
+    {
+        $setting = MarketSetting::first();
+        return [
+            'is_active'    => $setting->is_simulation_active ?? false,
+            'current_date' => $setting->current_simulated_date ?? now()->format('Y-m-d H:i:s'),
+            'status'       => ($setting->is_market_open ?? false) ? 'OPEN' : 'CLOSED',
+        ];
+    }
+
     private function getActiveChallenge($userId)
     {
-        return Challenge::where('user_id', $userId)
+        $challenge = Challenge::where('user_id', $userId)
             ->where('status', 'active')
             ->orderBy('created_at', 'desc')
             ->first();
+
+        // 🔥 CRITICAL FIX: Force update stats from TradeLogs before returning
+        if ($challenge) {
+            $challenge->refreshStats();
+        }
+
+        return $challenge;
     }
 
     private function getLiveLotConfig()
@@ -32,7 +50,9 @@ class MarketController extends Controller
 
     private function getUserTradingData($userId)
     {
-        // 1. ORDERS TAB
+        // ---------------------------------------------------------
+        // 1. ORDERS TAB (History from Orders Table)
+        // ---------------------------------------------------------
         $rawOrders = Order::where('user_id', $userId)
             ->orderBy('created_at', 'desc')
             ->take(50)
@@ -42,6 +62,7 @@ class MarketController extends Controller
             return [
                 'id'         => $order->id,
                 'time'       => $order->created_at->format('H:i:s'),
+                'date'       => $order->created_at->format('Y-m-d'),
                 'side'       => $order->order_side === Order::SIDE_BUY ? 'BUY' : 'SELL',
                 'type'       => $this->mapOrderType($order->order_type),
                 'symbol'     => $order->stock_symbol,
@@ -52,48 +73,58 @@ class MarketController extends Controller
             ];
         });
 
-        // 2. POSITIONS TAB
-        $rawPositions = Order::where('user_id', $userId)
-            ->whereIn('product_type', ['MIS', 'INTRADAY', 'CO', 'BO'])
-            // Fix: Include if status is Completed OR if filled_quantity > 0 (partial/error case)
-            ->where(function($q) {
-                $q->where('status', Order::STATUS_COMPLETED)
-                  ->orWhere('filled_quantity', '>', 0);
-            })
+        // ---------------------------------------------------------
+        // 2. POSITIONS TAB (ONLY Active Trades from 'trades' table)
+        // ---------------------------------------------------------
+        $rawPositions = Trade::where('user_id', $userId)
+            ->where('status', 'OPEN') // 🔥 Ensures CLOSED trades never appear here
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $positions = $rawPositions->map(function ($pos) {
-            $isOpen = is_null($pos->exit_price);
+        $positions = $rawPositions->map(function ($trade) {
             return [
-                'id'            => $pos->id,
-                'symbol'        => $pos->stock_symbol,
-                'product'       => $pos->product_type,
-                'quantity'      => (float) $pos->quantity,
-                'average_price' => (float) $pos->price,
-                'ltp'           => (float) ($pos->exit_price ?? $pos->price),
-                'pnl'           => (float) $pos->pnl,
-                'close_reason'  => $pos->close_reason,
-                'is_open'       => $isOpen,
+                'id'            => $trade->id,
+                'symbol'        => $trade->symbol,
+                'product'       => 'MIS',
+                'quantity'      => (float) $trade->qty,
+                'average_price' => (float) $trade->entry_price,
+                'ltp'           => (float) ($trade->ltp ?? $trade->entry_price),
+                'pnl'           => (float) $trade->pnl,
+                'side'          => $trade->side,
+                'is_open'       => true,
             ];
         });
 
-        // 3. HOLDINGS TAB
+        // ---------------------------------------------------------
+        // 3. HOLDINGS TAB (CNC Only + Logic to exclude Closed)
+        // ---------------------------------------------------------
         $rawHoldings = Order::where('user_id', $userId)
-            ->where('product_type', 'CNC')
-            // 🔥 FIX: Check filled_quantity > 0 instead of strict status check
-            // This catches orders that crashed mid-execution but were filled
+            ->where('product_type', 'CNC') // STRICTLY CNC
             ->where('filled_quantity', '>', 0)
-            ->whereNull('exit_price')
+            ->whereNull('exit_price') // Not sold in Orders table logic
             ->get();
 
-        $holdings = $rawHoldings->map(function ($hold) {
+        // 🔥 CRITICAL FIX: Filter out "Ghost Holdings"
+        // If a trade exists in 'trades' table with status 'CLOSED' for this order,
+        // it means the holding is gone, even if 'orders' table wasn't updated.
+        $validHoldings = $rawHoldings->filter(function($order) {
+            $isClosedInTrades = Trade::where('order_id', $order->id)
+                                     ->where('status', 'CLOSED')
+                                     ->exists();
+
+            // Also check TradeLogs (History) just in case it was moved there
+            $isClosedInLogs = TradeLog::whereJsonContains('order_ids', (string)$order->id)->exists();
+
+            return !($isClosedInTrades || $isClosedInLogs);
+        });
+
+        $holdings = $validHoldings->values()->map(function ($hold) {
             return [
                 'id'            => $hold->id,
                 'symbol'        => $hold->stock_symbol,
                 'quantity'      => (float) $hold->quantity,
                 'average_price' => (float) $hold->price,
-                'ltp'           => (float) $hold->price,
+                'ltp'           => (float) $hold->price, // Placeholder for live price
                 'pnl'           => 0,
             ];
         });
@@ -123,71 +154,87 @@ class MarketController extends Controller
         };
     }
 
+    private function buildMarketResponse($user_session, $activeChallenge, $instruments, $selectedInstrument, $expiry = null)
+    {
+        $userId = $user_session->id;
+        $lotConfig   = $this->getLiveLotConfig();
+        $tradingData = $this->getUserTradingData($userId); // Fetches clean data
+        $simState    = $this->getSimulationState();
+
+        return [
+            'instruments' => $instruments,
+            'instrument'  => $selectedInstrument,
+            'symbol'      => $selectedInstrument?->symbol,
+            'expiry'      => $expiry,
+            'simulation'  => $simState,
+            'userState'   => [
+                'id'               => $user_session->id,
+                'name'             => $user_session->name,
+                'email'            => $user_session->email,
+                'can_trade_mega'   => $user_session->can_trade_mega ?? false,
+                // 🔥 Updated Balance from Challenge
+                'account_balance'  => $activeChallenge ? $activeChallenge->current_balance : $user_session->account_balance,
+                'plan_title'       => $activeChallenge ? 'Active Challenge #' . $activeChallenge->id : 'No Active Plan',
+                'capital'          => $activeChallenge ? $activeChallenge->start_balance : 0,
+                'challenge_id'     => $activeChallenge ? $activeChallenge->id : null,
+                'websocket_channel'=> 'user.' . $user_session->id,
+            ],
+            'lotConfig' => $lotConfig,
+            'orders'    => $tradingData['orders'],
+            'positions' => $tradingData['positions'],
+            'holdings'  => $tradingData['holdings'],
+        ];
+    }
+
     public function index()
     {
         if (!Session::has('LoggedIn')) return redirect()->route('login');
-
-        $userId       = Session::get('LoggedIn');
+        $userId = Session::get('LoggedIn');
         $user_session = User::find($userId);
+        if (!$user_session) {
+            Session::forget('LoggedIn');
+            return redirect()->route('login');
+        }
+
         $activeChallenge = $this->getActiveChallenge($userId);
-        $lotConfig    = $this->getLiveLotConfig();
-        $tradingData  = $this->getUserTradingData($userId);
-
         $instruments = Instrument::where('is_active', 1)->orderBy('symbol')->get();
-        $first       = $instruments->first();
+        $firstInstrument = $instruments->first();
 
-        return Inertia::render('Market/Market', [
-            'instruments' => $instruments,
-            'instrument'  => $first,
-            'symbol'      => $first?->symbol,
-            'expiry'      => null,
-            'userState'   => [
-                'id'              => $user_session->id,
-                'name'            => $user_session->name,
-                'can_trade_mega'  => $user_session->can_trade_mega ?? false,
-                'account_balance' => $activeChallenge ? $activeChallenge->current_balance : $user_session->account_balance,
-                'plan_title'      => $activeChallenge ? 'Active Challenge #' . $activeChallenge->id : 'No Active Plan',
-                'capital'         => $activeChallenge ? $activeChallenge->start_balance : 0,
-                'challenge_id'    => $activeChallenge ? $activeChallenge->id : null,
-            ],
-            'lotConfig'   => $lotConfig,
-            'orders'      => $tradingData['orders'],
-            'positions'   => $tradingData['positions'],
-            'holdings'    => $tradingData['holdings'],
-        ]);
+        return Inertia::render('Market/Market',
+            $this->buildMarketResponse($user_session, $activeChallenge, $instruments, $firstInstrument)
+        );
     }
 
     public function show(Request $request, $symbol)
     {
         if (!Session::has('LoggedIn')) return redirect()->route('login');
-
-        $userId       = Session::get('LoggedIn');
+        $userId = Session::get('LoggedIn');
         $user_session = User::find($userId);
+        if (!$user_session) {
+            Session::forget('LoggedIn');
+            return redirect()->route('login');
+        }
+
         $activeChallenge = $this->getActiveChallenge($userId);
-        $lotConfig    = $this->getLiveLotConfig();
-        $tradingData  = $this->getUserTradingData($userId);
 
         $instrument = Instrument::with(['underlyingState', 'contracts' => function($q) {
             $q->active()->with(['futuresState', 'optionsState']);
         }])->where('symbol', $symbol)->firstOrFail();
 
-        return Inertia::render('Market/Chart', [
-            'instrument' => $instrument,
-            'symbol'     => $symbol,
-            'expiry'     => $request->query('expiry'),
-            'userState'  => [
-                'id'              => $user_session->id,
-                'name'            => $user_session->name,
-                'can_trade_mega'  => $user_session->can_trade_mega ?? false,
-                'account_balance' => $activeChallenge ? $activeChallenge->current_balance : $user_session->account_balance,
-                'plan_title'      => $activeChallenge ? 'Active Challenge #' . $activeChallenge->id : 'No Active Plan',
-                'capital'         => $activeChallenge ? $activeChallenge->start_balance : 0,
-                'challenge_id'    => $activeChallenge ? $activeChallenge->id : null,
-            ],
-            'lotConfig'   => $lotConfig,
-            'orders'      => $tradingData['orders'],
-            'positions'   => $tradingData['positions'],
-            'holdings'    => $tradingData['holdings'],
-        ]);
+        // Optimized instrument list for sidebar
+        $instruments = Instrument::select('id', 'symbol', 'name', 'type')
+            ->where('is_active', 1)
+            ->orderBy('symbol')
+            ->get();
+
+        return Inertia::render('Market/Chart',
+            $this->buildMarketResponse(
+                $user_session,
+                $activeChallenge,
+                $instruments,
+                $instrument,
+                $request->query('expiry')
+            )
+        );
     }
 }

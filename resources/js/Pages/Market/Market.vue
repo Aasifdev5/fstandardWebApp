@@ -1,7 +1,14 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import Chart from './Chart.vue'
 import { init as initEcho } from '@/echo.js'
+import Swal from 'sweetalert2'
+import axios from 'axios'
+import { router } from '@inertiajs/vue3'
+
+// ✅ CONFIG: Ensure session cookies are sent
+axios.defaults.withCredentials = true;
+axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 
 const props = defineProps({
   instruments: Array,
@@ -19,17 +26,109 @@ const searchQuery = ref('')
 const activeFilter = ref('all')
 const selectedSymbol = ref(props.symbol || props.instrument?.symbol)
 const selectedInstrument = ref(props.instrument)
-const showFavoritesOnly = ref(false)
 
-// Live Data State
+// --- LIVE DATA STATE ---
+// We create local copies of props so we can update LTP/PnL in real-time
 const livePositions = ref([...props.positions]);
 const liveHoldings = ref([...props.holdings]);
+
+// Socket State
 const echo = ref(null);
+const activeChannels = ref(new Set()); // Track channels to clean up later
 
 const isPanelExpanded = ref(true)
 const activeBottomTab = ref('positions')
 
-// --- 🔥 INSTRUMENT NAME MAPPING ---
+// --- 🔥 EXIT LOGIC ---
+async function handleExit(item, type) {
+    const qty = parseFloat(item.quantity || item.qty || 0);
+    const avgPrice = parseFloat(item.average_price || 0);
+    // Use current LTP from socket, fallback to avgPrice if no tick yet
+    const currentLtp = parseFloat(item.ltp || avgPrice);
+
+    let estimatedPnl = 0;
+
+    // Calculate PnL based on type
+    if (type === 'holding') {
+        // Holdings are always Long/Buy
+        estimatedPnl = (currentLtp - avgPrice) * qty;
+    } else {
+        // Intraday Positions
+        if (item.side === 'BUY') {
+            estimatedPnl = (currentLtp - avgPrice) * qty;
+        } else {
+            // Short Sell
+            estimatedPnl = (avgPrice - currentLtp) * qty;
+        }
+    }
+
+    const isProfit = estimatedPnl >= 0;
+    const formattedPnl = formatPrice(estimatedPnl);
+
+    const result = await Swal.fire({
+        title: type === 'holding' ? 'Sell Holding?' : 'Close Position?',
+        html: `
+            <div class="text-left bg-[#111827] p-4 rounded-lg border border-gray-700 font-sans">
+                <div class="flex justify-between mb-2">
+                    <span class="text-gray-400">Instrument:</span>
+                    <span class="font-bold text-white">${item.symbol}</span>
+                </div>
+                <div class="flex justify-between mb-2">
+                     <span class="text-gray-400">Exit Price:</span>
+                     <span class="font-bold text-white">${formatPrice(currentLtp)}</span>
+                </div>
+                <div class="flex justify-between border-t border-gray-700 pt-3 mt-2">
+                    <span class="text-gray-400 font-bold">Est. P&L:</span>
+                    <span class="font-bold text-lg" style="color: ${isProfit ? '#10b981' : '#ef4444'}">
+                        ${isProfit ? '+' : ''}₹ ${formattedPnl}
+                    </span>
+                </div>
+            </div>
+        `,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: isProfit ? '#059669' : '#dc2626',
+        cancelButtonColor: '#374151',
+        confirmButtonText: 'Yes, Exit Now',
+        background: '#1f2937',
+        color: '#f3f4f6'
+    });
+
+    if (result.isConfirmed) {
+        try {
+            // Call Backend to Close Trade
+            const response = await axios.post(`/trades/${item.id}/close`, {
+                exit_price: currentLtp
+            });
+
+            if (response.data.success) {
+                Swal.fire({
+                    title: 'Exited!',
+                    text: `Realized P&L: ₹${response.data.pnl}`,
+                    icon: 'success',
+                    background: '#1f2937',
+                    color: '#f3f4f6',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+
+                // Reload Inertia props to refresh balance, tables, and history
+                router.reload({ only: ['positions', 'holdings', 'userState', 'orders'] });
+            }
+        } catch (error) {
+            console.error(error);
+            Swal.fire({
+                title: 'Error',
+                text: error.response?.data?.message || 'Could not close position.',
+                icon: 'error',
+                background: '#1f2937',
+                color: '#f3f4f6'
+            });
+        }
+    }
+}
+
+// --- INSTRUMENT MAPPING ---
 const instrumentNames = {
     'FSI-NF50': 'NIFTY 50', 'FSI-BN': 'BANK NIFTY', 'FSI-SENSEX': 'SENSEX',
     'FSI-FN': 'FIN NIFTY', 'FSI-SX': 'SENSEX', 'FSI-MIDCP': 'MIDCAP SELECT',
@@ -43,11 +142,10 @@ const instrumentNames = {
 
 function getInstrumentName(symbol) {
     if (instrumentNames[symbol]) return instrumentNames[symbol];
-    return symbol.replace('FSI-', '').replace(/-/g, ' ');
+    return symbol?.replace('FSI-', '').replace(/-/g, ' ') || symbol;
 }
 
 // --- COMPUTED PROPERTIES ---
-
 const bottomTabs = computed(() => [
     { id: 'positions', label: 'Positions', count: livePositions.value.length },
     { id: 'orders', label: 'Orders', count: props.orders.length },
@@ -92,50 +190,86 @@ const filteredCategories = computed(() => {
   }))
 })
 
-// --- REAL-TIME SOCKETS ---
+// --- 🔥 REAL-TIME SOCKETS ---
 
 function setupSockets() {
-    if (echo.value) echo.value.disconnect();
-    echo.value = initEcho();
+    // 1. Initialize Echo if needed
+    if (!echo.value) {
+        echo.value = initEcho();
+    }
 
+    // 2. Unsubscribe from old channels to prevent duplicates
+    activeChannels.value.forEach(channel => {
+        echo.value.leave(channel);
+    });
+    activeChannels.value.clear();
+
+    // 3. Find unique symbols in Holdings and Positions
     const symbolsToWatch = new Set([
         ...liveHoldings.value.map(h => h.symbol),
         ...livePositions.value.map(p => p.symbol)
     ]);
 
+    if(symbolsToWatch.size === 0) return;
+
+    console.log("📡 Connecting sockets for:", Array.from(symbolsToWatch));
+
+    // 4. Subscribe
     symbolsToWatch.forEach(symbol => {
         let channelName = `market.underlying.${symbol}`;
+        // Adjust channel naming convention based on your backend events
         if (symbol.includes('-F-')) channelName = `market.futures.${symbol}`;
         else if (symbol.includes('-C-') || symbol.includes('-P-')) channelName = `market.options.${symbol}`;
 
         echo.value.channel(channelName)
-            .listen('.TickUpdated', (e) => updatePnl(symbol, Number(e.price)));
+            .listen('.TickUpdated', (e) => {
+                updatePnl(symbol, Number(e.price));
+            });
+
+        activeChannels.value.add(channelName);
     });
 }
 
-function updatePnl(symbol, price) {
+function updatePnl(symbol, rawPrice) {
+    const price = parseFloat(rawPrice);
+    if(isNaN(price)) return;
+
+    // Update Holdings
     liveHoldings.value.forEach(hold => {
         if (hold.symbol === symbol) {
             hold.ltp = price;
-            hold.pnl = (price - hold.average_price) * hold.quantity;
+            // Holdings PnL = (Current - Avg) * Qty
+            hold.pnl = (price - parseFloat(hold.average_price)) * parseFloat(hold.quantity);
         }
     });
+
+    // Update Positions
     livePositions.value.forEach(pos => {
         if (pos.symbol === symbol && pos.is_open) {
             pos.ltp = price;
-            pos.pnl = (price - pos.average_price) * pos.quantity;
+            const avg = parseFloat(pos.average_price);
+            const qty = parseFloat(pos.quantity);
+
+            // Position PnL Logic
+            if (pos.side === 'BUY') {
+                pos.pnl = (price - avg) * qty;
+            } else {
+                pos.pnl = (avg - price) * qty;
+            }
         }
     });
 }
 
+// Watch props: If backend sends new data (e.g. after trade/reload), sync local state and reset sockets
 watch(() => [props.holdings, props.positions], () => {
     liveHoldings.value = [...props.holdings];
     livePositions.value = [...props.positions];
-    setupSockets();
+    nextTick(() => {
+        setupSockets();
+    });
 }, { deep: true });
 
-// --- HELPER FUNCTIONS ---
-
+// --- FORMATTING HELPERS ---
 function getInstrumentColor(category) {
   const colors = {
     index: 'bg-gradient-to-br from-blue-500/20 to-blue-600/20 text-blue-300',
@@ -176,7 +310,7 @@ function getStatusClass(status) {
 }
 
 function formatPrice(price) {
-  if (!price) return '-'
+  if (price === null || price === undefined || isNaN(price)) return '0.00'
   const num = parseFloat(price)
   return num.toLocaleString('en-IN', {
     minimumFractionDigits: 2,
@@ -198,8 +332,10 @@ function switchInstrument(inst) {
   selectedInstrument.value = inst
 }
 
+// --- LIFECYCLE ---
 onMounted(() => {
   setupSockets();
+  // Select first instrument if none selected
   if (!selectedInstrument.value && filteredInstruments.value.length > 0) {
     selectedInstrument.value = filteredInstruments.value[0]
     selectedSymbol.value = selectedInstrument.value.symbol
@@ -207,7 +343,10 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-    if (echo.value) echo.value.disconnect();
+    if (echo.value) {
+        activeChannels.value.forEach(ch => echo.value.leave(ch));
+        echo.value.disconnect();
+    }
 })
 </script>
 
@@ -263,10 +402,6 @@ onUnmounted(() => {
                         <div class="flex items-center gap-2 flex-wrap">
                           <span class="font-semibold text-white truncate">{{ inst.symbol }}</span>
                           <div :class="['px-1.5 py-[1px] rounded text-[9px] font-bold uppercase tracking-wide border flex items-center gap-1 whitespace-nowrap', getVolatilityClass(inst.volatility_class)]">
-                            <span v-if="inst.volatility_class === 'low'">🛡️</span>
-                            <span v-else-if="inst.volatility_class === 'medium'">📊</span>
-                            <span v-else-if="inst.volatility_class === 'high'">⚡</span>
-                            <span v-else-if="inst.volatility_class === 'very_high'">🔥</span>
                             {{ formatVolatility(inst.volatility_class) }}
                           </div>
                         </div>
@@ -282,12 +417,7 @@ onUnmounted(() => {
                   <div class="mt-2 pt-2 border-t border-gray-800/50 flex items-center justify-between text-xs">
                     <div class="flex items-center space-x-4">
                       <div class="flex items-center space-x-1 text-gray-400">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         <span>{{ inst.session_start?.slice(0, 5) }} - {{ inst.session_end?.slice(0, 5) }}</span>
-                      </div>
-                      <div class="flex items-center space-x-1 text-gray-500">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                        <span class="capitalize">{{ inst.news_sensitivity?.replace('_', ' ') }}</span>
                       </div>
                     </div>
                     <div v-if="inst.is_active" class="flex items-center">
@@ -304,7 +434,6 @@ onUnmounted(() => {
     </aside>
 
     <main class="flex-1 flex flex-col overflow-hidden relative">
-
       <div class="border-b border-gray-800 bg-gray-900/50 backdrop-blur-sm shrink-0">
         <div class="flex items-center justify-between p-4">
           <div class="flex items-center space-x-4">
@@ -316,11 +445,7 @@ onUnmounted(() => {
                 <h2 class="text-2xl font-bold">{{ selectedSymbol || 'Select Instrument' }}</h2>
                 <div class="flex items-center space-x-2">
                   <div v-if="selectedInstrument" :class="['px-3 py-0.5 rounded-md text-xs font-bold uppercase border flex items-center gap-1.5', getVolatilityClass(selectedInstrument.volatility_class)]">
-                     <span v-if="selectedInstrument.volatility_class === 'low'">🛡️</span>
-                     <span v-else-if="selectedInstrument.volatility_class === 'medium'">📊</span>
-                     <span v-else-if="selectedInstrument.volatility_class === 'high'">⚡</span>
-                     <span v-else-if="selectedInstrument.volatility_class === 'very_high'">🔥</span>
-                     {{ formatVolatility(selectedInstrument.volatility_class) }}
+                      {{ formatVolatility(selectedInstrument.volatility_class) }}
                   </div>
                 </div>
               </div>
@@ -351,7 +476,6 @@ onUnmounted(() => {
       </div>
 
       <div :class="['border-t border-gray-800 bg-[#1e222d] flex flex-col transition-all duration-300 ease-in-out', isPanelExpanded ? 'h-80' : 'h-10']">
-
         <div class="flex items-center justify-between bg-[#2a2e39] px-2 h-10 shrink-0">
           <div class="flex space-x-1 h-full pt-1">
             <button
@@ -384,10 +508,10 @@ onUnmounted(() => {
                   <th class="p-3">Instrument</th>
                   <th class="p-3 text-right">Qty</th>
                   <th class="p-3 text-right">Avg. Price</th>
-                  <th class="p-3 text-right">LTP / Exit</th>
-                  <th class="p-3 text-center">Reason</th>
+                  <th class="p-3 text-right">LTP</th>
+                  <th class="p-3 text-center">Side</th>
                   <th class="p-3 text-right">P&L</th>
-                  <th class="p-3 text-right">Actions</th>
+                  <th class="p-3 text-right">Action</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-800">
@@ -400,19 +524,22 @@ onUnmounted(() => {
                   <td class="p-3 text-right text-gray-300">{{ formatPrice(pos.average_price) }}</td>
                   <td class="p-3 text-right text-white">{{ formatPrice(pos.ltp || 0) }}</td>
                   <td class="p-3 text-center">
-                    <span v-if="pos.close_reason" :class="['px-1.5 py-0.5 rounded text-[9px] font-bold uppercase', pos.close_reason === 'TARGET_HIT' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400']">{{ pos.close_reason.replace('_', ' ') }}</span>
-                    <span v-else class="text-gray-600">-</span>
+                    <span :class="pos.side === 'BUY' ? 'text-green-400 bg-green-500/10' : 'text-red-400 bg-red-500/10'" class="px-1.5 py-0.5 rounded text-[10px] font-bold">{{ pos.side }}</span>
                   </td>
                   <td class="p-3 text-right font-bold" :class="(pos.pnl || 0) >= 0 ? 'text-green-400' : 'text-red-400'">
                     {{ (pos.pnl || 0) >= 0 ? '+' : '' }}₹ {{ formatPrice(pos.pnl || 0) }}
                   </td>
                   <td class="p-3 text-right">
-                    <button v-if="pos.is_open" class="bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white px-2 py-1 rounded text-[10px] transition">Exit</button>
-                    <span v-else class="text-gray-600 text-[10px]">Closed</span>
+                    <button v-if="pos.is_open"
+                            @click="handleExit(pos, 'position')"
+                            class="bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/20 px-3 py-1 rounded text-[10px] font-bold transition uppercase tracking-wider">
+                      Exit
+                    </button>
+                    <span v-else class="text-gray-500 italic text-[10px]">Closed</span>
                   </td>
                 </tr>
                 <tr v-if="livePositions.length === 0">
-                    <td colspan="7" class="p-8 text-center text-gray-500 italic">No positions found</td>
+                    <td colspan="7" class="p-8 text-center text-gray-500 italic">No open positions</td>
                 </tr>
               </tbody>
             </table>
@@ -463,6 +590,7 @@ onUnmounted(() => {
                   <th class="p-3 text-right">LTP</th>
                   <th class="p-3 text-right">Cur. Value</th>
                   <th class="p-3 text-right">P&L</th>
+                  <th class="p-3 text-right">Action</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-800">
@@ -475,9 +603,15 @@ onUnmounted(() => {
                   <td class="p-3 text-right font-bold" :class="(hold.pnl || 0) >= 0 ? 'text-green-400' : 'text-red-400'">
                     {{ (hold.pnl || 0) >= 0 ? '+' : '' }}{{ formatPrice(hold.pnl || 0) }}
                   </td>
+                  <td class="p-3 text-right">
+                    <button @click="handleExit(hold, 'holding')"
+                            class="bg-orange-500/10 hover:bg-orange-500 text-orange-500 hover:text-white border border-orange-500/20 px-3 py-1 rounded text-[10px] font-bold transition uppercase tracking-wider">
+                      Sell
+                    </button>
+                  </td>
                 </tr>
                  <tr v-if="liveHoldings.length === 0">
-                    <td colspan="6" class="p-8 text-center text-gray-500 italic">No holdings found</td>
+                    <td colspan="7" class="p-8 text-center text-gray-500 italic">No holdings found</td>
                 </tr>
               </tbody>
             </table>
@@ -485,7 +619,6 @@ onUnmounted(() => {
 
         </div>
       </div>
-
     </main>
   </div>
 </template>

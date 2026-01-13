@@ -382,6 +382,14 @@
                                 <span>{{ __('Trade Config') }}</span>
                             </a>
                         </li>
+                        <li
+                            class="sidebar-list {{ Request::is('admin/simulation/profit-loss-control*') ? 'active' : '' }}">
+                            <a class="sidebar-link d-flex align-items-center"
+                                href="{{ route('profit-loss-control.index') }}">
+                                <i data-feather="percent" class="me-2"></i>&nbsp;&nbsp;
+                                <span>P/L Control</span>
+                            </a>
+                        </li>
                         <li class="sidebar-list {{ Request::is('admin/simulation-config*') ? 'active' : '' }}">
                             <i class="fa fa-thumb-tack"></i>
                             <a class="sidebar-link sidebar-title link-nav d-flex align-items-center"

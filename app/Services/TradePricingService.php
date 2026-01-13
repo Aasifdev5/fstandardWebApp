@@ -2,33 +2,53 @@
 
 namespace App\Services;
 
+use App\Models\MarketSetting; // ✅ Import your model
 use Exception;
 use Illuminate\Support\Str;
 
 class TradePricingService
 {
     /**
-     * Calculate ₹/Point using the "Only Formula" [cite: 104-111]
+     * Calculate ₹/Point using the dynamic DB config
      */
     public function rupeesPerPoint(float $accountSize, string $lotType, string $contractSymbol, float $currentPrice): float
     {
-        // 1. Get Constants [cite: 133-135]
-        $baseValue  = config('market_pricing.base_rupee_per_point');
-        $refAccount = config('market_pricing.reference_account');
-        $refPrice   = config('market_pricing.reference_price');
+        // 1. Fetch Config from Database (Cached)
+        $config = MarketSetting::getSimulationConfig();
 
-        // 2. Multipliers
-        $lotMult = config("market_pricing.lot_multipliers.{$lotType}");
-        if (is_null($lotMult)) throw new Exception("Invalid Lot Type: {$lotType}");
+        // 🛑 Safety Check: If config is empty, fallback or throw error
+        if (empty($config)) {
+            // You can either throw an error or return a default
+             throw new Exception("Market Configuration not found in database.");
+        }
 
+        // 2. Get Constants from the JSON structure
+        // Note: We use the keys exactly as they appear in your DB JSON
+        $baseValue  = $config['base_rupee_per_point'] ?? 75; // Default from your JSON
+        $refAccount = $config['reference_account'] ?? 1000000;
+        $refPrice   = $config['reference_price'] ?? 24000;
+
+        // 3. Lot Multipliers
+        // Your DB has keys in lowercase ('micro', 'mini'), so we force input to lowercase
+        $lotKey = strtolower($lotType);
+        $lotMult = $config['lot_multipliers'][$lotKey] ?? null;
+
+        if (is_null($lotMult)) {
+            // Fallback: Try uppercase if lowercase didn't work, just in case
+            $lotMult = $config['lot_multipliers'][$lotType] ?? 1.0;
+        }
+
+        // 4. Instrument Multipliers
         $baseSymbol = $this->extractBaseSymbol($contractSymbol);
-        $instMult = config("market_pricing.instrument_multipliers.{$baseSymbol}");
-        if (is_null($instMult)) throw new Exception("Invalid Instrument: {$baseSymbol}");
 
-        // 3. Price Normalization [cite: 94-98]
-        $priceNormalization = $refPrice / $currentPrice;
+        // Try exact match first, then fallback to default 1.0
+        $instMult = $config['instrument_multipliers'][$baseSymbol] ?? 1.0;
 
-        // 4. The Formula [cite: 106-111]
+        // 5. Price Normalization
+        // Avoid division by zero
+        $priceNormalization = ($currentPrice > 0) ? ($refPrice / $currentPrice) : 1;
+
+        // 6. The Formula
         return $baseValue
             * ($accountSize / $refAccount)
             * $lotMult
@@ -38,7 +58,14 @@ class TradePricingService
 
     private function extractBaseSymbol(string $fullSymbol): string
     {
-        // Logic to turn "FSI-NF50-F-20251230" into "FSI-NF50-F"
-        return Str::beforeLast($fullSymbol, '-');
+        // Your DB keys look like "FSI-NF50-F"
+        // If the symbol comes in as "FSI-NF50-F-20260115", we need to strip the date.
+
+        // If it has 3 or more hyphens, assume it has a date suffix
+        if (substr_count($fullSymbol, '-') >= 3) {
+            return Str::beforeLast($fullSymbol, '-');
+        }
+
+        return $fullSymbol;
     }
 }

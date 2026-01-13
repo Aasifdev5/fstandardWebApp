@@ -21,18 +21,18 @@ class UnderlyingTickUpdated implements ShouldBroadcastNow
     {
         $this->symbol = $symbol;
         $this->price = $price;
-        // Format to ISO string for Javascript compatibility
         $this->timestamp = $timestamp->toIso8601String();
     }
 
     public function broadcastOn(): Channel
     {
+        // ✅ CORRECT: Using 'Channel' creates a Public channel.
+        // No authentication required to listen to this.
         return new Channel('market.underlying.' . $this->symbol);
     }
 
     public function broadcastAs(): string
     {
-        // This is what the frontend .listen('.TickUpdated') looks for
         return 'TickUpdated';
     }
 }

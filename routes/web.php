@@ -54,14 +54,16 @@ use App\Http\Controllers\Admin\QRCodeController;
 use App\Http\Controllers\Admin\ReferralSettingController;
 use App\Http\Controllers\Admin\ResetPasswordController;
 use App\Http\Controllers\Admin\SettingController;
-use App\Http\Controllers\Admin\SubcategoryController;
+use App\Http\Controllers\Admin\SimulationConfigController;
 
+use App\Http\Controllers\Admin\SubcategoryController;
 use App\Http\Controllers\Admin\SupportTicketController;
 use App\Http\Controllers\Admin\SystemTradeConfigController;
 use App\Http\Controllers\Admin\TagController;
-use App\Http\Controllers\Admin\TestimonialController;
 
-use App\Http\Controllers\Admin\TradeController;
+use App\Http\Controllers\Admin\TestimonialController;
+use App\Http\Controllers\Admin\TradeControllers;
+use App\Http\Controllers\TradeController;
 use App\Http\Controllers\AffiliateController;
 use App\Http\Controllers\BlockchainHashRecordController;
 use App\Http\Controllers\DelayedFeedAssignmentController;
@@ -72,21 +74,22 @@ use App\Http\Controllers\SlippageProfileController;
 use App\Http\Controllers\User\PlanPurchaseController;
 use App\Http\Controllers\UserController;
 use App\Http\Middleware\SetLocale;
-use App\Models\Language;
 
+use App\Models\Language;
 use App\Models\PlanPurchase;
 use App\Models\User;
 use App\Services\DhanService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\App;
+
+
+
+
+
 use Illuminate\Support\Facades\Auth;
-
-
-
-
-
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Session;
+
 
 
 
@@ -214,6 +217,7 @@ Route::group(['middleware' => ['prevent-back-history', SetLocale::class]], funct
     Route::get('/local/{ln}', function ($ln) {
         return redirect()->back()->with('local', $ln);
     });
+    Route::post('/trades/{tradeId}/close', [TradeController::class, 'close']);
     Route::get('/genTerm', [UserController::class, 'genTerm'])->name('genTerm');
     Route::get('/privacy', [UserController::class, 'privacy'])->name('privacy');
     Route::get('/book', [UserController::class, 'book'])->name('book');
@@ -347,6 +351,22 @@ Route::get('/get-user-mode', [Admin::class, 'getUserMode'])->name('getUserMode')
 Route::group(['prefix' => 'admin', 'middleware' => ['check.session']], function () {
 
     Route::group(['middleware' => 'admin-prevent-back-history', SetLocale::class], function () {
+
+        // Main dashboard / overview page
+        Route::get('/profit-loss-control', [SimulationConfigController::class, 'index'])
+            ->name('profit-loss-control.index');
+
+        // Update global forced outcome (affects everyone)
+        Route::patch('/profit-loss-control/global', [SimulationConfigController::class, 'updateGlobal'])
+            ->name('profit-loss-control.global.update');
+
+        // Create or update user-specific forced outcome
+        Route::post('/profit-loss-control/override', [SimulationConfigController::class, 'storeUserOverride'])
+            ->name('profit-loss-control.override.store');
+
+        // Delete specific user override
+        Route::delete('/profit-loss-control/override/{id}', [SimulationConfigController::class, 'destroy'])
+            ->name('profit-loss-control.override.destroy');
 
         Route::get('simulation-config', [MarketSimulationController::class, 'index'])->name('simulation-config.index');
         Route::post('simulation-config', [MarketSimulationController::class, 'update'])->name('simulation-config.update');

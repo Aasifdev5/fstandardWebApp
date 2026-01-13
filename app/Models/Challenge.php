@@ -50,7 +50,7 @@ class Challenge extends Model
     protected $casts = [
         'capacity_value'              => 'decimal:2',
         'start_balance'               => 'decimal:2',
-        'current_balance'              => 'decimal:2',
+        'current_balance'             => 'decimal:2',
         'peak_balance'                => 'decimal:2',
         'total_profit'                => 'decimal:2',
         'total_loss'                  => 'decimal:2',
@@ -73,35 +73,24 @@ class Challenge extends Model
     ];
 
     // ====================================================================
-    // Constants
-    // ====================================================================
-    const PHASE_ONE     = 1;
-    const PHASE_TWO     = 2;
-    const PHASE_FUNDED  = 3;
-
-    const STATUS_ACTIVE    = 'active';
-    const STATUS_PASSED    = 'passed';
-    const STATUS_FAILED    = 'failed';
-    const STATUS_SUSPENDED = 'suspended';
-    const STATUS_REFUNDED  = 'refunded';
-    const STATUS_FUNDED    = 'funded';
-
-    // ====================================================================
     // Relationships
     // ====================================================================
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    public function plan(): BelongsTo
-    {
-        return $this->belongsTo(FundingPlan::class); // You should have a plans table
-    }
-
     public function trades(): HasMany
     {
-        return $this->hasMany(TradeLog::class);
+        // Links to the trade_logs table (Historical/Closed trades)
+        return $this->hasMany(TradeLog::class, 'challenge_id');
+    }
+
+    public function activeTrades(): HasMany
+    {
+        // Links to the trades table (Live/Open positions)
+        return $this->hasMany(Trade::class, 'challenge_id');
     }
 
     public function orders(): HasMany
@@ -110,18 +99,50 @@ class Challenge extends Model
     }
 
     // ====================================================================
-    // Accessors
+    // 🔥 CRITICAL FIX: Recalculate Stats Function
     // ====================================================================
+    public function refreshStats()
+    {
+        // 1. Calculate Realized PnL from TradeLogs (Closed Trades)
+        $closedStats = $this->trades()
+            ->selectRaw('
+                COALESCE(SUM(profit_loss), 0) as net_pnl,
+                COALESCE(SUM(CASE WHEN profit_loss > 0 THEN profit_loss ELSE 0 END), 0) as total_profit,
+                COALESCE(SUM(CASE WHEN profit_loss < 0 THEN ABS(profit_loss) ELSE 0 END), 0) as total_loss
+            ')
+            ->first();
+
+        $netPnl      = $closedStats->net_pnl;
+        $totalProfit = $closedStats->total_profit;
+        $totalLoss   = $closedStats->total_loss;
+
+        // 2. Calculate New Balance
+        // Start Balance + Realized PnL
+        $newBalance = $this->start_balance + $netPnl;
+
+        // 3. Update the Challenge Record in DB
+        $this->update([
+            'current_balance' => $newBalance,
+            'total_profit'    => $totalProfit,
+            'total_loss'      => $totalLoss,
+            'peak_balance'    => max($this->peak_balance, $newBalance), // Update High Water Mark
+        ]);
+
+        return $this;
+    }
+
+    // ====================================================================
+    // Accessors & Scopes (Kept for compatibility)
+    // ====================================================================
+
     public function getStatusBadgeAttribute(): string
     {
         return match($this->status) {
-            'active'     => '<span class="badge bg-primary">Active</span>',
-            'passed'     => '<span class="badge bg-success">Passed</span>',
-            'failed'     => '<span class="badge bg-danger">Failed</span>',
-            'suspended'  => '<span class="badge bg-warning">Suspended</span>',
-            'funded'     => '<span class="badge bg-info">Funded</span>',
-            'refunded'   => '<span class="badge bg-secondary">Refunded</span>',
-            default      => '<span class="badge bg-dark">Unknown</span>',
+            'active'    => '<span class="badge bg-primary">Active</span>',
+            'passed'    => '<span class="badge bg-success">Passed</span>',
+            'failed'    => '<span class="badge bg-danger">Failed</span>',
+            'suspended' => '<span class="badge bg-warning">Suspended</span>',
+            default     => '<span class="badge bg-dark">Unknown</span>',
         };
     }
 
@@ -135,52 +156,6 @@ class Challenge extends Model
         };
     }
 
-    public function getProfitProgressAttribute(): float
-    {
-        if ($this->profit_target_percent <= 0) return 0;
-        return round(($this->total_profit / ($this->capacity_value * $this->profit_target_percent / 100)), 2);
-    }
-
-    public function getIsBreachedDailyAttribute(): bool
-    {
-        return $this->current_daily_loss_percent >= $this->max_daily_loss_percent;
-    }
-
-    public function getIsBreachedOverallAttribute(): bool
-    {
-        return $this->current_overall_loss_percent >= $this->max_overall_loss_percent;
-    }
-
-    // ====================================================================
-    // Scopes
-    // ====================================================================
-    public function scopeActive($query)
-    {
-        return $query->where('status', 'active');
-    }
-
-    public function scopePhaseOne($query)
-    {
-        return $query->where('phase', 1);
-    }
-
-    public function scopePhaseTwo($query)
-    {
-        return $query->where('phase', 2);
-    }
-
-    public function scopePassed($query)
-    {
-        return $query->where('status', 'passed');
-    }
-
-    public function scopeFailed($query)
-    {
-        return $query->where('status', 'failed');
-    }
-
-    public function scopeUser($query, $userId)
-    {
-        return $query->where('user_id', $userId);
-    }
+    public function scopeActive($query) { return $query->where('status', 'active'); }
+    public function scopeUser($query, $userId) { return $query->where('user_id', $userId); }
 }

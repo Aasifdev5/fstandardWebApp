@@ -17,6 +17,8 @@ export function init() {
         wsPort: import.meta.env.VITE_PUSHER_PORT || 6001,
         wssPort: import.meta.env.VITE_PUSHER_PORT || 6001,
         forceTLS: import.meta.env.VITE_PUSHER_SCHEME === 'https',
+        authEndpoint: '/broadcasting/auth',
+
         encrypted: true,
         disableStats: true,
         enabledTransports: ['ws', 'wss'],

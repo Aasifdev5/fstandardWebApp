@@ -22,4 +22,4 @@ Route::prefix('instruments')->group(function () {
     Route::get('{symbol}/option-chain', [InstrumentController::class, 'optionChain']);
 });
 Route::post('/orders/place', [OrderController::class, 'place']);
-Route::post('/trades/{tradeId}/close', [TradeController::class, 'close']);
+
