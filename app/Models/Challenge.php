@@ -60,7 +60,7 @@ class Challenge extends Model
         'max_daily_loss_percent'      => 'decimal:2',
         'max_overall_loss_percent'    => 'decimal:2',
         'current_daily_loss_percent'  => 'decimal:2',
-        'current_overall_loss_percent'=> 'decimal:2',
+        'current_overall_loss_percent' => 'decimal:2',
         'payout_amount'               => 'decimal:2',
         'started_at'                  => 'datetime',
         'ended_at'                    => 'datetime',
@@ -92,6 +92,26 @@ class Challenge extends Model
         // Links to the trades table (Live/Open positions)
         return $this->hasMany(Trade::class, 'challenge_id');
     }
+    // Challenge → PlanPurchase
+    public function planPurchase()
+    {
+        return $this->belongsTo(PlanPurchase::class, 'plan_id');
+    }
+
+    // Shortcut: Challenge → PlanPurchase → FundingPlan
+    public function fundingPlan()
+{
+    return $this->hasOneThrough(
+        FundingPlan::class,   // final model
+        PlanPurchase::class,  // intermediate model
+        'id',                 // PlanPurchase primary key
+        'id',                 // FundingPlan primary key
+        'plan_id',            // Challenge foreign key to PlanPurchase
+        'funding_plan_id'     // PlanPurchase foreign key to FundingPlan
+    );
+}
+
+
 
     public function orders(): HasMany
     {
@@ -137,7 +157,7 @@ class Challenge extends Model
 
     public function getStatusBadgeAttribute(): string
     {
-        return match($this->status) {
+        return match ($this->status) {
             'active'    => '<span class="badge bg-primary">Active</span>',
             'passed'    => '<span class="badge bg-success">Passed</span>',
             'failed'    => '<span class="badge bg-danger">Failed</span>',
@@ -148,7 +168,7 @@ class Challenge extends Model
 
     public function getPhaseTextAttribute(): string
     {
-        return match($this->phase) {
+        return match ($this->phase) {
             1 => 'Phase 1',
             2 => 'Phase 2',
             3 => 'Funded Account',
@@ -156,6 +176,12 @@ class Challenge extends Model
         };
     }
 
-    public function scopeActive($query) { return $query->where('status', 'active'); }
-    public function scopeUser($query, $userId) { return $query->where('user_id', $userId); }
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'active');
+    }
+    public function scopeUser($query, $userId)
+    {
+        return $query->where('user_id', $userId);
+    }
 }

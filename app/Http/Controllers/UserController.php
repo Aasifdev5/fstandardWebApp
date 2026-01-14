@@ -34,6 +34,7 @@ use App\Models\SupportTicketQuestion;
 use App\Models\Testimonial;
 use App\Models\TradeLog;
 use App\Models\User;
+use App\Models\Withdrawal;
 use App\Notifications\NewUserRegisteredNotification;
 use App\Notifications\ResetPasswordNotification;
 use App\Notifications\UserRegisteredNotification;
@@ -502,52 +503,104 @@ class UserController extends Controller
 
     // 1. Dashboard / Overview
     public function overview()
-{
-    if (!Session::has('LoggedIn')) {
-        return redirect('login')->with('fail', 'Please login first.');
+    {
+        if (!Session::has('LoggedIn')) {
+            return redirect('login')->with('fail', 'Please login first.');
+        }
+
+        $user_session = User::find(Session::get('LoggedIn'));
+
+        // Get active challenge with proper relationship
+        $challenge = $user_session->challenges()
+            ->with(['planPurchase.plan', 'planPurchase' => function ($query) {
+                $query->where('status', 'approved');
+            }])
+            ->where('status', 'active')
+            ->latest()
+            ->first();
+
+        // If no active challenge, check for approved plan purchases
+        if (!$challenge) {
+            $approvedPlanPurchase = $user_session->planPurchases()
+                ->where('status', 'approved')
+                ->latest()
+                ->first();
+
+            if ($approvedPlanPurchase) {
+                // Try to find any challenge (including inactive) for this plan
+                $challenge = $user_session->challenges()
+                    ->where('plan_id', $approvedPlanPurchase->funding_plan_id)
+                    ->latest()
+                    ->first();
+            }
+        }
+
+        // Calculate metrics with proper filtering
+        $openOrders = Order::where('user_id', $user_session->id)
+            ->where('status', 0)
+            ->where('challenge_id', $challenge->id ?? null)
+            ->count();
+
+        $completedTrades = TradeLog::where('user_id', $user_session->id)
+            ->whereNotNull('exit_time')
+            ->where('challenge_id', $challenge->id ?? null)
+            ->count();
+
+        $canceledOrders = Order::where('user_id', $user_session->id)
+            ->where('status', 9)
+            ->where('challenge_id', $challenge->id ?? null)
+            ->count();
+
+        $totalPnL = TradeLog::where('user_id', $user_session->id)
+            ->whereNotNull('exit_time')
+            ->where('challenge_id', $challenge->id ?? null)
+            ->sum('profit_loss');
+
+        // Get recent data
+        $recentOrders = Order::where('user_id', $user_session->id)
+            ->where('challenge_id', $challenge->id ?? null)
+            ->latest()
+            ->limit(5)
+            ->get();
+
+        $recentTrades = TradeLog::where('user_id', $user_session->id)
+            ->whereNotNull('exit_time')
+            ->where('challenge_id', $challenge->id ?? null)
+            ->latest('exit_time')
+            ->limit(5)
+            ->get();
+
+        // Calculate challenge progress if exists
+        $challengeProgress = null;
+        if ($challenge) {
+            $challengeProgress = [
+                'profit_target_percent' => $challenge->profit_target_percent ?? 8,
+                'current_profit_percent' => $challenge->total_profit > 0
+                    ? ($challenge->total_profit / $challenge->start_balance) * 100
+                    : 0,
+                'progress_percent' => min(
+                    100,
+                    ($challenge->total_profit / ($challenge->start_balance * ($challenge->profit_target_percent / 100))) * 100
+                ),
+                'days_remaining' => max(0, ($challenge->max_trading_days ?? 30) - $challenge->trading_days_elapsed),
+                'daily_drawdown_percent' => $challenge->current_daily_loss_percent ?? 0,
+                'overall_drawdown_percent' => $challenge->current_overall_loss_percent ?? 0,
+            ];
+        }
+
+        return view('overview', [
+            'user_session'      => $user_session,
+            'challenge'         => $challenge,
+            'challengeProgress' => $challengeProgress,
+            'openOrders'        => $openOrders,
+            'completedTrades'   => $completedTrades,
+            'canceledOrders'    => $canceledOrders,
+            'totalPnL'          => $totalPnL,
+            'recentOrders'      => $recentOrders,
+            'recentTrades'      => $recentTrades,
+            'hasActivePlan'     => $user_session->planPurchases()->where('status', 'approved')->exists(),
+        ]);
     }
-
-    $user_session = \App\Models\User::find(Session::get('LoggedIn'));
-
-    // 1. Get the latest active challenge (since you have 3 in the DB)
-    // Using latest() ensures we get the most recent one, not the old one (ID 1).
-    $challenge = $user_session->challenges()
-        ->with('plan')
-        ->where('status', 'active') // Optional: Ensure we only pick active ones
-        ->latest()
-        ->first();
-
-    // Debugging: Uncomment the line below to verify data exists before the view loads
-    // dd($challenge);
-
-    $openOrders      = Order::where('user_id', $user_session->id)->where('status', 0)->count();
-    $completedTrades = TradeLog::where('user_id', $user_session->id)->whereNotNull('exit_time')->count();
-    $canceledOrders  = Order::where('user_id', $user_session->id)->where('status', 9)->count();
-    $totalPnL        = TradeLog::where('user_id', $user_session->id)->sum('profit_loss');
-
-    $recentOrders = Order::where('user_id', $user_session->id)
-        ->latest()
-        ->limit(5)
-        ->get();
-
-    $recentTrades = TradeLog::where('user_id', $user_session->id)
-        ->whereNotNull('exit_time')
-        ->latest('exit_time')
-        ->limit(5)
-        ->get();
-
-    // 2. Pass data explicitly
-    return view('overview', [
-        'user_session'    => $user_session,
-        'challenge'       => $challenge, // Explicit assignment
-        'openOrders'      => $openOrders,
-        'completedTrades' => $completedTrades,
-        'canceledOrders'  => $canceledOrders,
-        'totalPnL'        => $totalPnL,
-        'recentOrders'    => $recentOrders,
-        'recentTrades'    => $recentTrades
-    ]);
-}
 
     // 2. Manage Orders
     public function orders()
@@ -556,7 +609,7 @@ class UserController extends Controller
         if ($user_session instanceof \Illuminate\Http\RedirectResponse) return $user_session;
         $orders = Order::where('user_id', $user_session->id)
             ->with('challenge')
-            ->orderby('created_at','desc')->get();
+            ->orderby('created_at', 'desc')->get();
         return view('orders', compact('user_session', 'orders'));
     }
 
@@ -604,11 +657,59 @@ class UserController extends Controller
 
     // 5. Withdraw History
     public function withdrawHistory()
+{
+    $user_session = $this->authenticatedUser();
+    if ($user_session instanceof \Illuminate\Http\RedirectResponse) return $user_session;
+
+    $withdrawals = Withdrawal::where('user_id', $user_session->id)
+    ->latest()
+    ->paginate(50);
+
+    // Get active challenge for balance display
+    $challenge = $user_session->challenges()->where('status', 'active')->latest()->first();
+    $availableBalance = $challenge ? $challenge->current_balance : 0;
+
+    return view('withdraw-history', compact('user_session', 'withdrawals', 'challenge', 'availableBalance'));
+}
+
+
+
+    public function storeRequest(Request $request)
     {
+
+
+        $request->validate([
+            'amount' => 'required|numeric|min:100',
+            'bank_name' => 'required|string',
+            'account_holder' => 'required|string',
+            'account_number' => 'required|string',
+            'ifsc_code' => 'required|string',
+        ]);
         $user_session = $this->authenticatedUser();
         if ($user_session instanceof \Illuminate\Http\RedirectResponse) return $user_session;
+        $challenge = $user_session->challenges()->where('status', 'active')->latest()->first();
+        if (!$challenge || $request->amount > $challenge->current_balance) {
+            return back()->with('fail', 'Amount exceeds available balance.');
+        }
 
-        return view('withdraw-history', compact('user_session'));
+        $charge = $request->amount * 0.02; // 2% fee
+        $finalAmount = $request->amount - $charge;
+
+        Withdrawal::create([
+            'user_id' => $user_session->id,
+            'challenge_id' => $challenge->id,
+            'trx'            => 'WD-' . strtoupper(Str::random(10)), // ✅ FIX
+            'amount' => $request->amount,
+            'charge' => $charge,
+            'final_amount' => $finalAmount,
+            'bank_name' => $request->bank_name,
+            'account_holder' => $request->account_holder,
+            'account_number' => $request->account_number,
+            'ifsc_code' => $request->ifsc_code,
+            'status' => Withdrawal::STATUS_PENDING,
+        ]);
+
+        return redirect()->route('withdraw.history')->with('success', 'Withdrawal request submitted.');
     }
 
     // 6. KYC

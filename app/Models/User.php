@@ -123,6 +123,10 @@ class User extends Authenticatable
                     ->where('status', 'active')
                     ->latest();
     }
+    public function planPurchases()
+{
+    return $this->hasMany(\App\Models\PlanPurchase::class, 'user_id');
+}
 
     /**
      * Get the current active challenge (magic attribute)

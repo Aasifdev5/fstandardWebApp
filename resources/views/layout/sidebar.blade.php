@@ -408,14 +408,16 @@
                             </a>
                         </li>
 
-                        <li class="sidebar-list {{ Request::is('admin/mail-templates') ? 'active' : '' }}">
+                        <li class="sidebar-list {{ Request::routeIs('withdrawals.*') ? 'active' : '' }}">
                             <i class="fa fa-thumb-tack"></i>
+
                             <a class="sidebar-link sidebar-title link-nav d-flex align-items-center"
-                                href="{{ url('admin/mail-templates') }}">
-                                <i data-feather="trending-up" class="me-2"></i>&nbsp;&nbsp;
+                                href="{{ route('withdrawals.index') }}">
+                                <i data-feather="credit-card" class="me-2"></i>&nbsp;&nbsp;
                                 <span>{{ __('Withdrawals') }}</span>
                             </a>
                         </li>
+
 
                         {{-- <li class="sidebar-list {{ Request::is('admin/language') ? 'active' : '' }}"><i
                                 class="fa fa-thumb-tack"></i>

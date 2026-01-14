@@ -4,12 +4,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', 'Dashboard') - Trading Panel</title>
+    @php
+        $general_setting = \App\Models\Setting::pluck('option_value', 'option_key')->toArray();
+        $category = getCategory();
+        $adminNotifications = userNotifications();
+    @endphp
+    <title>{{ $general_setting['app_name'] ?? '' }} || @yield('title')</title>
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Favicon -->
+    <link rel="icon" href="{{ asset($general_setting['app_fav_icon'] ?? '') }}" type="image/x-icon">
+    <link rel="shortcut icon" href="{{ asset($general_setting['app_fav_icon'] ?? '') }}" type="image/x-icon">
+
+    <!-- Meta -->
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+
+    <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
         :root {
@@ -156,6 +172,7 @@
             }
         }
     </style>
+
     @stack('styles')
 </head>
 
@@ -176,53 +193,52 @@
         </div>
 
         <div class="menu-item {{ request()->is('overview') ? 'active' : '' }}"
-            onclick="window.location='{{ route('overview') }}'">
+             onclick="window.location='{{ route('overview') }}'">
             <i class="fa-solid fa-chart-line"></i> Dashboard
         </div>
         <div class="menu-item {{ request()->routeIs('market.index') ? 'active' : '' }}"
-            onclick="window.location='{{ route('market.index') }}'">
+             onclick="window.location='{{ route('market.index') }}'">
             <i class="fa-solid fa-arrow-trend-up"></i> Market Dashboard
         </div>
-
         <div class="menu-item {{ request()->is('orders') ? 'active' : '' }}"
-            onclick="window.location='{{ route('orders') }}'">
+             onclick="window.location='{{ route('orders') }}'">
             <i class="fa-solid fa-shopping-cart"></i> Orders
         </div>
         <div class="menu-item {{ request()->is('trade-history') ? 'active' : '' }}"
-            onclick="window.location='{{ route('trade.history') }}'">
+             onclick="window.location='{{ route('trade.history') }}'">
             <i class="fa-solid fa-history"></i> Trade History
         </div>
         <div class="menu-item {{ request()->is('deposit-history') ? 'active' : '' }}"
-            onclick="window.location='{{ route('deposit.history') }}'">
+             onclick="window.location='{{ route('deposit.history') }}'">
             <i class="fa-solid fa-wallet"></i> Plan Purchases
         </div>
         <div class="menu-item {{ request()->is('withdraw-history') ? 'active' : '' }}"
-            onclick="window.location='{{ route('withdraw.history') }}'">
-            <i class="fa-solid fa-money-bill-transfer"></i> Withdraw History
+             onclick="window.location='{{ route('withdraw.history') }}'">
+            <i class="fa-solid fa-money-bill-transfer"></i> Withdraw
         </div>
         <div class="menu-item {{ request()->is('kyc') ? 'active' : '' }}"
-            onclick="window.location='{{ route('kyc') }}'">
+             onclick="window.location='{{ route('kyc') }}'">
             <i class="fa-solid fa-id-card"></i> KYC
         </div>
         <div class="menu-item {{ request()->is('affiliation') ? 'active' : '' }}"
-            onclick="window.location='{{ route('affiliation') }}'">
+             onclick="window.location='{{ route('affiliation') }}'">
             <i class="fa-solid fa-users"></i> My Affiliation
         </div>
         <div class="menu-item {{ request()->is('calculator') ? 'active' : '' }}"
-            onclick="window.location='{{ route('calculator') }}'">
+             onclick="window.location='{{ route('calculator') }}'">
             <i class="fa-solid fa-calculator"></i> Calculator
         </div>
         <div class="menu-item {{ request()->is('transactions') ? 'active' : '' }}"
-            onclick="window.location='{{ route('transactions') }}'">
+             onclick="window.location='{{ route('transactions') }}'">
             <i class="fa-solid fa-exchange-alt"></i> Transactions
         </div>
         <div class="menu-item {{ request()->is('support') ? 'active' : '' }}"
-            onclick="window.location='{{ route('tickets.create') }}'">
+             onclick="window.location='{{ route('tickets.create') }}'">
             <i class="fa-solid fa-headset"></i> Support
         </div>
 
         <div class="menu-item mt-5" style="background:rgba(239,68,68,0.2);color:#fca5a5;"
-            onclick="window.location='{{ url('logout') }}'">
+             onclick="window.location='{{ url('logout') }}'">
             <i class="fa-solid fa-right-from-bracket"></i> Logout
         </div>
     </div>
@@ -237,10 +253,19 @@
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
+    <!-- Very important → Bootstrap 5 JavaScript (this was missing) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+            crossorigin="anonymous"></script>
+
+    <!-- Your DataTable & other scripts -->
     <script src="{{ asset('assets/js/datatable/datatables/jquery.dataTables.min.js') }}"></script>
     <script src="{{ asset('assets/js/datatable/datatables/jquery.sparkline2.1.2.js') }}"></script>
     <script src="{{ asset('assets/js/datatable/datatables/datatable.custom.js') }}"></script>
+
+    <!-- DataTables CSS (moved to head would be better, but keeping your original position) -->
     <link rel="stylesheet" type="text/css" href="{{ asset('assets/css/vendors/datatables.css') }}">
+
     <script>
         $(document).ready(function() {
             // Toggle sidebar on mobile
@@ -266,6 +291,6 @@
     </script>
 
     @stack('scripts')
-</body>
 
+</body>
 </html>

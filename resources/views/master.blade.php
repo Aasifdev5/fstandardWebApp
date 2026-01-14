@@ -1074,7 +1074,7 @@
                     'challenges' => 'Challenges',
                     'affiliate' => 'Partner',
                     'faq' => 'FAQ',
-                    'trading' => 'Trading Panel',
+
                     'challenges' => 'Challeges',
                 ];
                 @endphp

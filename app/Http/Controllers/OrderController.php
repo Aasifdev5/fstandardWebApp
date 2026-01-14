@@ -105,7 +105,8 @@ class OrderController extends Controller
                 }
             }
         }
-
+        $quantity = (float) $request->quantity;
+        $price    = (float) $executionPrice;
         // 9️⃣ Create Order
         $order = Order::create([
             'user_id'        => $user->id,
@@ -115,9 +116,10 @@ class OrderController extends Controller
             'security_id'    => '0000',
             'order_side'     => $sideMap[$request->side],
             'order_type'     => $typeMap[$request->type],
-            'quantity'       => $request->quantity,
-            'filled_quantity'=> ($request->type === 'MARKET') ? $request->quantity : 0,
-            'price'          => $executionPrice,
+            'quantity'        => $quantity,
+            'filled_quantity' => ($request->type === 'MARKET') ? $quantity : 0,
+            'price'           => $price,
+            'total_amount'    => round($price * $quantity, 2),
             'trigger_price'  => $request->trigger_price,
             'product_type'   => $request->product ?? 'MIS',
             'status'         => Order::STATUS_OPEN,
@@ -153,11 +155,11 @@ class OrderController extends Controller
 
         // 1️⃣1️⃣ Response
         if ($request->is_robo || ($stopLoss !== null || $target !== null)) {
-             $diagramDescription = $request->side === 'BUY'
+            $diagramDescription = $request->side === 'BUY'
                 ? ''
                 : '';
 
-             return response()->json([
+            return response()->json([
                 'message'         => 'Smart order placed & monitoring SL/Target',
                 'order_id'        => $order->id,
                 'diagram_trigger' => $diagramDescription

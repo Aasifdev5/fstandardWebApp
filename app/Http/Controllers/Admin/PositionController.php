@@ -3,9 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Trade;
 use App\Models\TradeLog;
+
 use App\Models\User;
-use App\Services\FakeDhanService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 
@@ -13,12 +14,7 @@ class PositionController extends Controller
 {
     protected $dhan;
 
-    public function __construct()
-    {
-        $this->dhan = app()->environment('local')
-            ? new \App\Services\FakeDhanService()
-            : app(\App\Services\DhanService::class);
-    }
+
 
     public function index()
     {
@@ -28,8 +24,9 @@ class PositionController extends Controller
 
         $user_session = User::find(Session::get('LoggedIn'));
 
-        $response = $this->dhan->getPositions();
-        $positions = $response->successful() ? $response->json() : [];
+        $positions = Trade::where('status', 'OPEN') // 🔥 Ensures CLOSED trades never appear here
+            ->orderBy('created_at', 'desc')
+            ->get();
 
         return view('admin.positions.index', compact('positions', 'user_session'));
     }
@@ -44,8 +41,7 @@ class PositionController extends Controller
 
         $trades = TradeLog::with('user')
             ->whereNotNull('exit_time')
-            ->latest()
-            ->paginate(50);
+            ->latest()->get();
 
         return view('admin.positions.history', compact('trades', 'user_session'));
     }

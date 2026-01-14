@@ -18,7 +18,7 @@ class TradeControllers extends Controller
 
         $user_session = User::find(Session::get('LoggedIn'));
 
-        $trades = TradeLog::with('user', 'challenge.plan')
+        $trades = TradeLog::with('user', 'challenge.planPurchase.plan')
             ->whereNotNull('exit_time')
             ->latest('exit_time')
             ->paginate(50);

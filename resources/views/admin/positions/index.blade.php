@@ -2,49 +2,86 @@
 @section('title', 'Admin - Live Positions')
 
 @section('main_content')
-<div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="text-white">Live Positions</h2>
-        <button class="btn btn-outline-info btn-sm" onclick="location.reload()">
-            <i class="fas fa-sync-alt"></i> Refresh
-        </button>
-    </div>
+    <div class="container-fluid py-4">
 
-    @if(empty($positions) || count($positions) == 0)
-        <div class="text-center py-5 text-muted">
-            <i class="fas fa-chart-line fa-4x mb-3"></i>
-            <h5>No open positions</h5>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="text-white mb-0">Live Positions</h2>
+            <button class="btn btn-outline-info btn-sm" onclick="location.reload()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
         </div>
-    @else
-        <div class="row g-4">
-            @foreach($positions as $pos)
-            <div class="col-md-6 col-lg-4">
-                <div class="card bg-dark border-0 shadow-sm">
-                    <div class="card-body">
-                        <h5 class="card-title">{{ $pos['tradingSymbol'] ?? '—' }}</h5>
-                        <div class="row text-center">
-                            <div class="col">
-                                <small class="text-muted">Net Qty</small>
-                                <div class="h5 mb-0 {{ ($pos['netQty'] ?? 0) > 0 ? 'text-success' : 'text-danger' }}">
-                                    {{ $pos['netQty'] ?? 0 }}
-                                </div>
-                            </div>
-                            <div class="col">
-                                <small class="text-muted">Avg Price</small>
-                                <div class="h5 mb-0">₹{{ number_format($pos['avgPrice'] ?? 0, 2) }}</div>
-                            </div>
-                            <div class="col">
-                                <small class="text-muted">P&L</small>
-                                <div class="h5 mb-0 {{ ($pos['pnl'] ?? 0) >= 0 ? 'text-success' : 'text-danger' }}">
-                                    {{ ($pos['pnl'] ?? 0) >= 0 ? '+' : '' }}₹{{ number_format(abs($pos['pnl'] ?? 0), 2) }}
-                                </div>
-                            </div>
-                        </div>
+
+        @if ($positions->isEmpty())
+            <div class="text-center py-5 text-muted">
+                <i class="fas fa-chart-line fa-4x mb-3"></i>
+                <h5>No open positions</h5>
+            </div>
+        @else
+            <div class="card  border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table id="basic-1" class="table table-dark table-hover align-middle mb-0">
+                            <thead class="table-secondary text-dark">
+                                <tr>
+                                    <th>Symbol</th>
+                                    <th>Side</th>
+                                    <th>Lot Type</th>
+                                    <th class="text-end">Qty</th>
+                                    <th class="text-end">Entry Price</th>
+                                    <th class="text-end">P&amp;L</th>
+                                    <th>Entry Time</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($positions as $pos)
+                                    <tr>
+                                        {{-- Symbol --}}
+                                        <td class="fw-semibold">
+                                            {{ $pos->symbol }}
+                                        </td>
+
+                                        {{-- Side --}}
+                                        <td>
+                                            <span class="badge {{ $pos->side === 'BUY' ? 'bg-success' : 'bg-danger' }}">
+                                                {{ $pos->side }}
+                                            </span>
+                                        </td>
+
+                                        {{-- Lot Type --}}
+                                        <td>
+                                            <span class="badge bg-info text-dark">
+                                                {{ strtoupper($pos->lot_type) }}
+                                            </span>
+                                        </td>
+
+                                        {{-- Quantity --}}
+                                        <td class="text-end {{ $pos->qty > 0 ? 'text-success' : 'text-danger' }}">
+                                            {{ number_format($pos->qty, 2) }}
+                                        </td>
+
+                                        {{-- Entry Price --}}
+                                        <td class="text-end">
+                                            ₹{{ number_format($pos->entry_price, 2) }}
+                                        </td>
+
+                                        {{-- P&L --}}
+                                        <td class="text-end {{ $pos->pnl >= 0 ? 'text-success' : 'text-danger' }}">
+                                            {{ $pos->pnl >= 0 ? '+' : '' }}₹{{ number_format(abs($pos->pnl), 2) }}
+                                        </td>
+
+                                        {{-- Entry Time --}}
+                                        <td class="text-muted">
+                                            {{ optional($pos->entry_time)->format('d M Y, H:i') }}
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
                     </div>
                 </div>
+
             </div>
-            @endforeach
-        </div>
-    @endif
-</div>
+        @endif
+
+    </div>
 @endsection

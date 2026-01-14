@@ -143,10 +143,7 @@ class TradeLog extends Model
         return $this->belongsTo(Challenge::class); // create Challenge model if needed
     }
 
-    public function strategy(): BelongsTo
-    {
-        return $this->belongsTo(Strategy::class); // optional
-    }
+
 
     // ====================================================================
     // Accessors & Mutators

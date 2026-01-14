@@ -3,11 +3,12 @@
 
 @section('main_content')
 <div class="container-fluid py-4">
-    <h2 class="text-white mb-4">Order History</h2>
+    <h2 class=" mb-4">Order History</h2>
 
-    <div class="card bg-dark border-0 shadow">
-        <div class="table-responsive">
-            <table class="table table-dark table-hover mb-0">
+    <div class="card  border-0 shadow">
+        <div class="card-body">
+<div class="table-responsive">
+            <table id="basic-1" class="table table-dark table-hover mb-0">
                 <thead>
                     <tr>
                         <th>User</th>
@@ -47,6 +48,8 @@
                 </tbody>
             </table>
         </div>
+        </div>
+
     </div>
 </div>
 @endsection

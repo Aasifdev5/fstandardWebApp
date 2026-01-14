@@ -4,9 +4,7 @@
 
 @section('main_content')
 <div class="container-fluid pt-4">
-    <div class="page-header">
-        <h2 class="mb-0">{{ __('System Trade / Fake Trade Configuration') }}</h2>
-    </div>
+
 
     <!-- Success Message -->
     @if(session('success'))

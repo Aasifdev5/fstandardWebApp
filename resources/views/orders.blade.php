@@ -2,85 +2,161 @@
 
 @section('title', 'Orders')
 
+@push('styles')
+    <style>
+        .orders-card {
+            background: linear-gradient(135deg, #0f172a, #020617);
+            border-radius: 18px;
+            border: 1px solid #1e293b;
+        }
+
+        .orders-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 22px 26px;
+            border-bottom: 1px solid #1e293b;
+        }
+
+        .orders-header h2 {
+            margin: 0;
+            font-weight: 700;
+        }
+
+        .orders-table th {
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #94a3b8;
+            border-bottom: 1px solid #1e293b !important;
+        }
+
+        .orders-table td {
+            vertical-align: middle;
+            border-top: 1px solid #1e293b;
+        }
+
+        .orders-table tbody tr:hover {
+            background-color: rgba(255, 255, 255, 0.03);
+        }
+
+        .symbol-pill {
+            font-weight: 700;
+            letter-spacing: 0.4px;
+        }
+
+        .price-text {
+            font-weight: 600;
+        }
+
+        .empty-state {
+            background: linear-gradient(135deg, #020617, #020617);
+            border-radius: 20px;
+            padding: 70px 20px;
+            border: 1px dashed #334155;
+            text-align: center;
+        }
+
+        .empty-state i {
+            font-size: 64px;
+            margin-bottom: 20px;
+            color: #64748b;
+        }
+
+        .empty-state h4 {
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .empty-state p {
+            color: #94a3b8;
+            margin-bottom: 0;
+        }
+    </style>
+@endpush
+
 @section('content')
     <div class="container-fluid py-4">
+
+        {{-- Page Header --}}
         <div class="d-flex justify-content-between align-items-center mb-4">
-
-
+            <h1 class="text-white fw-bold mb-0">
+                <i class="fas fa-shopping-cart me-2 text-primary"></i> Orders
+            </h1>
+            <span class="badge bg-secondary px-3 py-2">
+                {{ $orders->count() }} Total
+            </span>
         </div>
 
+        {{-- Empty State --}}
         @if ($orders->isEmpty())
-            <div class="card bg-dark border-0 shadow-sm text-center p-5">
-                <i class="fas fa-receipt fa-4x text-muted mb-4"></i>
-                <h4 class="text-white">No orders yet</h4>
-                <p class="text-muted mb-0">Your placed orders will appear here automatically.</p>
+            <div class="empty-state">
+                <i class="fas fa-receipt"></i>
+                <h4 class="text-white">No orders placed yet</h4>
+                <p>Your trading activity will appear here once you place an order.</p>
             </div>
         @else
-            <div class="card bg-dark border-0 shadow">
+            {{-- Orders Table --}}
+            <div class="card shadow-lg">
                 <div class="card-header">
-                    <h2 class="text-white mb-0">
-                        <i class="fas fa-shopping-cart me-2"></i> Orders
+                    <h2 class="text-white">
+                        <i class="fas fa-list me-2 text-warning"></i> Order History
                     </h2>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table id="basic-1" class="table table-dark table-hover mb-0">
-                            <thead class="table-borderless">
+                        <table id="basic-1" class="table table-dark table-hover mb-0 orders-table">
+                            <thead>
                                 <tr>
                                     <th>Time</th>
                                     <th>Symbol</th>
                                     <th>Side</th>
                                     <th>Type</th>
                                     <th>Qty</th>
-                                    <th>Price</th>
-                                    <th>Filled</th>
+                                    <th>Avg Price</th>
+                                    <th>Total</th>
                                     <th>Status</th>
-                                    <th>PL</th>
-                                    <th>PNL</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach ($orders as $order)
                                     <tr>
                                         <td class="text-light small">
-                                            {{ $order->created_at->format('d M, H:i') }}
+                                            {{ $order->created_at->format('d M Y') }}<br>
+                                            {{ $order->created_at->format('H:i') }}
                                         </td>
+
                                         <td>
-                                            <strong>{{ $order->stock_symbol }}</strong>
+                                            <span class="symbol-pill text-white">
+                                                {{ $order->stock_symbol }}
+                                            </span>
                                         </td>
+
                                         <td>{!! $order->side_badge !!}</td>
+
                                         <td>
-                                            <span class="badge bg-secondary">{{ $order->type_text }}</span>
+                                            <span class="badge bg-secondary">
+                                                {{ $order->type_text }}
+                                            </span>
                                         </td>
-                                        <td>{{ $order->quantity }}</td>
-                                        <td>
-                                            @if ($order->price > 0)
-                                                ₹{{ number_format($order->price, 2) }}
-                                            @else
-                                                <em class="text-muted">Market</em>
-                                            @endif
+
+                                        <td>{{ number_format($order->quantity) }}</td>
+
+                                        <td class="price-text">
+                                            ₹{{ number_format($order->average_price ?? 0, 2) }}
                                         </td>
-                                        <td>
-                                            <div class="progress" style="height: 20px;">
-                                                <div class="progress-bar {{ $order->filled_quantity == $order->quantity ? 'bg-success' : 'bg-warning' }}"
-                                                    role="progressbar" style="width: {{ $order->filled_percentage }}%"
-                                                    aria-valuenow="{{ $order->filled_percentage }}" aria-valuemin="0"
-                                                    aria-valuemax="100">
-                                                    {{ $order->filled_percentage }}%
-                                                </div>
-                                            </div>
+
+                                        <td class="price-text">
+                                            ₹{{ number_format($order->total_amount ?? 0, 2) }}
                                         </td>
+
                                         <td>{!! $order->status_badge !!}</td>
-                                        <td>{{ $order->close_reason }}</td>
-                                        <td>₹{{ number_format($order->pnl, 2) }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>
                         </table>
                     </div>
                 </div>
-
-
 
             </div>
         @endif

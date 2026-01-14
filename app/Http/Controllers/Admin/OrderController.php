@@ -18,9 +18,9 @@ class OrderController extends Controller
 
         $user_session = User::find(Session::get('LoggedIn'));
 
-        $orders = Order::with('user', 'challenge.plan')
+        $orders = Order::with('user', 'challenge.planPurchase.plan')
             ->latest()
-            ->paginate(50);
+            ->get();
 
         return view('admin.orders.index', compact('orders', 'user_session'));
     }
@@ -37,7 +37,7 @@ class OrderController extends Controller
             ->where('status', 0) // Open
             ->orWhere('status', 2) // Partial
             ->latest()
-            ->paginate(50);
+            ->get();
 
         return view('admin.orders.open', compact('orders', 'user_session'));
     }
@@ -54,8 +54,7 @@ class OrderController extends Controller
 
         $orders = Order::with('user')
             ->whereIn('status', [1, 9]) // Completed or Cancelled
-            ->latest()
-            ->paginate(50);
+            ->latest()->get();
 
         return view('admin.orders.history', compact('orders', 'user_session'));
     }
