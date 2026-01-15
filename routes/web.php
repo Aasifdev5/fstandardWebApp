@@ -4,63 +4,66 @@ use App\Http\Controllers\Admin\AboutUsController;
 
 use App\Http\Controllers\Admin\Admin;
 
+use App\Http\Controllers\Admin\AdminAnalyticsController;
+use App\Http\Controllers\Admin\AdminPatternController;
 use App\Http\Controllers\Admin\AdminPlanPurchaseController;
 use App\Http\Controllers\Admin\AdminWithdrawalController;
 use App\Http\Controllers\Admin\BankController;
+
 use App\Http\Controllers\Admin\BannerController;
 use App\Http\Controllers\Admin\BlogCategoryController;
-
 use App\Http\Controllers\Admin\BlogController;
-use App\Http\Controllers\Admin\CategoryController;
-use App\Http\Controllers\Admin\CelebrityEndorsementController;
 
+
+use App\Http\Controllers\Admin\CategoryController;
+
+use App\Http\Controllers\Admin\CelebrityEndorsementController;
 
 use App\Http\Controllers\Admin\ChatController;
 
+
 use App\Http\Controllers\Admin\ContactUsController;
+
 
 use App\Http\Controllers\Admin\CurrencyController;
 
-
 use App\Http\Controllers\Admin\FacebookSocialiteController;
-
-
 use App\Http\Controllers\Admin\ForumCategoryController;
 
 use App\Http\Controllers\Admin\FundingPlanController;
 use App\Http\Controllers\Admin\GoogleController;
-
 use App\Http\Controllers\Admin\HomeSettingController;
+
+
 use App\Http\Controllers\Admin\InstrumentController;
 use App\Http\Controllers\Admin\LanguageController;
 
 
 use App\Http\Controllers\Admin\LocationController;
+
 use App\Http\Controllers\Admin\MailTemplateController;
 
-
 use App\Http\Controllers\Admin\MarketSimulationController;
-
 use App\Http\Controllers\Admin\MediaController;
-
 use App\Http\Controllers\Admin\NewsController;
 use App\Http\Controllers\Admin\NotificationSettingController;
 use App\Http\Controllers\Admin\NotificationTemplateController;
 use App\Http\Controllers\Admin\OrderController;
-use App\Http\Controllers\Admin\Pages;
-use App\Http\Controllers\Admin\PortfolioController;
 
+use App\Http\Controllers\Admin\Pages;
+use App\Http\Controllers\Admin\PatternDefinitionController;
+use App\Http\Controllers\Admin\PortfolioController;
 use App\Http\Controllers\Admin\PositionController;
 use App\Http\Controllers\Admin\QRCodeController;
+
 use App\Http\Controllers\Admin\ReferralSettingController;
 use App\Http\Controllers\Admin\ResetPasswordController;
 use App\Http\Controllers\Admin\SettingController;
-
 use App\Http\Controllers\Admin\SimulationConfigController;
+
 use App\Http\Controllers\Admin\SubcategoryController;
 use App\Http\Controllers\Admin\SupportTicketController;
 use App\Http\Controllers\Admin\SystemTradeConfigController;
-
 use App\Http\Controllers\Admin\TagController;
 use App\Http\Controllers\Admin\TestimonialController;
 use App\Http\Controllers\Admin\TradeControllers;
@@ -71,25 +74,28 @@ use App\Http\Controllers\HedgingMonitorController;
 use App\Http\Controllers\KycVerificationController;
 use App\Http\Controllers\MarketController;
 use App\Http\Controllers\SlippageProfileController;
+
 use App\Http\Controllers\TradeController;
 use App\Http\Controllers\User\PlanPurchaseController;
 use App\Http\Controllers\UserController;
-
 use App\Http\Middleware\SetLocale;
 use App\Models\Language;
 use App\Models\PlanPurchase;
+
+
+
+
+
 use App\Models\User;
 use App\Services\DhanService;
 use Carbon\Carbon;
-
-
-
-
-
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Session;
+
+
+
 
 
 
@@ -103,28 +109,6 @@ Route::get('/market/{symbol}', [MarketController::class, 'show'])->name('market.
 
 
 
-
-Route::get('/test-dhan', function () {
-    $dhan = new DhanService();
-
-    return $dhan->getOrderBook(); // change to anything you want to test
-});
-Route::get('/test-place-order', function () {
-    $dhan = new \App\Services\DhanService();
-
-    $payload = [
-        "transactionType" => "BUY",
-        "exchangeSegment" => "NSE_EQ",
-        "productType"     => "INTRADAY",
-        "securityId"      => "1333",     // Example: INFY
-        "quantity"        => 1,
-        "price"           => 0,
-        "orderType"       => "MARKET",
-        "validity"        => "DAY",
-    ];
-
-    return $dhan->placeOrder($payload);
-});
 
 
 
@@ -357,6 +341,39 @@ Route::group(['prefix' => 'admin', 'middleware' => ['check.session']], function 
 
     Route::group(['middleware' => 'admin-prevent-back-history', SetLocale::class], function () {
 
+        Route::get('/admin/analytics', [AdminAnalyticsController::class, 'index'])->name('analytics');
+        // List patterns
+        Route::get('pattern-definitions', [PatternDefinitionController::class, 'index'])
+            ->name('pattern-definitions.index');
+
+        // Create pattern form
+        Route::get('pattern-definitions/create', [PatternDefinitionController::class, 'create'])
+            ->name('pattern-definitions.create');
+
+        // Store new pattern (POST)
+        Route::post('pattern-definitions/store', [PatternDefinitionController::class, 'store'])
+            ->name('pattern-definitions.store');
+
+        // Edit pattern form
+        Route::get('pattern-definitions/edit/{id}', [PatternDefinitionController::class, 'edit'])
+            ->name('pattern-definitions.edit');
+
+        // Update pattern (POST)
+        Route::post('pattern-definitions/update/{id}', [PatternDefinitionController::class, 'update'])
+            ->name('pattern-definitions.update');
+
+        // Delete pattern (POST)
+        Route::post('pattern-definitions/delete/{id}', [PatternDefinitionController::class, 'destroy'])
+            ->name('pattern-definitions.destroy');
+
+        Route::get('/patterns', [AdminPatternController::class, 'index'])
+            ->name('patterns.index');
+
+        Route::post('/patterns', [AdminPatternController::class, 'store'])
+            ->name('patterns.store');
+
+        Route::delete('/patterns/{pattern}', [AdminPatternController::class, 'destroy'])
+            ->name('patterns.destroy');
 
         Route::get('/withdrawals', [AdminWithdrawalController::class, 'index'])
             ->name('withdrawals.index');

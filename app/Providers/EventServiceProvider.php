@@ -15,6 +15,10 @@ use App\Listeners\UpdateCandle;
 use App\Listeners\UpdateFuturesCandle;
 use App\Listeners\UpdateOptionsCandle;
 
+// NEW: For AI Psychometric Explanations (PART 2.4)
+use App\Models\PsychometricSnapshot;
+use App\Services\AI\PsychometricExplainService;
+
 class EventServiceProvider extends ServiceProvider
 {
     /**
@@ -50,7 +54,12 @@ class EventServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        //
+        // Automatic AI explanation after every new psychometric snapshot
+        // This ensures traders get fresh behavior insights without manual trigger
+        PsychometricSnapshot::created(function ($snapshot) {
+            app(PsychometricExplainService::class)
+                ->generateForUser($snapshot->user_id);
+        });
     }
 
     /**

@@ -2,37 +2,41 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+
+// ✅ Relationship imports (fixes Intelephense)
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 
     /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
+     * Mass assignable attributes
      */
     protected $fillable = [
-        'is_affiliate',
-        'can_trade_mega',
-        'account_balance',
-        'status',
-        'referral_code',
-        'affiliate_earnings',
-        'commission_rate',
         'uid',
         'name',
+        'username',
         'email',
-        'google_id',
-        'fcm_token',
         'password',
         'custom_password',
         'phone',
+        'mobile_number',
+
+        'account_balance',
+        'account_type',
+        'status',
+        'is_active',
+        'is_online',
+        'last_seen',
+        'ip_address',
+
         'membershipType',
         'membership_status',
         'membership_start_date',
@@ -41,174 +45,233 @@ class User extends Authenticatable
         'payment_status',
         'membership_card_number',
         'guest_access_count',
-        'last_seen',
-        'is_online',
+
+        'is_affiliate',
+        'referral_code',
+        'affiliate_earnings',
+        'commission_rate',
+
+        'is_system',
+        'is_super_admin',
+        'permissions',
+
         'whatsapp_number',
         'about',
         'level',
         'refer',
         'refer_date',
-        'username',
+
         'facebook',
         'instagram',
-        'address',
         'linkedin',
         'twitter',
-        'birth_date',
-        'city',
-        'is_active',
-        'is_system',
-        'email_verified_at',
-        'player_id',
-        'is_subscribed',
-        'country',
-        'id_number',
-        'language',
-        'is_super_admin',
         'facebook_id',
         'google_id',
-        'ip_address',
-        'account_type',
-        'mobile_number',
-        'permissions',
+
+        'country',
+        'city',
+        'address',
+        'birth_date',
+        'language',
+        'id_number',
+
         'profile_photo',
-        'email_verified_at'
+        'player_id',
+        'fcm_token',
+        'is_subscribed',
+
+        'email_verified_at',
     ];
 
     /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
+     * Hidden attributes
      */
     protected $hidden = [
         'password',
         'remember_token',
     ];
-    public static function getUserInfo($id)
-    {
-        $userinfo = User::find($id);
 
-        return $userinfo;
-    }
-    public function kycVerification()
-    {
-        return $this->hasOne(KycVerification::class);
-    }
-    public function comments()
-    {
-        return $this->hasMany(Comment::class);
-    }
-    protected static function booted()
-    {
-        static::creating(function ($user) {
-            if ($user->is_affiliate && !$user->referral_code) {
-                $user->referral_code = strtoupper(substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), 0, 10));
-            }
-        });
-    }
     /**
-     * All challenges belonging to this user (past + present)
+     * Attribute casting
      */
-    public function challenges()
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'birth_date'        => 'date',
+        'last_seen'         => 'datetime',
+        'is_active'         => 'boolean',
+        'is_online'         => 'boolean',
+        'is_affiliate'      => 'boolean',
+        'is_system'         => 'boolean',
+        'is_super_admin'    => 'boolean',
+        'is_subscribed'     => 'boolean',
+    ];
+
+    // ────────────────────────────────────────────────────────────────
+    // PSYCHOMETRIC RELATIONSHIPS
+    // ────────────────────────────────────────────────────────────────
+
+    public function psychometricState(): HasOne
+    {
+        return $this->hasOne(PsychometricState::class);
+    }
+
+    public function psychometricSnapshots(): HasMany
+    {
+        return $this->hasMany(PsychometricSnapshot::class);
+    }
+
+    public function psychometricExplanations(): HasMany
+    {
+        return $this->hasMany(PsychometricExplanation::class);
+    }
+
+    public function getLatestPsychometricSnapshotAttribute()
+    {
+        return $this->psychometricSnapshots()->latest()->first();
+    }
+
+    public function getLatestExplanationAttribute()
+    {
+        return $this->psychometricExplanations()->latest()->first();
+    }
+
+    // ────────────────────────────────────────────────────────────────
+    // TRADES & ASSISTANCE
+    // ────────────────────────────────────────────────────────────────
+
+    public function trades(): HasMany
+    {
+        return $this->hasMany(Trade::class);
+    }
+
+    public function openTrades(): HasMany
+    {
+        return $this->trades()->where('status', 'OPEN');
+    }
+
+    public function recentTrades(int $days = 30): HasMany
+    {
+        return $this->trades()
+            ->where('created_at', '>=', now()->subDays($days))
+            ->latest();
+    }
+
+    public function tradeAssistanceLogs(): HasManyThrough
+    {
+        return $this->hasManyThrough(
+            TradeAssistanceLog::class,
+            Trade::class,
+            'user_id',
+            'trade_id',
+            'id',
+            'id'
+        );
+    }
+
+    public function getLatestAssistanceLogAttribute()
+    {
+        return $this->tradeAssistanceLogs()->latest()->first();
+    }
+
+    // ────────────────────────────────────────────────────────────────
+    // CHALLENGES
+    // ────────────────────────────────────────────────────────────────
+
+    public function challenges(): HasMany
     {
         return $this->hasMany(Challenge::class);
     }
 
-    /**
-     * Get the user's currently active challenge (only one active at a time)
-     */
-    public function activeChallenge()
+    public function activeChallenge(): HasOne
     {
         return $this->hasOne(Challenge::class)
-                    ->where('status', 'active')
-                    ->latest();
+            ->where('status', 'active')
+            ->latest();
     }
-    public function planPurchases()
-{
-    return $this->hasMany(\App\Models\PlanPurchase::class, 'user_id');
-}
 
-    /**
-     * Get the current active challenge (magic attribute)
-     * Usage: auth()->user()->current_challenge
-     */
     public function getCurrentChallengeAttribute()
     {
         return $this->activeChallenge()->first();
     }
 
-    /**
-     * Scope a query to only include users who have an active challenge
-     */
-    public function scopeHasActiveChallenge($query)
-    {
-        return $query->whereHas('challenges', fn($q) => $q->where('status', 'active'));
-    }
-
-    // Bonus: Easy check in Blade / Controller
     public function hasActiveChallenge(): bool
     {
         return $this->activeChallenge()->exists();
     }
-    public function orders()
+
+    public function scopeHasActiveChallenge($query)
     {
-        return $this->hasMany(Order::class);
+        return $query->whereHas('challenges', fn ($q) => $q->where('status', 'active'));
     }
 
-    public function trades()
-    {
-        return $this->hasMany(Trade::class);
-    }
+    // ────────────────────────────────────────────────────────────────
+    // FINANCIALS
+    // ────────────────────────────────────────────────────────────────
 
-    public function deposits()
-    {
-        return $this->hasMany(Deposit::class);
-    }
-
-    public function withdrawals()
-    {
-        return $this->hasMany(Withdrawal::class);
-    }
-
-    public function balance()
+    public function balance(): HasOne
     {
         return $this->hasOne(UserBalance::class);
     }
 
-    // Helper
-    public function getWalletBalanceAttribute()
+    public function deposits(): HasMany
+    {
+        return $this->hasMany(Deposit::class);
+    }
+
+    public function withdrawals(): HasMany
+    {
+        return $this->hasMany(Withdrawal::class);
+    }
+
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
+    }
+
+    public function planPurchases(): HasMany
+    {
+        return $this->hasMany(PlanPurchase::class);
+    }
+
+    public function getWalletBalanceAttribute(): float
     {
         return $this->balance?->balance ?? 0.00;
     }
 
-    public function getAvailableBalanceAttribute()
+    public function getAvailableBalanceAttribute(): float
     {
-        return $this->balance?->getAvailableBalanceAttribute() ?? 0.00;
+        return $this->balance?->available_balance ?? 0.00;
     }
-    public static function getUserFullname($id)
-    {
-        $userinfo = User::find($id);
 
-        return $userinfo ? $userinfo->name : '';
-    }
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
-     */
-    protected $casts = [
-        'email_verified_at' => 'datetime',
-    ];
-    // Helper to get latest purchase with plan
-    public function getLatestPurchase()
+    // ────────────────────────────────────────────────────────────────
+    // KYC & COMMENTS
+    // ────────────────────────────────────────────────────────────────
+
+    public function kycVerification(): HasOne
     {
-        return $this->purchases()
-            ->with('plan')
-            ->latest()
-            ->first();
+        return $this->hasOne(KycVerification::class);
     }
-    public function purchases()
+
+    public function comments(): HasMany
     {
-        return $this->hasMany(PlanPurchase::class);
+        return $this->hasMany(Comment::class);
     }
+
+    // ────────────────────────────────────────────────────────────────
+    // MODEL EVENTS
+    // ────────────────────────────────────────────────────────────────
+
+    protected static function booted()
+    {
+        static::creating(function ($user) {
+            if ($user->is_affiliate && empty($user->referral_code)) {
+                $user->referral_code = strtoupper(
+                    substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), 0, 10)
+                );
+            }
+        });
+    }
+
+
+
 }

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Trade extends Model
 {
@@ -30,6 +31,7 @@ class Trade extends Model
         'holding_time_seconds',
         'gap_seconds',
         'news_flag',
+        'risk_amount'
     ];
 
     protected $casts = [
@@ -48,5 +50,9 @@ class Trade extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+    public function assistanceLogs(): HasMany
+    {
+        return $this->hasMany(TradeAssistanceLog::class);
     }
 }

@@ -382,6 +382,33 @@
                                 <span>{{ __('Trade Config') }}</span>
                             </a>
                         </li>
+                        <li class="sidebar-list {{ Request::is('pattern-definitions*') ? 'active' : '' }}">
+                            <i class="fa fa-thumb-tack"></i>
+                            <a class="sidebar-link sidebar-title link-nav d-flex align-items-center"
+                                href="{{ route('pattern-definitions.index') }}">
+                                <i data-feather="activity" class="me-2"></i>&nbsp;&nbsp;
+                                <span>{{ __('Manual Pattern Definition Control') }}</span>
+                            </a>
+                        </li>
+
+                        <li class="sidebar-list {{ Request::routeIs('admin.patterns.*') ? 'active' : '' }}">
+                            <i class="fa fa-thumb-tack"></i>
+                            <a class="sidebar-link sidebar-title link-nav d-flex align-items-center"
+                                href="{{ route('patterns.index') }}">
+                                <i data-feather="activity" class="me-2"></i>&nbsp;&nbsp;
+                                <span>{{ __('Manual Pattern Control') }}</span>
+                            </a>
+                        </li>
+
+                        <li class="sidebar-list {{ Request::routeIs('admin.analytics') ? 'active' : '' }}">
+                            <i class="fa fa-thumb-tack"></i>
+
+                            <a class="sidebar-link sidebar-title link-nav d-flex align-items-center"
+                                href="{{ route('analytics') }}">
+                                <i data-feather="bar-chart-2" class="me-2"></i>&nbsp;&nbsp;
+                                <span>{{ __('Analytics & Forecasts') }}</span>
+                            </a>
+                        </li>
                         <li
                             class="sidebar-list {{ Request::is('admin/simulation/profit-loss-control*') ? 'active' : '' }}">
                             <a class="sidebar-link d-flex align-items-center"

@@ -12,8 +12,10 @@ use App\Models\User;
 
 use Illuminate\Database\Eloquent\HigherOrderBuilderProxy;
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
+
 
 
 /**
@@ -72,10 +74,11 @@ function adminNotifications()
 }
 function userNotifications()
 {
-    return  \App\Models\Notification::where('user_type', 2)
-        ->where('is_seen', 'no')
-        ->orderByDesc('created_at')
-        ->paginate(5);
+    return DB::table('old_notifications')
+    ->where('user_type', 2)     // 2 = instructor
+    ->where('is_seen', 'no')
+    ->orderByDesc('created_at')
+    ->paginate(5);
 
 }
 function toastrMessage($type, $message)
