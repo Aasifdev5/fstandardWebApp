@@ -4,10 +4,11 @@ namespace App\Services;
 
 use App\Models\Candle;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class CandleAggregator
 {
-    // Define all supported timeframes and their duration in minutes
+    // All supported timeframes and their duration in minutes
     protected $timeframes = [
         '1m'  => 1,
         '3m'  => 3,
@@ -19,47 +20,54 @@ class CandleAggregator
         '1D'  => 1440,
     ];
 
+    /**
+     * Process a new tick and update all timeframes in a single high-performance operation.
+     */
     public function onTick(
         string $symbol,
-        string $sourceTimeframe, // We ignore this now as we calculate ALL frames
         float $price,
         Carbon $timestamp
     ): void {
+        $upserts = [];
+        $now = now();
 
-        // Loop through ALL timeframes and update/create candles for each
         foreach ($this->timeframes as $tfName => $minutes) {
-
             // 1. Calculate the 'Bucket' start time for this timeframe
-            // Logic: Floor the timestamp to the nearest interval
-            // e.g. For 5m, 10:04:30 becomes 10:00:00
             $seconds = $minutes * 60;
-            $timestampUnix = $timestamp->timestamp;
-            $bucketStartUnix = floor($timestampUnix / $seconds) * $seconds;
-            $candleStart = Carbon::createFromTimestamp($bucketStartUnix);
+            $bucketStartUnix = floor($timestamp->timestamp / $seconds) * $seconds;
+            $bucketStart = Carbon::createFromTimestamp($bucketStartUnix);
 
-            // 2. Find existing candle or initialize new one
-            $candle = Candle::firstOrNew([
-                'symbol'    => $symbol,
-                'timeframe' => $tfName,
-                'timestamp' => $candleStart,
-            ]);
-
-            if (!$candle->exists) {
-                // New Candle Logic
-                $candle->open   = $price;
-                $candle->high   = $price;
-                $candle->low    = $price;
-                $candle->close  = $price;
-                $candle->volume = rand(10, 50); // Synthetic initial volume
-            } else {
-                // Update Existing Candle Logic
-                $candle->high   = max($candle->high, $price);
-                $candle->low    = min($candle->low, $price);
-                $candle->close  = $price;
-                $candle->volume += rand(1, 10); // Add synthetic volume on tick
-            }
-
-            $candle->save();
+            // 2. Prepare data for bulk upsert
+            $upserts[] = [
+                'symbol'     => $symbol,
+                'timeframe'  => $tfName,
+                'timestamp'  => $bucketStart,
+                'open'       => $price,
+                'high'       => $price,
+                'low'        => $price,
+                'close'      => $price,
+                'volume'     => rand(5, 50), // Synthetic initial volume
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
         }
+
+        /**
+         * 3. 🔥 ATOMIC UPSERT
+         * This logic tells the database:
+         * - If the (symbol, timeframe, timestamp) combination doesn't exist: INSERT.
+         * - If it exists: UPDATE only high, low, close, and volume using math logic.
+         */
+
+        Candle::upsert($upserts,
+            ['symbol', 'timeframe', 'timestamp'], // Unique key constraint
+            [
+                'close'      => DB::raw("VALUES(close)"),
+                'high'       => DB::raw("GREATEST(high, VALUES(high))"),
+                'low'        => DB::raw("LEAST(low, VALUES(low))"),
+                'volume'     => DB::raw("volume + VALUES(volume)"),
+                'updated_at' => DB::raw("VALUES(updated_at)")
+            ]
+        );
     }
 }

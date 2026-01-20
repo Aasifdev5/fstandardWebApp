@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import Chart from './Chart.vue'
+import PsychometricRadar from '@/Components/PsychometricRadar.vue' // ✅ Added Import
 import { init as initEcho } from '@/echo.js'
 import Swal from 'sweetalert2'
 import axios from 'axios'
@@ -429,6 +430,10 @@ onUnmounted(() => {
               </div>
             </div>
           </template>
+
+          <div class="mt-6 pt-6 border-t border-gray-800">
+             <PsychometricRadar :user="userState" />
+          </div>
         </div>
       </div>
     </aside>

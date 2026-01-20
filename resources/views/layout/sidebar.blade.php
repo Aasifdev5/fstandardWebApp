@@ -373,6 +373,14 @@
                                 <span>{{ __('Mail Template') }}</span>
                             </a>
                         </li> --}}
+                        <li class="sidebar-list {{ Request::is('admin/behavioral-monitor*') ? 'active' : '' }}">
+                            <i class="fa fa-thumb-tack"></i>
+                            <a class="sidebar-link sidebar-title link-nav d-flex align-items-center"
+                                href="{{ route('psychometrics.index') }}">
+                                <i data-feather="pie-chart" class="me-2"></i>&nbsp;&nbsp;
+                                <span>{{ __('Behavioral Monitor') }}</span>
+                            </a>
+                        </li>
                         <li
                             class="sidebar-list {{ Request::is('admin/system-trade-config') || Request::is('admin/system-trade-config/*') ? 'active' : '' }}">
                             <i class="fa fa-thumb-tack"></i>
@@ -382,6 +390,7 @@
                                 <span>{{ __('Trade Config') }}</span>
                             </a>
                         </li>
+
                         <li class="sidebar-list {{ Request::is('pattern-definitions*') ? 'active' : '' }}">
                             <i class="fa fa-thumb-tack"></i>
                             <a class="sidebar-link sidebar-title link-nav d-flex align-items-center"

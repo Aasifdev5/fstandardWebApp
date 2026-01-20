@@ -110,9 +110,9 @@ class User extends Authenticatable
     // PSYCHOMETRIC RELATIONSHIPS
     // ────────────────────────────────────────────────────────────────
 
-    public function psychometricState(): HasOne
+    public function psychometricState()
     {
-        return $this->hasOne(PsychometricState::class);
+        return $this->hasOne(PsychometricState::class, 'user_id', 'id');
     }
 
     public function psychometricSnapshots(): HasMany
@@ -120,6 +120,16 @@ class User extends Authenticatable
         return $this->hasMany(PsychometricSnapshot::class);
     }
 
+
+    public function latestExplanation()
+    {
+        return $this->hasOne(PsychometricExplanation::class, 'user_id', 'id')->latestOfMany();
+    }
+    public function latestSnapshot()
+    {
+        // This links User 'id' to 'user_id' in psychometric_snapshots
+        return $this->hasOne(PsychometricSnapshot::class, 'user_id', 'id')->latestOfMany();
+    }
     public function psychometricExplanations(): HasMany
     {
         return $this->hasMany(PsychometricExplanation::class);
@@ -201,7 +211,7 @@ class User extends Authenticatable
 
     public function scopeHasActiveChallenge($query)
     {
-        return $query->whereHas('challenges', fn ($q) => $q->where('status', 'active'));
+        return $query->whereHas('challenges', fn($q) => $q->where('status', 'active'));
     }
 
     // ────────────────────────────────────────────────────────────────
@@ -271,7 +281,4 @@ class User extends Authenticatable
             }
         });
     }
-
-
-
 }

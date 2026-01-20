@@ -9,6 +9,7 @@ use App\Models\InstrumentNewsState;
 use App\Models\MarketSetting;
 use App\Events\UnderlyingTickUpdated;
 use App\Services\PriceService;
+use App\Services\CandleAggregator; // 🔥 Added for historical tracking
 use Carbon\Carbon;
 
 class RunUnderlyings extends Command
@@ -16,7 +17,10 @@ class RunUnderlyings extends Command
     protected $signature = 'market:run-underlyings';
     protected $description = 'Run underlying price engine with real-time dynamic configuration';
 
-    public function handle(PriceService $priceService)
+    /**
+     * Updated handle method with CandleAggregator dependency
+     */
+    public function handle(PriceService $priceService, CandleAggregator $aggregator)
     {
         $this->info('✅ Underlying Price Engine STARTED');
 
@@ -136,7 +140,14 @@ class RunUnderlyings extends Command
                 $newPrice = max($tick, $newPrice);
 
                 /**
-                 * 1️⃣1️⃣ UPDATE STATE
+                 * 1️⃣1️⃣ 🔥 UPDATE HISTORICAL CANDLES
+                 * We call the aggregator before updating the state so that OHLC
+                 * logic can track the move from the previous price to the new one.
+                 */
+                $aggregator->onTick($instrument->symbol, $newPrice, $now);
+
+                /**
+                 * 1️⃣2️⃣ UPDATE STATE
                  */
                 $state->update([
                     'last_price' => $newPrice,
@@ -145,7 +156,7 @@ class RunUnderlyings extends Command
                 ]);
 
                 /**
-                 * 1️⃣2️⃣ BROADCAST TICK
+                 * 1️⃣3️⃣ BROADCAST TICK
                  */
                 event(new UnderlyingTickUpdated(
                     $instrument->symbol,
@@ -155,7 +166,7 @@ class RunUnderlyings extends Command
             }
 
             /**
-             * 1️⃣3️⃣ DYNAMIC ENGINE TICK RATE
+             * 1️⃣4️⃣ DYNAMIC ENGINE TICK RATE
              * Use the value from config (e.g. 200ms vs 1000ms)
              */
             usleep($tickSpeed * 1000);

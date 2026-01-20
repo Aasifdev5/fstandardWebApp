@@ -11,7 +11,7 @@ use App\Http\Controllers\Api\TradeAssistanceController;
 | Public Instrument APIs
 |--------------------------------------------------------------------------
 */
-Route::prefix('v1/instruments')->group(function () {
+Route::prefix('instruments')->group(function () {
     Route::get('/', [InstrumentController::class, 'index']);
     Route::get('{symbol}', [InstrumentController::class, 'show']);
     Route::get('{symbol}/candles', [InstrumentController::class, 'candles']);

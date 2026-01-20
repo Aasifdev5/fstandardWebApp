@@ -8,18 +8,20 @@ use App\Models\Trade;
 use App\Models\PsychometricState;
 use App\Models\PsychometricSnapshot;
 use App\Models\MarketSetting;
+use App\Events\PsychometricUpdated; // 🔥 Added
+use App\Http\Controllers\Api\PsychometricController; // 🔥 Added
 
 class RunPsychometrics extends Command
 {
     protected $signature = 'psychometrics:run';
-    protected $description = 'Run psychometric behavior engine';
+    protected $description = 'Run psychometric behavior engine and broadcast updates';
 
     public function handle()
     {
         $this->info('🧠 Psychometric Engine RUNNING');
 
-        $config = MarketSetting::getSimulationConfig();
-
+        // Instantiate the controller to use its explanation logic
+        $psychController = new PsychometricController();
         $users = User::where('is_active', 1)->get();
 
         foreach ($users as $user) {
@@ -57,7 +59,7 @@ class RunPsychometrics extends Command
             ]);
 
             // ───── ROLLING STATE (NORMALIZED 0–1) ─────
-            PsychometricState::updateOrCreate(
+            $state = PsychometricState::updateOrCreate(
                 ['user_id' => $user->id],
                 [
                     'confidence' => round(min(1, $wins / $total), 2),
@@ -66,6 +68,15 @@ class RunPsychometrics extends Command
                     'aggression' => round($impulse / 100, 2),
                 ]
             );
+
+            // ───── 🔥 GENERATE AI INSIGHT & BROADCAST ─────
+            // We pull the dynamic explanation from the logic we built in the controller
+            $explanation = $psychController->generateExplanation($state);
+
+            // Broadcast the event for the Vue Radar Chart to update live
+            event(new PsychometricUpdated($user->id, $state, $explanation));
+
+            $this->info("Processed User #{$user->id}: Event Dispatched.");
         }
 
         $this->info('✅ Psychometric Engine FINISHED');
