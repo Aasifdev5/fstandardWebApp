@@ -45,10 +45,16 @@ class RunMarketPatterns extends Command
 
                         // ───── SNAPSHOT STATE ─────
                         PatternState::updateOrCreate(
-                            ['instrument_id' => $instrument->id],
                             [
-                                'pattern'     => $definition->pattern_id,
+                                'instrument_id' => $instrument->id,
+                                'pattern_definition_id' => $definition->id,
+                                'timeframe' => '15m',
+                            ],
+                            [
                                 'strength'    => $strength,
+                                'confidence'  => round($strength * 100, 2),
+                                'source'      => 'system',
+                                'is_active'   => true,
                                 'detected_at' => now(),
                             ]
                         );

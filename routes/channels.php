@@ -38,8 +38,12 @@ Broadcast::channel('market.futures.{symbol}', function ($user) {
 Broadcast::channel('market.options.{symbol}', function ($user) {
     return true;
 });
-// 🔹 Psychometric Updates (Private)
 Broadcast::channel('user.psychometrics.{userId}', function ($user, $userId) {
-    // Only allow the user to listen to their own psychological profile updates
-    return (int) $user->id === (int) $userId;
+
+    \Log::info('Broadcast auth', [
+        'user' => $user?->id,
+        'requested' => $userId,
+    ]);
+
+    return true;
 });

@@ -19,6 +19,7 @@ class PatternState extends Model
         'starts_at',
         'ends_at',
         'parent_pattern_id',
+        'detected_at'
     ];
 
     protected $casts = [

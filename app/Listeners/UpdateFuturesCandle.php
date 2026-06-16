@@ -25,8 +25,7 @@ class UpdateFuturesCandle
 
         $this->aggregator->onTick(
             $event->symbol,
-            '1m',
-            (float) $event->price,   // ✅ force float
+            (float)$event->price,
             $event->timestamp
         );
     }
